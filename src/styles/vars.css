@@ -1,0 +1,22 @@
+:root {
+  --radius: 0.25rem;
+  --sp-xs: 0.25rem;
+  --sp-sm: 0.5rem;
+  --sp-md: 1rem;
+  --sp-lg: 1.5rem;
+  --sp-xl: 2rem;
+
+  --toolbar-offset: 0.5rem;
+  --max-width: 720px;
+
+  --editor-font: "BuiltinSerif", serif;
+  --editor-font-size: 1rem;
+  --editor-line-height: 1.4;
+
+  --preview-font: "BuiltinSerif", Times, serif;
+  --preview-font-size: 0.875rem;
+  --preview-line-height: 1.6;
+  --preview-para-indent: 1em;
+
+  --form-height: 2rem;
+}

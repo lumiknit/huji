@@ -1,0 +1,36 @@
+:root {
+  color-scheme: light dark;
+  --c-bg: #ffffff;
+  --c-fg: #000000;
+  --c-bg-subtle: #f5f5f5;
+  --c-border: #cccccc;
+  --c-primary: #0066cc;
+  --c-primary-fg: #ffffff;
+  --c-success: #228b22;
+  --c-success-fg: #ffffff;
+  --c-danger: #cc0000;
+  --c-danger-fg: #ffffff;
+  --c-muted: #666666;
+  --c-overlay: rgba(0, 0, 0, 0.04);
+  --badge-l: 82%;
+  --badge-fg: #111;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #000000;
+    --c-fg: #ffffff;
+    --c-bg-subtle: #111111;
+    --c-border: #333333;
+    --c-primary: #4da6ff;
+    --c-primary-fg: #000000;
+    --c-success: #5adb5a;
+    --c-success-fg: #000000;
+    --c-danger: #ff6666;
+    --c-danger-fg: #000000;
+    --c-muted: #999999;
+    --c-overlay: rgba(255, 255, 255, 0.04);
+    --badge-l: 35%;
+    --badge-fg: #eee;
+  }
+}

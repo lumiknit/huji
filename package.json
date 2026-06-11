@@ -1,0 +1,49 @@
+{
+  "name": "huji",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "author": "lumiknit <aasr4r4@gmail.com>",
+  "license": "MPL-2.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "deno run typecheck && vite build",
+    "preview": "vite preview",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@solid-primitives/media": "^2.3.5",
+    "@solid-primitives/storage": "^4.3.4",
+    "@solidjs/router": "^0.16.1",
+    "docx": "^9.7.1",
+    "dompurify": "^3.4.9",
+    "idb": "^8.0.3",
+    "js-yaml": "^4.2.0",
+    "localforage": "^1.10.0",
+    "marked": "^18.0.5",
+    "smol-toml": "^1.6.1",
+    "solid-icons": "^1.2.0",
+    "solid-js": "^1.9.13",
+    "solid-toast": "^0.5.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.9.3",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.8.4",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.61.0",
+    "vite": "^8.0.16",
+    "vite-bundle-visualizer": "^1.2.1",
+    "vite-plugin-solid": "^2.11.12",
+    "vitest": "^4.1.8"
+  }
+}
