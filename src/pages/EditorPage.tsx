@@ -24,8 +24,10 @@ import {
   TbOutlinePaperclip,
   TbOutlineShare,
   TbOutlineCursorText,
-  TbOutlineCloud,
+  TbOutlineCloudUpload,
   TbOutlineCopy,
+  TbOutlineArrowUp,
+  TbOutlineArrowDown,
 } from "solid-icons/tb";
 import toast from "solid-toast";
 
@@ -96,7 +98,7 @@ const SaveOrBackupButton: Component<SaveOrBackupButtonProps> = (props) => {
         onClick={props.onBackup}
         title="Backup to cloud"
       >
-        <TbOutlineCloud />
+        <TbOutlineCloudUpload />
       </button>
     </Show>
   );
@@ -728,12 +730,15 @@ const EditorPage: Component = () => {
                   switchSection(prev().id);
                 }}
               >
-                ← Prev section
+                <TbOutlineArrowUp /> Prev section
               </button>
             )}
           </Show>
           <Show when={!isReadonly()}>
-            <button onClick={handleAddSectionBefore}>+ Create Prev</button>
+            <button onClick={handleAddSectionBefore}>
+              {" "}
+              <TbOutlinePlus /> Create Prev
+            </button>
           </Show>
         </div>
 
@@ -780,7 +785,8 @@ const EditorPage: Component = () => {
           <Show when={nextSection()}>
             {(next) => (
               <button onClick={() => switchSection(next().id)}>
-                Next section →
+                <TbOutlineArrowDown />
+                Next section
               </button>
             )}
           </Show>
@@ -790,7 +796,7 @@ const EditorPage: Component = () => {
                 handleAddSection(editorState.activeSectionId() ?? undefined)
               }
             >
-              + Create Next
+              <TbOutlinePlus /> Create Next
             </button>
           </Show>
         </div>

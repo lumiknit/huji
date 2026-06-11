@@ -15,7 +15,8 @@ import {
   TbOutlineUpload,
   TbOutlineSettings,
   TbOutlineRefresh,
-  TbOutlineCloudDown,
+  TbOutlineCloudDownload,
+  TbOutlineLogout,
   TbFillCloud,
   TbOutlineChevronDown,
   TbOutlineChevronRight,
@@ -824,6 +825,14 @@ const FileListPage: Component = () => {
                 "margin-top": "0.4rem",
               }}
             >
+              <button
+                class="danger"
+                onClick={handleDisconnect}
+                style={{ "margin-right": "auto" }}
+              >
+                <TbOutlineLogout />
+                Disconnect
+              </button>
               <Show
                 when={cloudFiles() !== null}
                 fallback={
@@ -831,7 +840,7 @@ const FileListPage: Component = () => {
                     onClick={() => loadCloudFiles()}
                     disabled={cloudLoading()}
                   >
-                    <TbFillCloud /> Show files
+                    <TbOutlineCloudDownload /> Show files
                   </button>
                 }
               >
@@ -846,17 +855,10 @@ const FileListPage: Component = () => {
                     onClick={() => loadCloudFiles(cloudCursor())}
                     disabled={cloudLoading()}
                   >
-                    <TbOutlineCloudDown /> Load more
+                    <TbOutlineCloudDownload /> Load more
                   </button>
                 </Show>
               </Show>
-              <button
-                class="danger"
-                onClick={handleDisconnect}
-                style={{ "margin-left": "auto" }}
-              >
-                Disconnect
-              </button>
             </div>
           </Show>
         </fieldset>
@@ -865,9 +867,10 @@ const FileListPage: Component = () => {
       <Show when={!files.loading}>
         <div
           class="flex-row"
-          style={{ gap: "0.4rem", "margin-bottom": "0.5rem" }}
+          style={{ gap: "0.4rem", "margin-bottom": "1rem" }}
         >
           <button
+            class="danger"
             onClick={handleCleanOldVersions}
             title="Remove all but the latest local version per group"
           >
