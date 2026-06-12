@@ -127,7 +127,6 @@ const EditorPage: Component = () => {
 
   let textareaEl: HTMLTextAreaElement | null = null;
   let wholeEl: HTMLTextAreaElement | null = null;
-  let textareaContainerEl: HTMLDivElement | null = null;
 
   const captureSnapshot = (): SectionSnapshot | undefined => {
     const id = editorState.activeSectionId();
@@ -181,23 +180,29 @@ const EditorPage: Component = () => {
   });
 
   const scrollToEditor = () => {
-    if (!textareaContainerEl) return;
-    const r = textareaContainerEl.getBoundingClientRect();
-    if (r.bottom < 0) {
-      // textarea is above — scroll down to it, cursor at end
-      textareaContainerEl.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-      if (textareaEl) {
-        const len = textareaEl.value.length;
-        textareaEl.setSelectionRange(len, len);
-      }
-    } else if (r.top > window.innerHeight) {
-      // textarea is below — scroll up to it, cursor at start
-      textareaContainerEl.scrollIntoView({ behavior: "smooth", block: "end" });
-      if (textareaEl) textareaEl.setSelectionRange(0, 0);
+    if (!textareaEl) return;
+    const r = textareaEl.getBoundingClientRect();
+    const hh = document.documentElement.clientHeight / 2;
+
+    let targetY = 0;
+    if (r.bottom < hh) {
+      const len = textareaEl.value.length;
+      textareaEl.setSelectionRange(len, len);
+      targetY = r.bottom;
+    } else if (r.top > hh) {
+      textareaEl.setSelectionRange(0, 0);
+      targetY = r.top;
+    } else {
+      // Already in the screen, ignore
+      return;
     }
+
+    // Scroll targetY to be a center position
+    const ry = window.scrollY + targetY;
+    window.scrollTo({
+      top: ry - hh,
+      behavior: "smooth",
+    });
   };
 
   const prettifyFrontmatter = async () => {
@@ -254,7 +259,6 @@ const EditorPage: Component = () => {
     if (editorState.activeSectionId() !== id) return; // race condition guard
     if (textareaEl) {
       textareaEl.value = content;
-      textareaEl.focus();
       const sel = popSectionSelection(id);
       if (sel) {
         const len = content.length;
@@ -263,7 +267,10 @@ const EditorPage: Component = () => {
           Math.min(sel.end, len),
         );
       }
-      scrollToEditor();
+      setTimeout(() => {
+        textareaEl!.focus();
+        scrollToEditor();
+      }, 16);
     }
   });
 
@@ -740,11 +747,7 @@ const EditorPage: Component = () => {
           </Show>
         </div>
 
-        <div
-          ref={(el) => {
-            textareaContainerEl = el;
-          }}
-        >
+        <div>
           <textarea
             class="edit"
             placeholder="Write here!"

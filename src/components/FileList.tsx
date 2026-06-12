@@ -171,7 +171,10 @@ type FileListProps = {
 
 const FileList: Component<FileListProps> = (props) => {
   const navigate = useNavigate();
-  const [debouncedSearch, setDebouncedSearch] = createDebouncedSignal(props.search, 500);
+  const [debouncedSearch, setDebouncedSearch] = createDebouncedSignal(
+    props.search,
+    500,
+  );
   const [expanded, setExpanded] = createSignal(new Set<string>());
   const [openMenu, setOpenMenu] = createSignal<string | null>(null);
 
