@@ -238,6 +238,24 @@ export async function upload(
   return fileFromParsed(parsed.data);
 }
 
+export async function deleteFile(
+  token: SyncToken,
+  name: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/files/delete_v2`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ path: `/${name}` }),
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    dbxError(`Delete failed: ${parseApiError(json)}`, json);
+  }
+}
+
 export async function download(token: SyncToken, name: string): Promise<Blob> {
   const res = await fetch(`${CONTENT_URL}/files/download`, {
     method: "POST",

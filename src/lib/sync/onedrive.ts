@@ -207,6 +207,22 @@ export async function upload(
   };
 }
 
+export async function deleteFile(
+  token: SyncToken,
+  name: string,
+): Promise<void> {
+  const res = await fetch(`${APP_ROOT}:/${encodeURIComponent(name)}:`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token.accessToken}` },
+  });
+  if (!res.ok && res.status !== 204) {
+    const err = await res.json().catch(() => ({}));
+    odvError(
+      `Delete failed: ${JSON.stringify((err as { error?: unknown }).error ?? err)}`,
+    );
+  }
+}
+
 export async function download(token: SyncToken, name: string): Promise<Blob> {
   const res = await fetch(`${APP_ROOT}:/${encodeURIComponent(name)}:/content`, {
     headers: { Authorization: `Bearer ${token.accessToken}` },

@@ -553,7 +553,7 @@ const EditorPage: Component = () => {
           </button>
           <Show when={canBackup()}>
             <button onClick={() => handleBackup()}>
-              <TbOutlineCloud /> Backup to {defaultRemoteProvider() || "cloud"}
+              <TbOutlineCloudUpload /> Backup to {defaultRemoteProvider() || "cloud"}
             </button>
           </Show>
         </ToggleMenu>

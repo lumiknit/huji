@@ -42,6 +42,7 @@ export interface SyncProvider {
   ): Promise<{ files: SyncFile[]; cursor: string; hasMore: boolean }>;
   upload(token: SyncToken, name: string, blob: Blob): Promise<SyncFile>;
   download(token: SyncToken, name: string): Promise<Blob>;
+  delete(token: SyncToken, name: string): Promise<void>;
 }
 
 export interface SyncFile {

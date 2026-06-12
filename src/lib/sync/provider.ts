@@ -25,6 +25,7 @@ const dropboxProvider: SyncProvider = {
   list: dropbox.list,
   upload: dropbox.upload,
   download: dropbox.download,
+  delete: dropbox.deleteFile,
 };
 
 const onedriveProvider: SyncProvider = {
@@ -41,6 +42,7 @@ const onedriveProvider: SyncProvider = {
   list: onedrive.list,
   upload: onedrive.upload,
   download: onedrive.download,
+  delete: onedrive.deleteFile,
 };
 
 const providers: Record<SyncProviderName, SyncProvider> = {
