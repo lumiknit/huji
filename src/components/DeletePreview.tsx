@@ -67,7 +67,14 @@ function computePlan(
       keepRemote?.name ??
       docId;
 
-    plans.push({ docId, displayName, keepLocal, deleteLocal, keepRemote, deleteRemote });
+    plans.push({
+      docId,
+      displayName,
+      keepLocal,
+      deleteLocal,
+      keepRemote,
+      deleteRemote,
+    });
   }
 
   return plans;
@@ -90,7 +97,10 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
   );
 
   const totalDeletes = createMemo(() =>
-    plan().reduce((n, g) => n + g.deleteLocal.length + g.deleteRemote.length, 0),
+    plan().reduce(
+      (n, g) => n + g.deleteLocal.length + g.deleteRemote.length,
+      0,
+    ),
   );
 
   const handleConfirm = async () => {
@@ -145,7 +155,9 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
           <For each={plan()}>
             {(group) => (
               <>
-                <li style={{ "font-weight": "600", "padding-block": "0.35rem" }}>
+                <li
+                  style={{ "font-weight": "600", "padding-block": "0.35rem" }}
+                >
                   <span class="file-chevron" />
                   <span class="file-info" style={{ gap: "0.15rem" }}>
                     <span>{group.displayName}</span>
@@ -158,11 +170,14 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
                       <span class="file-chevron" />
                       <span class="file-info">
                         <span>
-                          <TbOutlineDeviceFloppy style={{ "vertical-align": "middle" }} />{" "}
+                          <TbOutlineDeviceFloppy
+                            style={{ "vertical-align": "middle" }}
+                          />{" "}
                           {item().filename}
                         </span>
                         <small>
-                          Keep · Local · {formatDateTime(new Date(item().lastUsedAt))}
+                          Keep · Local ·{" "}
+                          {formatDateTime(new Date(item().lastUsedAt))}
                         </small>
                       </span>
                     </li>
@@ -173,16 +188,22 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
                   {(item) => (
                     <li
                       class="version-item"
-                      style={{ opacity: "0.5", "text-decoration": "line-through" }}
+                      style={{
+                        opacity: "0.5",
+                        "text-decoration": "line-through",
+                      }}
                     >
                       <span class="file-chevron" />
                       <span class="file-info">
                         <span>
-                          <TbOutlineDeviceFloppy style={{ "vertical-align": "middle" }} />{" "}
+                          <TbOutlineDeviceFloppy
+                            style={{ "vertical-align": "middle" }}
+                          />{" "}
                           {item.filename}
                         </span>
                         <small class="text-danger">
-                          Delete · Local · {formatDateTime(new Date(item.lastUsedAt))}
+                          Delete · Local ·{" "}
+                          {formatDateTime(new Date(item.lastUsedAt))}
                         </small>
                       </span>
                     </li>
@@ -195,7 +216,10 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
                       <span class="file-chevron" />
                       <span class="file-info">
                         <span>
-                          <TbFillCloud class="file-cloud-icon" style={{ "vertical-align": "middle" }} />{" "}
+                          <TbFillCloud
+                            class="file-cloud-icon"
+                            style={{ "vertical-align": "middle" }}
+                          />{" "}
                           {item().name}
                         </span>
                         <small>
@@ -214,12 +238,18 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
                   {(item) => (
                     <li
                       class="version-item"
-                      style={{ opacity: "0.5", "text-decoration": "line-through" }}
+                      style={{
+                        opacity: "0.5",
+                        "text-decoration": "line-through",
+                      }}
                     >
                       <span class="file-chevron" />
                       <span class="file-info">
                         <span>
-                          <TbFillCloud class="file-cloud-icon" style={{ "vertical-align": "middle" }} />{" "}
+                          <TbFillCloud
+                            class="file-cloud-icon"
+                            style={{ "vertical-align": "middle" }}
+                          />{" "}
                           {item.name}
                         </span>
                         <small class="text-danger">

@@ -3,9 +3,9 @@ import {
   createSignal,
   createEffect,
   createMemo,
+  createResource,
   onMount,
   onCleanup,
-  untrack,
   For,
   Show,
 } from "solid-js";
@@ -35,13 +35,10 @@ import {
   editorState,
   loadFile,
   switchSection,
-  notifyEdit,
-  flushSave,
-  setTextareaRef,
+  type SectionSnapshot,
   setActiveSectionId,
   loadSectionContent,
   loadAllContent,
-  saveWholeContent,
   addSection,
   addSectionBefore,
   deleteSection,
@@ -50,7 +47,9 @@ import {
   popPendingJump,
   setSectionSelection,
   getCurrentDocId,
+  importMarkdownText,
 } from "../states/editor";
+import { notifyEdit, flushSave, saveWholeContent } from "../states/editor_save";
 import { settingsSignals, defaultRemoteProvider } from "../states/settings";
 import { buildSectionLabel } from "../lib/md/section";
 import {
@@ -58,7 +57,6 @@ import {
   serializeFrontmatter,
 } from "../lib/md/frontmatter";
 import { loadRawMarkdown, downloadBlob } from "../lib/export";
-import { importMarkdownText } from "../states/editor";
 import { sanitizeFilename, packBackupName } from "../lib/path";
 import { getProvider } from "../lib/sync/provider";
 import type { SyncProviderName } from "../lib/sync/interface";
@@ -70,6 +68,25 @@ import type { SectionMeta } from "../lib/db/schema";
 
 const ALL_ID = "__all__";
 
+type ContextSectionProps = {
+  meta: () => SectionMeta;
+  raw: boolean;
+};
+
+const ContextSection: Component<ContextSectionProps> = (props) => {
+  const [content] = createResource(() => props.meta().id, loadSectionContent);
+  return (
+    <div class="section-preview">
+      <Show
+        when={!props.raw && props.meta().level !== -1}
+        fallback={<pre class="pre-wrap">{content() ?? ""}</pre>}
+      >
+        <MarkdownView sectionId={props.meta().id} content={content() ?? ""} />
+      </Show>
+    </div>
+  );
+};
+
 type SaveOrBackupButtonProps = {
   status: () => string;
   onSave: () => void;
@@ -79,28 +96,24 @@ type SaveOrBackupButtonProps = {
 
 const SaveOrBackupButton: Component<SaveOrBackupButtonProps> = (props) => {
   const isSaved = () => props.status() === "saved";
+  const handleClick = () => {
+    if (isSaved()) {
+      props.onBackup();
+    } else {
+      props.onSave();
+    }
+  };
   return (
-    <Show
-      when={isSaved()}
-      fallback={
-        <button
-          class="primary"
-          disabled={props.status() === "saving"}
-          onClick={props.onSave}
-          title="Save"
-        >
-          <TbOutlineDeviceFloppy />
-        </button>
-      }
+    <button
+      class={isSaved() ? undefined : "primary"}
+      disabled={isSaved() ? !props.canBackup() : props.status() === "saving"}
+      onClick={handleClick}
+      title={isSaved() ? "Backup to cloud" : "Save"}
     >
-      <button
-        disabled={!props.canBackup()}
-        onClick={props.onBackup}
-        title="Backup to cloud"
-      >
+      <Show when={isSaved()} fallback={<TbOutlineDeviceFloppy />}>
         <TbOutlineCloudUpload />
-      </button>
-    </Show>
+      </Show>
+    </button>
   );
 };
 
@@ -110,14 +123,22 @@ const EditorPage: Component = () => {
   const [searchParams] = useSearchParams();
   const isReadonly = () => searchParams.readonly !== undefined;
 
-  const [contextContents, setContextContents] = createSignal<
-    Record<string, string>
-  >({});
   const [fmError, setFmError] = createSignal("");
 
   let textareaEl: HTMLTextAreaElement | null = null;
   let wholeEl: HTMLTextAreaElement | null = null;
   let textareaContainerEl: HTMLDivElement | null = null;
+
+  const captureSnapshot = (): SectionSnapshot | undefined => {
+    const id = editorState.activeSectionId();
+    if (!textareaEl || !id || id.startsWith("__")) return undefined;
+    return {
+      id,
+      value: textareaEl.value,
+      selectionStart: textareaEl.selectionStart,
+      selectionEnd: textareaEl.selectionEnd,
+    };
+  };
 
   const activeMeta = createMemo(() =>
     editorState.metas().find((m) => m.id === editorState.activeSectionId()),
@@ -181,6 +202,8 @@ const EditorPage: Component = () => {
 
   const prettifyFrontmatter = async () => {
     if (!textareaEl || !isFrontmatter()) return;
+    const id = editorState.activeSectionId();
+    if (!id) return;
     try {
       const info = await extractFrontmatter(textareaEl.value);
       if (!info) {
@@ -190,7 +213,7 @@ const EditorPage: Component = () => {
       const pretty = await serializeFrontmatter(info.type, info.data);
       textareaEl.value = pretty;
       setFmError("");
-      notifyEdit();
+      notifyEdit(id, pretty);
     } catch (e) {
       setFmError(String(e));
     }
@@ -205,10 +228,10 @@ const EditorPage: Component = () => {
         start: jump.start,
         end: jump.end,
       });
-      await switchSection(jump.sectionId);
+      await switchSection(jump.sectionId, undefined);
     } else {
       const first = list.find((m) => m.level !== -1) ?? list[0];
-      if (first) await switchSection(first.id);
+      if (first) await switchSection(first.id, undefined);
     }
   });
 
@@ -244,34 +267,6 @@ const EditorPage: Component = () => {
     }
   });
 
-  createEffect(async () => {
-    const id = editorState.activeSectionId();
-    const ctx = settingsSignals.contextSections();
-    if (!id || id === ALL_ID) return;
-
-    // Drop the active section from cache so it re-fetches after save
-    setContextContents((prev) => {
-      if (prev[id] === undefined) return prev;
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-
-    const list = editorState.metas();
-    const idx = list.findIndex((m) => m.id === id);
-    for (
-      let i = Math.max(0, idx - ctx);
-      i <= Math.min(list.length - 1, idx + ctx);
-      i++
-    ) {
-      const sid = list[i].id;
-      if (sid !== id && untrack(() => contextContents()[sid]) === undefined) {
-        const content = await loadSectionContent(sid);
-        setContextContents((prev) => ({ ...prev, [sid]: content }));
-      }
-    }
-  });
-
   const handleSectionChange = async (e: Event) => {
     const id = (e.currentTarget as HTMLSelectElement).value;
     if (id === "__outline__") {
@@ -279,10 +274,10 @@ const EditorPage: Component = () => {
       return;
     }
     if (id === ALL_ID) {
-      await switchSection(null);
+      await switchSection(null, captureSnapshot());
       setActiveSectionId(ALL_ID);
     } else {
-      await switchSection(id);
+      await switchSection(id, captureSnapshot());
     }
   };
 
@@ -298,7 +293,7 @@ const EditorPage: Component = () => {
       const prev = prevSection();
       if (prev) {
         setSectionSelection(prev.id, { start: Infinity, end: Infinity });
-        switchSection(prev.id);
+        switchSection(prev.id, captureSnapshot());
       }
     }
     if (
@@ -307,7 +302,7 @@ const EditorPage: Component = () => {
     ) {
       e.preventDefault();
       const next = nextSection();
-      if (next) switchSection(next.id);
+      if (next) switchSection(next.id, captureSnapshot());
     }
     if ((e.ctrlKey || e.metaKey) && e.key === "f") {
       e.preventDefault();
@@ -340,7 +335,7 @@ const EditorPage: Component = () => {
     try {
       const newId = await addSectionBefore(id);
       if (newId) {
-        await switchSection(newId);
+        await switchSection(newId, captureSnapshot());
         requestAnimationFrame(() => {
           if (!textareaEl) return;
           const val = textareaEl.value;
@@ -364,7 +359,7 @@ const EditorPage: Component = () => {
         id && !id.startsWith("__") ? id : undefined,
       );
       if (newId) {
-        await switchSection(newId);
+        await switchSection(newId, captureSnapshot());
         // Select "Title here" in the new section's textarea for immediate editing
         requestAnimationFrame(() => {
           if (!textareaEl) return;
@@ -472,7 +467,7 @@ const EditorPage: Component = () => {
       await deleteSection(id);
       const updated = editorState.metas();
       const next = updated[Math.min(idx, updated.length - 1)];
-      if (next) await switchSection(next.id);
+      if (next) await switchSection(next.id, undefined);
     } catch (e) {
       console.error("Failed to delete section:", e);
       toast.error("Failed to delete section");
@@ -500,20 +495,32 @@ const EditorPage: Component = () => {
   };
 
   const handleSave = () => {
-    if (mode() === "all") handleWholeSave();
-    else flushSave();
+    const snap = captureSnapshot();
+    const p = (async () => {
+      if (mode() === "all") {
+        await handleWholeSave();
+      } else if (snap) {
+        const err = await flushSave(snap.id, snap.value);
+        if (err) throw new Error(err);
+      }
+    })();
+    toast.promise(p, {
+      loading: "Saving…",
+      success: "Saved",
+      error: (e) => `Save failed: ${(e as Error).message}`,
+    });
   };
 
   const handleFileDrop = (file: File) => {
-    if (!textareaEl) return;
+    const id = editorState.activeSectionId();
+    if (!textareaEl || !id) return;
+    const el = textareaEl;
     file.text().then((text) => {
-      const start = textareaEl!.selectionStart;
-      const end = textareaEl!.selectionEnd;
-      const prev = textareaEl!.value;
-      textareaEl!.value = prev.slice(0, start) + text + prev.slice(end);
-      textareaEl!.selectionStart = textareaEl!.selectionEnd =
-        start + text.length;
-      notifyEdit();
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      el.value = el.value.slice(0, start) + text + el.value.slice(end);
+      el.selectionStart = el.selectionEnd = start + text.length;
+      notifyEdit(id, el.value);
     });
   };
 
@@ -553,7 +560,8 @@ const EditorPage: Component = () => {
           </button>
           <Show when={canBackup()}>
             <button onClick={() => handleBackup()}>
-              <TbOutlineCloudUpload /> Backup to {defaultRemoteProvider() || "cloud"}
+              <TbOutlineCloudUpload /> Backup to{" "}
+              {defaultRemoteProvider() || "cloud"}
             </button>
           </Show>
         </ToggleMenu>
@@ -694,7 +702,9 @@ const EditorPage: Component = () => {
               el.focus();
             });
           }}
-          onInput={() => !isReadonly() && notifyEdit()}
+          onInput={(e) =>
+            !isReadonly() && notifyEdit("__all__", e.currentTarget.value)
+          }
           onBlur={isReadonly() ? undefined : handleWholeSave}
         />
       </Show>
@@ -702,19 +712,7 @@ const EditorPage: Component = () => {
       <Show when={mode() === "single"}>
         <For each={contextRange().before}>
           {(m) => (
-            <div class="section-preview">
-              <Show
-                when={!settingsSignals.contextRaw() && m.level !== -1}
-                fallback={
-                  <pre class="pre-wrap">{contextContents()[m.id] ?? ""}</pre>
-                }
-              >
-                <MarkdownView
-                  sectionId={m.id}
-                  content={contextContents()[m.id] ?? ""}
-                />
-              </Show>
-            </div>
+            <ContextSection meta={() => m} raw={settingsSignals.contextRaw()} />
           )}
         </For>
 
@@ -754,22 +752,24 @@ const EditorPage: Component = () => {
             readOnly={isReadonly()}
             ref={(el) => {
               textareaEl = el;
-              setTextareaRef(el);
             }}
-            onInput={() => {
+            onInput={(e) => {
               if (isReadonly()) return;
-              notifyEdit();
+              const id = editorState.activeSectionId();
+              if (id) notifyEdit(id, e.currentTarget.value);
               setFmError("");
             }}
             onBlur={
               isReadonly()
                 ? undefined
-                : async () => {
+                : async (e) => {
+                    const id = editorState.activeSectionId();
+                    if (!id) return;
                     try {
-                      const err = await flushSave();
+                      const err = await flushSave(id, e.currentTarget.value);
                       setFmError(err);
-                    } catch (e) {
-                      console.error("Failed to save:", e);
+                    } catch (err) {
+                      console.error("Failed to save:", err);
                       toast.error("Failed to save");
                     }
                   }
@@ -803,19 +803,7 @@ const EditorPage: Component = () => {
 
         <For each={contextRange().after}>
           {(m) => (
-            <div class="section-preview">
-              <Show
-                when={!settingsSignals.contextRaw() && m.level !== -1}
-                fallback={
-                  <pre class="pre-wrap">{contextContents()[m.id] ?? ""}</pre>
-                }
-              >
-                <MarkdownView
-                  sectionId={m.id}
-                  content={contextContents()[m.id] ?? ""}
-                />
-              </Show>
-            </div>
+            <ContextSection meta={() => m} raw={settingsSignals.contextRaw()} />
           )}
         </For>
       </Show>

@@ -5,6 +5,7 @@ import {
   createSignal,
   createMemo,
   createEffect,
+  onMount,
   onCleanup,
   For,
   Show,
@@ -20,11 +21,9 @@ import {
 } from "solid-icons/tb";
 import toast from "solid-toast";
 
-import {
-  serializeFrontmatter,
-  parseDocument,
-} from "../lib/md/frontmatter";
+import { serializeFrontmatter, parseDocument } from "../lib/md/frontmatter";
 import { genId } from "../lib/utils/id";
+import { createDebouncedSignal } from "../lib/utils/debounce";
 import { loadRawMarkdown } from "../lib/export";
 import { importMarkdownText } from "../states/editor";
 import type { SyncFile } from "../lib/sync/interface";
@@ -50,40 +49,58 @@ type DropdownMenuProps = {
   onDelete: () => void;
 };
 
-const DropdownMenu: Component<DropdownMenuProps> = (props) => (
-  <div class="file-menu-anchor">
-    <button
-      title="Menu"
-      onClick={() =>
-        props.setOpenMenu((prev) => (prev === props.id ? null : props.id))
+const DropdownMenu: Component<DropdownMenuProps> = (props) => {
+  let anchorEl: HTMLDivElement | undefined;
+
+  onMount(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        props.openMenu() === props.id &&
+        anchorEl &&
+        !anchorEl.contains(e.target as Node)
+      ) {
+        props.setOpenMenu(null);
       }
-    >
-      <TbOutlineDots />
-    </button>
-    <Show when={props.openMenu() === props.id}>
-      <div class="file-dropdown">
-        <div
-          class="file-dropdown-item"
-          onClick={() => {
-            props.setOpenMenu(null);
-            props.onFork();
-          }}
-        >
-          <TbOutlineGitBranch /> Fork
+    };
+    document.addEventListener("mousedown", handler);
+    onCleanup(() => document.removeEventListener("mousedown", handler));
+  });
+
+  return (
+    <div class="file-menu-anchor" ref={anchorEl}>
+      <button
+        title="Menu"
+        onClick={() =>
+          props.setOpenMenu((prev) => (prev === props.id ? null : props.id))
+        }
+      >
+        <TbOutlineDots />
+      </button>
+      <Show when={props.openMenu() === props.id}>
+        <div class="file-dropdown">
+          <div
+            class="file-dropdown-item"
+            onClick={() => {
+              props.setOpenMenu(null);
+              props.onFork();
+            }}
+          >
+            <TbOutlineGitBranch /> Fork
+          </div>
+          <div
+            class="file-dropdown-item danger"
+            onClick={() => {
+              props.setOpenMenu(null);
+              props.onDelete();
+            }}
+          >
+            <TbOutlineTrash /> Delete
+          </div>
         </div>
-        <div
-          class="file-dropdown-item danger"
-          onClick={() => {
-            props.setOpenMenu(null);
-            props.onDelete();
-          }}
-        >
-          <TbOutlineTrash /> Delete
-        </div>
-      </div>
-    </Show>
-  </div>
-);
+      </Show>
+    </div>
+  );
+};
 
 type ChevronSlotProps = {
   groupKey: string;
@@ -154,21 +171,12 @@ type FileListProps = {
 
 const FileList: Component<FileListProps> = (props) => {
   const navigate = useNavigate();
-  const [debouncedSearch, setDebouncedSearch] = createSignal(props.search);
-  const [filtering, setFiltering] = createSignal(false);
+  const [debouncedSearch, setDebouncedSearch] = createDebouncedSignal(props.search, 500);
   const [expanded, setExpanded] = createSignal(new Set<string>());
   const [openMenu, setOpenMenu] = createSignal<string | null>(null);
 
-  createEffect(() => {
-    const q = props.search;
-    if (q === debouncedSearch()) return;
-    setFiltering(true);
-    const id = setTimeout(() => {
-      setDebouncedSearch(q);
-      setFiltering(false);
-    }, 500);
-    onCleanup(() => clearTimeout(id));
-  });
+  createEffect(() => setDebouncedSearch(props.search));
+  const filtering = createMemo(() => props.search !== debouncedSearch());
 
   const grouped = createMemo(() =>
     buildGroups(props.localItems, props.cloudItems, debouncedSearch()),

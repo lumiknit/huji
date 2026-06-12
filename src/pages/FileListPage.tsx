@@ -339,7 +339,9 @@ const FileListPage: Component = () => {
               <small class="dropbox-account">
                 {PROVIDER_LABELS[activeProvider()!.name]}
                 {" · "}
-                {cloudToken()?.displayName ?? cloudToken()?.email ?? "Connected"}
+                {cloudToken()?.displayName ??
+                  cloudToken()?.email ??
+                  "Connected"}
               </small>
               <div
                 class="flex-row"
@@ -401,7 +403,9 @@ const FileListPage: Component = () => {
                   >
                     <For each={providers}>
                       {(p) => (
-                        <option value={p.name}>{PROVIDER_LABELS[p.name]}</option>
+                        <option value={p.name}>
+                          {PROVIDER_LABELS[p.name]}
+                        </option>
                       )}
                     </For>
                   </select>

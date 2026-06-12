@@ -19,12 +19,8 @@ import {
 
 import { getContent } from "../lib/db/content";
 import { buildSectionLabel } from "../lib/md/section";
-import {
-  editorState,
-  loadFile,
-  saveSectionDirectly,
-  setPendingJump,
-} from "../states/editor";
+import { editorState, loadFile, setPendingJump } from "../states/editor";
+import { saveSectionDirectly } from "../states/editor_save";
 import type { SectionMeta } from "../lib/db/schema";
 import Toolbar from "../components/Toolbar";
 

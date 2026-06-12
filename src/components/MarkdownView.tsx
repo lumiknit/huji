@@ -1,4 +1,4 @@
-import { type Component } from "solid-js";
+import { type Component, createMemo } from "solid-js";
 import { renderMarkdown } from "../lib/md/render";
 
 type Props = {
@@ -7,7 +7,7 @@ type Props = {
 };
 
 const MarkdownView: Component<Props> = (props) => {
-  const html = () => renderMarkdown(props.content);
+  const html = createMemo(() => renderMarkdown(props.content));
 
   return <article class="md-body" innerHTML={html()} />;
 };

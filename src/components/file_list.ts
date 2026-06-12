@@ -133,8 +133,7 @@ export function buildGroups(
   const singletons: ItemGroup[] = [];
 
   for (const item of merged) {
-    const docId =
-      item.kind === "local" ? item.docId : item.docId;
+    const docId = item.kind === "local" ? item.docId : item.docId;
     if (docId) {
       if (!groupMap.has(docId)) groupMap.set(docId, []);
       groupMap.get(docId)!.push(item);
