@@ -127,6 +127,7 @@ const EditorPage: Component = () => {
 
   let textareaEl: HTMLTextAreaElement | null = null;
   let wholeEl: HTMLTextAreaElement | null = null;
+  let mirrorEl: HTMLDivElement | undefined;
 
   const captureSnapshot = (): SectionSnapshot | undefined => {
     const id = editorState.activeSectionId();
@@ -180,27 +181,26 @@ const EditorPage: Component = () => {
   });
 
   const scrollToEditor = () => {
-    if (!textareaEl) return;
+    if (!textareaEl || !mirrorEl) return;
     const r = textareaEl.getBoundingClientRect();
     const hh = document.documentElement.clientHeight / 2;
 
-    let targetY = 0;
-    if (r.bottom < hh) {
-      const len = textareaEl.value.length;
-      textareaEl.setSelectionRange(len, len);
-      targetY = r.bottom;
-    } else if (r.top > hh) {
-      textareaEl.setSelectionRange(0, 0);
-      targetY = r.top;
-    } else {
-      // Already in the screen, ignore
-      return;
-    }
+    mirrorEl.style.width = `${textareaEl.clientWidth}px`;
+    const position = textareaEl.selectionStart;
+    mirrorEl.textContent = textareaEl.value.slice(0, position);
 
-    // Scroll targetY to be a center position
-    const ry = window.scrollY + targetY;
+    const span = document.createElement("span");
+    span.textContent = ".";
+    mirrorEl.appendChild(span);
+
+    const spanTop = span.offsetTop;
+
+    // Clear mirror content
+    mirrorEl.textContent = "";
+
+    const absoluteCursorY = window.scrollY + r.top + spanTop;
     window.scrollTo({
-      top: ry - hh,
+      top: absoluteCursorY - hh,
       behavior: "smooth",
     });
   };
@@ -259,16 +259,15 @@ const EditorPage: Component = () => {
     if (editorState.activeSectionId() !== id) return; // race condition guard
     if (textareaEl) {
       textareaEl.value = content;
-      const sel = popSectionSelection(id);
-      if (sel) {
-        const len = content.length;
-        textareaEl.setSelectionRange(
-          Math.min(sel.start, len),
-          Math.min(sel.end, len),
-        );
-      }
+      const sel = popSectionSelection(id) || { start: 0, end: 0 };
+      const len = content.length;
+      textareaEl.setSelectionRange(
+        Math.min(sel.start, len),
+        Math.min(sel.end, len),
+      );
       setTimeout(() => {
-        textareaEl!.focus();
+        if (!textareaEl) return;
+        textareaEl.focus();
         scrollToEditor();
       }, 16);
     }
@@ -309,7 +308,10 @@ const EditorPage: Component = () => {
     ) {
       e.preventDefault();
       const next = nextSection();
-      if (next) switchSection(next.id, captureSnapshot());
+      if (next) {
+        setSectionSelection(next.id, { start: 0, end: 0 });
+        switchSection(next.id, captureSnapshot());
+      }
     }
     if ((e.ctrlKey || e.metaKey) && e.key === "f") {
       e.preventDefault();
@@ -533,6 +535,11 @@ const EditorPage: Component = () => {
 
   return (
     <main>
+      <div
+        ref={mirrorEl}
+        class="edit-mirror"
+        style="position: absolute; visibility: hidden; top: 0; left: -9999px; height: 0; overflow: hidden;"
+      />
       <FileDrop onDrop={handleFileDrop} label="Insert as raw text" />
       <Toolbar title={`Edit — ${editorState.filename()}`}>
         <A href="/" title="File list">
@@ -787,7 +794,15 @@ const EditorPage: Component = () => {
         <div class="section-nav">
           <Show when={nextSection()}>
             {(next) => (
-              <button onClick={() => switchSection(next().id)}>
+              <button
+                onClick={() => {
+                  setSectionSelection(next().id, {
+                    start: 0,
+                    end: 0,
+                  });
+                  switchSection(next().id);
+                }}
+              >
                 <TbOutlineArrowDown />
                 Next section
               </button>

@@ -254,14 +254,25 @@ textarea {
   outline: none;
 }
 
-/* 메인 편집 textarea */
-textarea.edit {
+/* 메인 편집 textarea 및 가상 DOM 미러 */
+textarea.edit,
+.edit-mirror {
   font-family: var(--editor-font);
   font-size: var(--editor-font-size);
   line-height: var(--editor-line-height);
+  padding: var(--sp-sm);
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  border: 1px solid transparent;
+}
+
+textarea.edit {
   field-sizing: content;
   min-height: 4rem;
   margin-block: var(--sp-sm);
+  border: 1px solid var(--c-border);
 }
 
 textarea.edit:focus {
