@@ -94,13 +94,13 @@ const loadFileList = async (): Promise<FileSummary[]> => {
   );
 };
 
-const createNewFile = async (): Promise<string> => {
+const createNewFile = async (filename: string): Promise<string> => {
   const fileId = genId();
   const now = new Date().toISOString();
   const fmId = genId();
   const fmData: Record<string, unknown> = {
     _id: genId(),
-    _filename: "Untitled",
+    _filename: filename || "Untitled",
     _last_used_at: now,
   };
   ensureRenderRules(fmData);
@@ -166,6 +166,8 @@ const FileListPage: Component = () => {
     createSignal<SyncProviderName>(providers[0]?.name ?? "dropbox");
 
   let fileInputEl!: HTMLInputElement;
+  let newDialogEl!: HTMLDialogElement;
+  let newTitleEl!: HTMLInputElement;
 
   onMount(async () => {
     const params = new URLSearchParams(location.search);
@@ -196,8 +198,16 @@ const FileListPage: Component = () => {
     }
   });
 
-  const handleNew = async () => {
-    const fileId = await createNewFile();
+  const handleNew = () => {
+    newTitleEl.value = "";
+    newDialogEl.showModal();
+    newTitleEl.focus();
+  };
+
+  const handleNewSubmit = async (e: SubmitEvent) => {
+    e.preventDefault();
+    if ((e.submitter as HTMLButtonElement)?.value !== "ok") return;
+    const fileId = await createNewFile(newTitleEl.value.trim());
     navigate(`/edit/${fileId}`);
   };
 
@@ -295,6 +305,20 @@ const FileListPage: Component = () => {
 
   return (
     <main>
+      <dialog ref={newDialogEl}>
+        <form method="dialog" onSubmit={handleNewSubmit}>
+          <h2>New file</h2>
+          <input ref={newTitleEl} type="text" placeholder="Title" autofocus />
+          <div class="dialog-actions">
+            <button type="submit" value="cancel">
+              Cancel
+            </button>
+            <button type="submit" value="ok" class="primary">
+              OK
+            </button>
+          </div>
+        </form>
+      </dialog>
       <FileDrop onDrop={handleDrop} label="Import file" />
       <Toolbar title="Files">
         <strong class="brand">huji</strong>

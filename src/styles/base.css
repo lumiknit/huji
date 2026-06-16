@@ -29,7 +29,7 @@ body {
 main {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 var(--sp-md) 6rem;
+  padding: 0 var(--sp-xs) 6rem;
 }
 
 /* ── Typography ── */
@@ -65,7 +65,7 @@ nav.toolbar {
   position: sticky;
   top: var(--toolbar-offset);
   z-index: 50;
-  margin: var(--toolbar-offset) 0 var(--sp-md);
+  margin: 0 var(--sp-xs) var(--sp-md);
 }
 
 nav.toolbar > fieldset {
@@ -673,7 +673,8 @@ article.md-body {
   align-items: center;
 }
 
-.find-row > input[type="text"] {
+.find-row > input[type="text"],
+.find-row > input[type="search"] {
   flex: 1;
 }
 
@@ -767,6 +768,23 @@ article.md-body {
   width: auto;
   flex-shrink: 0;
   font-size: 0.8rem;
+}
+
+/* ── Section count label ── */
+button.count-label {
+  border: none;
+  background: transparent;
+  color: var(--c-muted);
+  font-size: 0.7rem;
+  height: var(--form-height);
+  padding: 0 var(--sp-xs);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+button.count-label.dim {
+  opacity: 0.35;
 }
 
 /* ── Helper utilities ── */
@@ -937,6 +955,41 @@ tr.outline-excluded td {
 .outline-total td {
   border-top: 2px solid var(--c-border);
   border-bottom: none;
+}
+
+/* ── Dialog ── */
+dialog {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  background: var(--c-bg);
+  color: var(--c-fg);
+  box-shadow: none;
+  padding: var(--sp-md);
+  min-width: 18rem;
+  margin: var(--sp-sm) auto;
+}
+
+dialog::backdrop {
+  background: color-mix(in srgb, var(--c-bg) 60%, transparent);
+}
+
+dialog > form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+
+dialog > form > h2 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+dialog > form > .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-xs);
+  margin-top: var(--sp-xs);
 }
 
 /* ── Find bar ── */

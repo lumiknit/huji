@@ -36,6 +36,20 @@ const handleResetAll = async () => {
   location.reload();
 };
 
+const FontDataList: Component<{ id: string }> = (props) => {
+  return (
+    <datalist id={props.id}>
+      <option value="BuiltinSerif" />
+      <option value="BuiltinSans" />
+      <option value="RIDIBatang" />
+      <option value="MaruBuri" />
+      <option value="Pretendard JP Variable" />
+      <option value="KimjungchulMyungjo" />
+      <option value="GyeonggiCheonnyeonBatang" />
+    </datalist>
+  );
+};
+
 const SettingsPage: Component = () => {
   return (
     <main>
@@ -53,9 +67,11 @@ const SettingsPage: Component = () => {
           <input
             type="text"
             placeholder="(Default Serif)"
+            list="editor-font-family"
             value={settingsSignals.editorFont()}
             onChange={(e) => setEditorFont(e.currentTarget.value)}
           />
+          <FontDataList id="editor-font-family" />
         </label>
 
         <label>
@@ -99,9 +115,11 @@ const SettingsPage: Component = () => {
           <input
             type="text"
             placeholder="(Default Serif)"
+            list="preview-font-family"
             value={settingsSignals.previewFont()}
             onChange={(e) => setPreviewFont(e.currentTarget.value)}
           />
+          <FontDataList id="preview-font-family" />
         </label>
 
         <label>

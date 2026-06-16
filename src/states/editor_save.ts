@@ -25,9 +25,21 @@ import {
   editorState,
   setMetas,
   setSaveStatus,
+  setSectionCount,
   getCurrentDocId,
   fileId,
 } from "./editor";
+
+const countWords = (text: string) => {
+  let n = 0;
+  for (const _ of text.matchAll(/\S+/g)) n++;
+  return n;
+};
+
+export const countText = (text: string) => ({
+  chars: text.length,
+  words: countWords(text),
+});
 
 // ── Normalization helpers ──
 
@@ -295,6 +307,7 @@ const debounce = createDebounce(async () => {
   setSaveStatus("saving");
   try {
     await saveSection(id, meta, value);
+    setSectionCount(countText(value));
     setSaveStatus("saved");
   } catch {
     setSaveStatus("dirty");
@@ -326,6 +339,7 @@ const doFlushSave = async (
   setSaveStatus("saving");
   try {
     const { error } = await saveSection(id, meta, value);
+    if (!error) setSectionCount(countText(value));
     setSaveStatus(error ? "dirty" : "saved");
     return error;
   } finally {

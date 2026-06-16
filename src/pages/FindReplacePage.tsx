@@ -257,7 +257,7 @@ const FindReplacePage: Component = () => {
           <TbOutlineSearch />
           <input
             ref={queryInputEl}
-            type="text"
+            type="search"
             placeholder="Find…"
             value={queryRaw()}
             onInput={(e) => {

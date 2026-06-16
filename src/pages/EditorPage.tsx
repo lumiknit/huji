@@ -17,7 +17,6 @@ import {
   TbOutlineRotateClockwise,
   TbOutlineSearch,
   TbOutlinePlus,
-  TbOutlineTrash,
   TbOutlineWand,
   TbOutlineHome,
   TbOutlineDownload,
@@ -41,15 +40,20 @@ import {
   loadAllContent,
   addSection,
   addSectionBefore,
-  deleteSection,
   disposeEditor,
   popSectionSelection,
   popPendingJump,
   setSectionSelection,
   getCurrentDocId,
   importMarkdownText,
+  setSectionCount,
 } from "../states/editor";
-import { notifyEdit, flushSave, saveWholeContent } from "../states/editor_save";
+import {
+  notifyEdit,
+  flushSave,
+  saveWholeContent,
+  countText,
+} from "../states/editor_save";
 import { settingsSignals, defaultRemoteProvider } from "../states/settings";
 import { buildSectionLabel } from "../lib/md/section";
 import {
@@ -259,6 +263,7 @@ const EditorPage: Component = () => {
     if (editorState.activeSectionId() !== id) return; // race condition guard
     if (textareaEl) {
       textareaEl.value = content;
+      setSectionCount(countText(content));
       const sel = popSectionSelection(id) || { start: 0, end: 0 };
       const len = content.length;
       textareaEl.setSelectionRange(
@@ -433,7 +438,8 @@ const EditorPage: Component = () => {
     const name = defaultRemoteProvider();
     if (!name) return false;
     const provider = getProvider(name as SyncProviderName);
-    return !!provider?.loadToken();
+    if (!provider) return false;
+    return !!provider.loadToken()?.refreshToken;
   };
 
   const handleBackup = (providerName?: string) => {
@@ -466,21 +472,13 @@ const EditorPage: Component = () => {
     });
   };
 
-  const handleDeleteSection = async () => {
-    const id = editorState.activeSectionId();
-    if (!id || id.startsWith("__")) return;
-    if (!confirm("Delete this section?")) return;
-    try {
-      const list = editorState.metas();
-      const idx = list.findIndex((m) => m.id === id);
-      await deleteSection(id);
-      const updated = editorState.metas();
-      const next = updated[Math.min(idx, updated.length - 1)];
-      if (next) await switchSection(next.id, undefined);
-    } catch (e) {
-      console.error("Failed to delete section:", e);
-      toast.error("Failed to delete section");
-    }
+  const [showWords, setShowWords] = createSignal(false);
+
+  const countLabel = () => {
+    const { chars, words } = editorState.sectionCount();
+    const n = showWords() ? words : chars;
+    const unit = showWords() ? "w" : "c";
+    return `${n.toLocaleString()} ${unit}`;
   };
 
   const handleWholeSave = async () => {
@@ -623,9 +621,6 @@ const EditorPage: Component = () => {
             <button onClick={() => handleAddSection()}>
               <TbOutlinePlus /> Add section
             </button>
-            <button onClick={handleDeleteSection}>
-              <TbOutlineTrash /> Delete section
-            </button>
             <hr />
             <button onClick={() => fileInsertEl?.click()}>
               <TbOutlinePaperclip /> Insert file
@@ -637,6 +632,16 @@ const EditorPage: Component = () => {
               onChange={handleFileInsert}
             />
           </ToggleMenu>
+        </Show>
+
+        <Show when={mode() === "single"}>
+          <button
+            class="count-label"
+            classList={{ dim: editorState.saveStatus() !== "saved" }}
+            onClick={() => setShowWords((v) => !v)}
+          >
+            {countLabel()}
+          </button>
         </Show>
 
         <span class="spacer" />

@@ -39,6 +39,12 @@ const [activeSectionId, _setActiveSectionId] = createSignal<string | null>(
 export const [saveStatus, setSaveStatus] = createSignal<SaveStatus>("saved");
 const [filename, setFilename] = createSignal<string>("");
 
+export type SectionCount = { chars: number; words: number };
+export const [sectionCount, setSectionCount] = createSignal<SectionCount>({
+  chars: 0,
+  words: 0,
+});
+
 export const setActiveSectionId = _setActiveSectionId;
 
 export const editorState = {
@@ -47,6 +53,7 @@ export const editorState = {
   activeSectionId,
   saveStatus,
   filename,
+  sectionCount,
 };
 
 // ── Session state ──
