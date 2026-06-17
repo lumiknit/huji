@@ -26,7 +26,14 @@ import {
 import { ensureRenderRules } from "../lib/db/defaults";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { sanitizeFilename } from "../lib/path";
-import { disposeDebounce, normalizeAndMerge, saveSection } from "./editor_save";
+import {
+  disposeDebounce,
+  normalizeAndMerge,
+  saveSection,
+  getActiveTextareaValue,
+  registerActiveTextarea,
+  activeTextareaRef,
+} from "./editor_save";
 
 export type SaveStatus = "saved" | "dirty" | "saving";
 
@@ -48,6 +55,10 @@ export const [sectionCount, setSectionCount] = createSignal<SectionCount>({
 
 export const setActiveSectionId = _setActiveSectionId;
 
+// Bump this to force EditorPage to reload the active section's content from IDB.
+const [activeContentVersion, _setActiveContentVersion] = createSignal(0);
+export const bumpActiveContent = () => _setActiveContentVersion((v) => v + 1);
+
 export const editorState = {
   fileId,
   metas,
@@ -55,6 +66,7 @@ export const editorState = {
   saveStatus,
   filename,
   sectionCount,
+  activeContentVersion,
 };
 
 // ── Session state ──
@@ -204,26 +216,23 @@ const updateLastUsedAt = async (list: SectionMeta[]) => {
 
 // ── Section navigation ──
 
-export type SectionSnapshot = {
-  id: string;
-  value: string;
-  selectionStart: number;
-  selectionEnd: number;
-};
+export { registerActiveTextarea };
 
 /**
- * Save the current section (via snapshot) then switch to nextId.
- * Pass snapshot when a textarea is active; omit when there is nothing to save.
+ * Save the current active section (reads from textarea ref) then switch to nextId.
  */
-export const switchSection = async (
-  nextId: string | null,
-  snapshot?: SectionSnapshot,
-) => {
+export const switchSection = async (nextId: string | null) => {
   disposeDebounce();
 
-  if (snapshot) {
-    const { id, value, selectionStart, selectionEnd } = snapshot;
-    sectionSelections.set(id, { start: selectionStart, end: selectionEnd });
+  const id = activeSectionId();
+  if (id && !id.startsWith("__")) {
+    const value = getActiveTextareaValue();
+    if (activeTextareaRef && document.activeElement === activeTextareaRef) {
+      sectionSelections.set(id, {
+        start: activeTextareaRef.selectionStart,
+        end: activeTextareaRef.selectionEnd,
+      });
+    }
     const meta = metas().find((m) => m.id === id);
     if (meta) {
       await saveSection(id, meta, value);

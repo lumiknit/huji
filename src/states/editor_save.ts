@@ -293,15 +293,25 @@ export const saveSection = async (
   return { error: "" };
 };
 
+// ── Active textarea ref ──
+
+export let activeTextareaRef: HTMLTextAreaElement | null = null;
+
+export const registerActiveTextarea = (el: HTMLTextAreaElement | null) => {
+  activeTextareaRef = el;
+};
+
+export const getActiveTextareaValue = (): string =>
+  activeTextareaRef?.value ?? "";
+
 // ── Debounce / auto-save ──
 
 let pendingId: string | null = null;
-let pendingValue: string | null = null;
 
 const debounce = createDebounce(async () => {
-  if (!pendingId || pendingValue === null) return;
+  if (!pendingId) return;
   const id = pendingId;
-  const value = pendingValue;
+  const value = getActiveTextareaValue();
   const meta = editorState.metas().find((m) => m.id === id);
   if (!meta) return;
   setSaveStatus("saving");
@@ -314,9 +324,8 @@ const debounce = createDebounce(async () => {
   }
 });
 
-export const notifyEdit = (id: string, value: string) => {
+export const notifyEdit = (id: string) => {
   pendingId = id;
-  pendingValue = value;
   setSaveStatus("dirty");
   debounce.notify();
 };
@@ -324,7 +333,6 @@ export const notifyEdit = (id: string, value: string) => {
 export const disposeDebounce = () => {
   debounce.dispose();
   pendingId = null;
-  pendingValue = null;
 };
 
 // ── Manual flush (concurrency guard) ──
@@ -348,14 +356,14 @@ const doFlushSave = async (
 };
 
 /**
- * Manually flush a save. Returns an error string on failure, empty on success.
+ * Manually flush a save. Reads value from the active textarea ref.
  * Concurrent calls while a save is in progress return the same promise.
  */
-export const flushSave = (id: string, value: string): Promise<string> => {
+export const flushSave = (id: string): Promise<string> => {
   if (savePromise) return savePromise;
   const meta = editorState.metas().find((m) => m.id === id);
   if (!meta) return Promise.resolve("");
-  savePromise = doFlushSave(id, meta, value);
+  savePromise = doFlushSave(id, meta, getActiveTextareaValue());
   return savePromise;
 };
 

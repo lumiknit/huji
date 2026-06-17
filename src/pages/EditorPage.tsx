@@ -34,7 +34,6 @@ import {
   editorState,
   loadFile,
   switchSection,
-  type SectionSnapshot,
   setActiveSectionId,
   loadSectionContent,
   loadAllContent,
@@ -47,6 +46,7 @@ import {
   getCurrentDocId,
   importMarkdownText,
   setSectionCount,
+  registerActiveTextarea,
 } from "../states/editor";
 import {
   notifyEdit,
@@ -68,6 +68,8 @@ import ToggleMenu from "../components/ToggleMenu";
 import MarkdownView from "../components/MarkdownView";
 import FileDrop from "../components/FileDrop";
 import Toolbar from "../components/Toolbar";
+import FindReplaceModal from "../components/FindReplaceModal";
+import { resetFindState, loadFindContents } from "../states/find";
 import type { SectionMeta } from "../lib/db/schema";
 
 const ALL_ID = "__all__";
@@ -128,21 +130,18 @@ const EditorPage: Component = () => {
   const isReadonly = () => searchParams.readonly !== undefined;
 
   const [fmError, setFmError] = createSignal("");
+  const [showFind, setShowFind] = createSignal(false);
+
+  const openFind = async () => {
+    const id = editorState.activeSectionId();
+    if (id && !id.startsWith("__")) await flushSave(id);
+    await loadFindContents();
+    setShowFind(true);
+  };
 
   let textareaEl: HTMLTextAreaElement | null = null;
   let wholeEl: HTMLTextAreaElement | null = null;
   let mirrorEl: HTMLDivElement | undefined;
-
-  const captureSnapshot = (): SectionSnapshot | undefined => {
-    const id = editorState.activeSectionId();
-    if (!textareaEl || !id || id.startsWith("__")) return undefined;
-    return {
-      id,
-      value: textareaEl.value,
-      selectionStart: textareaEl.selectionStart,
-      selectionEnd: textareaEl.selectionEnd,
-    };
-  };
 
   const activeMeta = createMemo(() =>
     editorState.metas().find((m) => m.id === editorState.activeSectionId()),
@@ -222,13 +221,14 @@ const EditorPage: Component = () => {
       const pretty = await serializeFrontmatter(info.type, info.data);
       textareaEl.value = pretty;
       setFmError("");
-      notifyEdit(id, pretty);
+      notifyEdit(id);
     } catch (e) {
       setFmError(String(e));
     }
   };
 
   onMount(async () => {
+    resetFindState();
     await loadFile(params.fileId);
     const list = editorState.metas();
     const jump = popPendingJump();
@@ -237,10 +237,10 @@ const EditorPage: Component = () => {
         start: jump.start,
         end: jump.end,
       });
-      await switchSection(jump.sectionId, undefined);
+      await switchSection(jump.sectionId);
     } else {
       const first = list.find((m) => m.level !== -1) ?? list[0];
-      if (first) await switchSection(first.id, undefined);
+      if (first) await switchSection(first.id);
     }
   });
 
@@ -258,6 +258,7 @@ const EditorPage: Component = () => {
 
   createEffect(async () => {
     const id = editorState.activeSectionId();
+    editorState.activeContentVersion(); // reactive dep: re-run when content is externally updated
     if (!id || id === ALL_ID) return;
     const content = await loadSectionContent(id);
     if (editorState.activeSectionId() !== id) return; // race condition guard
@@ -285,10 +286,10 @@ const EditorPage: Component = () => {
       return;
     }
     if (id === ALL_ID) {
-      await switchSection(null, captureSnapshot());
+      await switchSection(null);
       setActiveSectionId(ALL_ID);
     } else {
-      await switchSection(id, captureSnapshot());
+      await switchSection(id);
     }
   };
 
@@ -304,7 +305,7 @@ const EditorPage: Component = () => {
       const prev = prevSection();
       if (prev) {
         setSectionSelection(prev.id, { start: Infinity, end: Infinity });
-        switchSection(prev.id, captureSnapshot());
+        switchSection(prev.id);
       }
     }
     if (
@@ -315,12 +316,12 @@ const EditorPage: Component = () => {
       const next = nextSection();
       if (next) {
         setSectionSelection(next.id, { start: 0, end: 0 });
-        switchSection(next.id, captureSnapshot());
+        switchSection(next.id);
       }
     }
     if ((e.ctrlKey || e.metaKey) && e.key === "f") {
       e.preventDefault();
-      navigate(`/find/${params.fileId}`);
+      openFind();
     }
   };
 
@@ -349,7 +350,7 @@ const EditorPage: Component = () => {
     try {
       const newId = await addSectionBefore(id);
       if (newId) {
-        await switchSection(newId, captureSnapshot());
+        await switchSection(newId);
         requestAnimationFrame(() => {
           if (!textareaEl) return;
           const val = textareaEl.value;
@@ -373,7 +374,7 @@ const EditorPage: Component = () => {
         id && !id.startsWith("__") ? id : undefined,
       );
       if (newId) {
-        await switchSection(newId, captureSnapshot());
+        await switchSection(newId);
         // Select "Title here" in the new section's textarea for immediate editing
         requestAnimationFrame(() => {
           if (!textareaEl) return;
@@ -474,6 +475,34 @@ const EditorPage: Component = () => {
 
   const [showWords, setShowWords] = createSignal(false);
 
+  const [scrollPct, setScrollPct] = createSignal(0);
+  const [showScrollPct, setShowScrollPct] = createSignal(false);
+  let scrollHideTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const handleScroll = () => {
+    if (!textareaEl || mode() !== "single") return;
+    const r = textareaEl.getBoundingClientRect();
+    const centerY = window.scrollY + window.innerHeight / 2;
+    const pct = Math.round(
+      Math.min(
+        100,
+        Math.max(0, ((centerY - (window.scrollY + r.top)) / r.height) * 100),
+      ),
+    );
+    setScrollPct(pct);
+    setShowScrollPct(true);
+    clearTimeout(scrollHideTimer);
+    scrollHideTimer = setTimeout(() => setShowScrollPct(false), 1000);
+  };
+
+  onMount(() =>
+    window.addEventListener("scroll", handleScroll, { passive: true }),
+  );
+  onCleanup(() => {
+    window.removeEventListener("scroll", handleScroll);
+    clearTimeout(scrollHideTimer);
+  });
+
   const countLabel = () => {
     const { chars, words } = editorState.sectionCount();
     const n = showWords() ? words : chars;
@@ -502,13 +531,15 @@ const EditorPage: Component = () => {
   };
 
   const handleSave = () => {
-    const snap = captureSnapshot();
     const p = (async () => {
       if (mode() === "all") {
         await handleWholeSave();
-      } else if (snap) {
-        const err = await flushSave(snap.id, snap.value);
-        if (err) throw new Error(err);
+      } else {
+        const id = editorState.activeSectionId();
+        if (id) {
+          const err = await flushSave(id);
+          if (err) throw new Error(err);
+        }
       }
     })();
     toast.promise(p, {
@@ -527,12 +558,23 @@ const EditorPage: Component = () => {
       const end = el.selectionEnd;
       el.value = el.value.slice(0, start) + text + el.value.slice(end);
       el.selectionStart = el.selectionEnd = start + text.length;
-      notifyEdit(id, el.value);
+      notifyEdit(id);
     });
   };
 
   return (
     <main>
+      <Show when={mode() === "single"}>
+        <div class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}>
+          {scrollPct()}%
+        </div>
+      </Show>
+      <Show when={showFind()}>
+        <FindReplaceModal
+          fileId={params.fileId}
+          onClose={() => setShowFind(false)}
+        />
+      </Show>
       <div
         ref={mirrorEl}
         class="edit-mirror"
@@ -608,7 +650,7 @@ const EditorPage: Component = () => {
               <TbOutlineRotateClockwise /> Redo
             </button>
             <hr />
-            <button onClick={() => navigate(`/find/${params.fileId}`)}>
+            <button onClick={openFind}>
               <TbOutlineSearch /> Find / Replace
             </button>
             <Show when={isFrontmatter()}>
@@ -721,9 +763,7 @@ const EditorPage: Component = () => {
               el.focus();
             });
           }}
-          onInput={(e) =>
-            !isReadonly() && notifyEdit("__all__", e.currentTarget.value)
-          }
+          onInput={() => !isReadonly() && notifyEdit("__all__")}
           onBlur={isReadonly() ? undefined : handleWholeSave}
         />
       </Show>
@@ -767,21 +807,22 @@ const EditorPage: Component = () => {
             readOnly={isReadonly()}
             ref={(el) => {
               textareaEl = el;
+              registerActiveTextarea(el);
             }}
-            onInput={(e) => {
+            onInput={() => {
               if (isReadonly()) return;
               const id = editorState.activeSectionId();
-              if (id) notifyEdit(id, e.currentTarget.value);
+              if (id) notifyEdit(id);
               setFmError("");
             }}
             onBlur={
               isReadonly()
                 ? undefined
-                : async (e) => {
+                : async () => {
                     const id = editorState.activeSectionId();
                     if (!id) return;
                     try {
-                      const err = await flushSave(id, e.currentTarget.value);
+                      const err = await flushSave(id);
                       setFmError(err);
                     } catch (err) {
                       console.error("Failed to save:", err);

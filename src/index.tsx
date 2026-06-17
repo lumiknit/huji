@@ -13,8 +13,6 @@ import EditorPage from "./pages/EditorPage";
 import PreviewPage from "./pages/PreviewPage";
 import ReorderPage from "./pages/ReorderPage";
 import SettingsPage from "./pages/SettingsPage";
-import FindReplacePage from "./pages/FindReplacePage";
-
 type LayoutProps = { children?: JSX.Element };
 
 const Layout: Component<LayoutProps> = (props) => {
@@ -38,7 +36,6 @@ render(
       <Route path="/preview/:fileId" component={PreviewPage} />
       <Route path="/reorder/:fileId" component={ReorderPage} />
       <Route path="/settings" component={SettingsPage} />
-      <Route path="/find/:fileId" component={FindReplacePage} />
     </HashRouter>
   ),
   root,
