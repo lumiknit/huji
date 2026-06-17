@@ -16,9 +16,37 @@ export type ExportEntry = {
   excluded?: boolean;
 };
 
-/** Sections whose heading starts with "((" are always hidden. */
-export const isHiddenHeading = (heading: string): boolean =>
-  heading.startsWith("((");
+/**
+ * Build a Set of section IDs that should be hidden based on excludeAll pattern.
+ * A matching heading hides itself and all immediately following sections
+ * with a deeper level, until a section at the same or shallower level appears.
+ */
+export const buildHiddenIds = (
+  metas: Array<{ id: string; level: number; heading: string }>,
+  excludeAllPattern: string | undefined,
+): Set<string> => {
+  if (!excludeAllPattern) return new Set();
+  let regex: RegExp;
+  try {
+    regex = new RegExp(excludeAllPattern);
+  } catch {
+    return new Set();
+  }
+  const hidden = new Set<string>();
+  let hideUntilLevel: number | null = null;
+  for (const m of metas) {
+    if (hideUntilLevel !== null && m.level > hideUntilLevel) {
+      hidden.add(m.id);
+    } else {
+      hideUntilLevel = null;
+      if (regex.test(m.heading)) {
+        hideUntilLevel = m.level;
+        hidden.add(m.id);
+      }
+    }
+  }
+  return hidden;
+};
 
 /** Normalize whitespace between paragraphs: collapse 3+ newlines (possibly with spaces) to exactly 2. */
 export const normalizeNewlines = (text: string): string =>

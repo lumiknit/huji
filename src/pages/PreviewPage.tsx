@@ -34,7 +34,7 @@ import {
   buildDocx,
   downloadBlob,
   normalizeNewlines,
-  isHiddenHeading,
+  buildHiddenIds,
   type FmMode,
 } from "../lib/export";
 import type { SectionMeta } from "../lib/db/schema";
@@ -153,29 +153,24 @@ const applyRenderRule = (
   entries: SectionEntry[],
   rule: RenderRule | null,
 ): SectionEntry[] => {
+  const hiddenIds = buildHiddenIds(
+    entries.map((e) => e.meta),
+    rule?.excludeAll,
+  );
+  let excludeTitleRe: RegExp | null = null;
+  if (rule?.excludeTitle) {
+    try {
+      excludeTitleRe = new RegExp(rule.excludeTitle);
+    } catch {
+      /* ignore invalid regex */
+    }
+  }
   return entries
-    .filter((e) => !isHiddenHeading(e.meta.heading))
-    .filter((e) => {
-      if (!rule) return true;
-      if (rule.excludeAll) {
-        try {
-          if (new RegExp(rule.excludeAll).test(e.meta.heading)) return false;
-        } catch {
-          /* ignore */
-        }
-      }
-      return true;
-    })
+    .filter((e) => !hiddenIds.has(e.meta.id))
     .map((e) => {
-      if (rule?.excludeTitle) {
-        try {
-          if (new RegExp(rule.excludeTitle).test(e.meta.heading)) {
-            const lines = e.content.split("\n");
-            return { ...e, content: lines.slice(1).join("\n").trimStart() };
-          }
-        } catch {
-          /* ignore */
-        }
+      if (excludeTitleRe?.test(e.meta.heading)) {
+        const lines = e.content.split("\n");
+        return { ...e, content: lines.slice(1).join("\n").trimStart() };
       }
       return e;
     });
@@ -190,8 +185,10 @@ const countChars = (text: string, mode: CountMode): number => {
   return text.length;
 };
 
-const countWords = (text: string): number =>
-  text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+const countWords = (text: string): number => {
+  const t = text.trim();
+  return t === "" ? 0 : t.split(/\s+/).length;
+};
 
 const plainText = (raw: string): string => {
   // Strip markdown syntax for a rough plain-text representation
@@ -214,19 +211,15 @@ const OutlineView: Component<OutlineProps> = (props) => {
   const [checkedIds, setCheckedIds] = createSignal<Set<string>>(new Set());
   let headerCheckRef: HTMLInputElement | undefined;
 
-  const isExcludedEntry = (e: SectionEntry): boolean => {
-    if (isHiddenHeading(e.meta.heading)) return true;
-    const rule = props.activeRule;
-    if (!rule) return false;
-    if (rule.excludeAll) {
-      try {
-        if (new RegExp(rule.excludeAll).test(e.meta.heading)) return true;
-      } catch {
-        /* ignore */
-      }
-    }
-    return false;
-  };
+  const hiddenIds = createMemo(() =>
+    buildHiddenIds(
+      props.entries.map((e) => e.meta),
+      props.activeRule?.excludeAll,
+    ),
+  );
+
+  const isExcludedEntry = (e: SectionEntry): boolean =>
+    hiddenIds().has(e.meta.id);
 
   createEffect(() => {
     const newSet = new Set<string>();

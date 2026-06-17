@@ -1,6 +1,6 @@
 export const DEFAULT_RENDER_RULES = {
   Simple: {
-    exclude_all: "^\\s*\\.",
+    exclude_all: "^\\s*\\(\\(",
     exclude_title: "^\\s*\\(",
   },
 };

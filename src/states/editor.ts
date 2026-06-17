@@ -26,6 +26,7 @@ import {
 import { ensureRenderRules } from "../lib/db/defaults";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { sanitizeFilename } from "../lib/path";
+import { disposeDebounce, normalizeAndMerge, saveSection } from "./editor_save";
 
 export type SaveStatus = "saved" | "dirty" | "saving";
 
@@ -158,11 +159,7 @@ export const importMarkdownText = async (
 
 // ── File load ──
 
-// Deferred import to avoid circular dependency (editor_save imports from editor)
-const getSaveModule = () => import("./editor_save");
-
 export const loadFile = async (id: string) => {
-  const { disposeDebounce, normalizeAndMerge } = await getSaveModule();
   disposeDebounce();
 
   sectionSelections.clear();
@@ -222,7 +219,6 @@ export const switchSection = async (
   nextId: string | null,
   snapshot?: SectionSnapshot,
 ) => {
-  const { disposeDebounce, saveSection } = await getSaveModule();
   disposeDebounce();
 
   if (snapshot) {
@@ -351,7 +347,6 @@ export const loadAllContent = async (): Promise<string> => {
     .join("\n\n");
 };
 
-export const disposeEditor = async () => {
-  const { disposeDebounce } = await getSaveModule();
+export const disposeEditor = () => {
   disposeDebounce();
 };
