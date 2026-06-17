@@ -1,8 +1,8 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 
 export const syncTokenSchema = z.object({
   accessToken: z.string(),
-  refreshToken: z.string().optional(),
+  refreshToken: z.optional(z.string()),
   expiresAt: z.number(),
 });
 
@@ -10,8 +10,8 @@ export type SyncToken = z.infer<typeof syncTokenSchema>;
 
 export const persistedTokenSchema = z.object({
   refreshToken: z.string(),
-  displayName: z.string().optional(),
-  email: z.string().optional(),
+  displayName: z.optional(z.string()),
+  email: z.optional(z.string()),
 });
 
 export type PersistedToken = z.infer<typeof persistedTokenSchema>;

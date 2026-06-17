@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 import {
   generateCodeVerifier,
   generateCodeChallenge,
@@ -22,32 +22,32 @@ export type OneDrivePkceState = z.infer<typeof pkceStateSchema>;
 
 const tokenResponseSchema = z.object({
   access_token: z.string(),
-  refresh_token: z.string().optional(),
-  expires_in: z.number().optional(),
+  refresh_token: z.optional(z.string()),
+  expires_in: z.optional(z.number()),
 });
 
 const oauthErrorSchema = z.object({
-  error: z.string().optional(),
-  error_description: z.string().optional(),
+  error: z.optional(z.string()),
+  error_description: z.optional(z.string()),
 });
 
 const driveItemSchema = z.object({
   id: z.string(),
   name: z.string(),
-  lastModifiedDateTime: z.string().optional(),
-  size: z.number().optional(),
-  file: z.record(z.string(), z.unknown()).optional(),
+  lastModifiedDateTime: z.optional(z.string()),
+  size: z.optional(z.number()),
+  file: z.optional(z.record(z.string(), z.unknown())),
 });
 
 const listResponseSchema = z.object({
   value: z.array(z.record(z.string(), z.unknown())),
-  "@odata.nextLink": z.string().optional(),
+  "@odata.nextLink": z.optional(z.string()),
 });
 
 const meResponseSchema = z.object({
-  displayName: z.string().optional(),
-  mail: z.string().optional(),
-  userPrincipalName: z.string().optional(),
+  displayName: z.optional(z.string()),
+  mail: z.optional(z.string()),
+  userPrincipalName: z.optional(z.string()),
 });
 
 function odvError(msg: string, cause?: unknown): never {

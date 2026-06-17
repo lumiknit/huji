@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/mini";
 import {
   generateCodeVerifier,
   generateCodeChallenge,
@@ -21,23 +21,23 @@ export type DropboxPkceState = z.infer<typeof dropboxPkceStateSchema>;
 
 const tokenResponseSchema = z.object({
   access_token: z.string(),
-  refresh_token: z.string().optional(),
-  expires_in: z.number().optional(),
+  refresh_token: z.optional(z.string()),
+  expires_in: z.optional(z.number()),
 });
 
 const oauthErrorSchema = z.object({
-  error: z.string().optional(),
-  error_description: z.string().optional(),
+  error: z.optional(z.string()),
+  error_description: z.optional(z.string()),
 });
 
 const fileEntrySchema = z.object({
-  ".tag": z.string().optional(),
-  id: z.string().optional(),
+  ".tag": z.optional(z.string()),
+  id: z.optional(z.string()),
   name: z.string(),
-  path_lower: z.string().optional(),
-  client_modified: z.string().optional(),
-  server_modified: z.string().optional(),
-  size: z.number().optional(),
+  path_lower: z.optional(z.string()),
+  client_modified: z.optional(z.string()),
+  server_modified: z.optional(z.string()),
+  size: z.optional(z.number()),
 });
 
 const listFolderResponseSchema = z.object({
@@ -52,8 +52,8 @@ const accountResponseSchema = z.object({
 });
 
 const apiErrorSchema = z.object({
-  error_summary: z.string().optional(),
-  error: z.unknown().optional(),
+  error_summary: z.optional(z.string()),
+  error: z.optional(z.unknown()),
 });
 
 function headerJson(obj: unknown): string {
