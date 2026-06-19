@@ -10,6 +10,8 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
@@ -273,6 +275,7 @@ textarea.edit {
   min-height: 4rem;
   margin-block: var(--sp-sm);
   border: 1px solid var(--c-border);
+  scroll-margin-top: 4rem;
 }
 
 textarea.edit:focus {

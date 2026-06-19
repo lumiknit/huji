@@ -20,7 +20,7 @@
     "@solid-primitives/storage": "^4.3.4",
     "@solidjs/router": "^0.16.1",
     "docx": "^9.7.1",
-    "dompurify": "^3.4.10",
+    "dompurify": "^3.4.11",
     "idb": "^8.0.3",
     "js-yaml": "^4.2.0",
     "localforage": "^1.10.0",

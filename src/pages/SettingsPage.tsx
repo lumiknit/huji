@@ -13,6 +13,9 @@ import {
   setPreviewLineHeight,
   setPreviewParaIndent,
   setSpellcheck,
+  setAutocorrect,
+  setAutocapitalize,
+  setWakeLock,
   setContextSections,
   setContextRaw,
   setMaxWidth,
@@ -99,11 +102,52 @@ const SettingsPage: Component = () => {
 
         <label>
           Spellcheck
-          <input
-            type="checkbox"
-            checked={settingsSignals.spellcheck()}
-            onChange={(e) => setSpellcheck(e.currentTarget.checked)}
-          />
+          <select
+            value={settingsSignals.spellcheck() ? "on" : "off"}
+            onChange={(e) => setSpellcheck(e.currentTarget.value === "on")}
+          >
+            <option value="on">On</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+
+        <label>
+          Autocorrect
+          <select
+            value={settingsSignals.autocorrect() ? "on" : "off"}
+            onChange={(e) => setAutocorrect(e.currentTarget.value === "on")}
+          >
+            <option value="off">Off</option>
+            <option value="on">On</option>
+          </select>
+        </label>
+
+        <label>
+          Autocapitalize
+          <select
+            value={settingsSignals.autocapitalize()}
+            onChange={(e) =>
+              setAutocapitalize(
+                e.currentTarget.value as "off" | "none" | "sentences" | "words",
+              )
+            }
+          >
+            <option value="sentences">Sentences</option>
+            <option value="words">Words</option>
+            <option value="none">None</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+
+        <label>
+          Wake lock (prevent screen sleep)
+          <select
+            value={settingsSignals.wakeLock() ? "on" : "off"}
+            onChange={(e) => setWakeLock(e.currentTarget.value === "on")}
+          >
+            <option value="on">On</option>
+            <option value="off">Off</option>
+          </select>
         </label>
       </section>
 

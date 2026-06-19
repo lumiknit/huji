@@ -8,7 +8,7 @@
     "npm:@types/js-yaml@^4.0.9": "4.0.9",
     "npm:@types/node@^25.9.3": "25.9.3",
     "npm:docx@^9.7.1": "9.7.1",
-    "npm:dompurify@^3.4.10": "3.4.10",
+    "npm:dompurify@^3.4.11": "3.4.11",
     "npm:eslint@^10.5.0": "10.5.0",
     "npm:globals@^17.6.0": "17.6.0",
     "npm:idb@^8.0.3": "8.0.3",
@@ -1102,8 +1102,8 @@
         "xml-js"
       ]
     },
-    "dompurify@3.4.10": {
-      "integrity": "sha512-0xzNv0e7oYC6yyuOGZIABPM4qtg3QxLFniDNPP4ZP90wR8Yq3zgwpRbrNiT4N3IKqDbbYFEJLV+JWEs19aZ//w==",
+    "dompurify@3.4.11": {
+      "integrity": "sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==",
       "optionalDependencies": [
         "@types/trusted-types"
       ]
@@ -2217,7 +2217,7 @@
         "npm:@types/js-yaml@^4.0.9",
         "npm:@types/node@^25.9.3",
         "npm:docx@^9.7.1",
-        "npm:dompurify@^3.4.10",
+        "npm:dompurify@^3.4.11",
         "npm:eslint@^10.5.0",
         "npm:globals@^17.6.0",
         "npm:idb@^8.0.3",

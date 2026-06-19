@@ -34,6 +34,11 @@ export const [previewParaIndent, setPreviewParaIndent] = persisted(
   true,
 );
 export const [spellcheck, setSpellcheck] = persisted("spellcheck", true);
+export const [autocorrect, setAutocorrect] = persisted("autocorrect", false);
+export const [autocapitalize, setAutocapitalize] = persisted<
+  "off" | "none" | "sentences" | "words"
+>("autocapitalize", "sentences");
+export const [wakeLock, setWakeLock] = persisted("wakeLock", true);
 export const [defaultRemoteProvider, setDefaultRemoteProvider] = persisted(
   "defaultRemoteProvider",
   "" as string,
@@ -57,6 +62,9 @@ export const settingsSignals = {
   previewLineHeight,
   previewParaIndent,
   spellcheck,
+  autocorrect,
+  autocapitalize,
+  wakeLock,
   contextSections,
   maxWidth,
   contextRaw,

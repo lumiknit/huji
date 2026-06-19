@@ -54,7 +54,10 @@ import {
   saveWholeContent,
   countText,
 } from "../states/editor_save";
-import { settingsSignals, defaultRemoteProvider } from "../states/settings";
+import {
+  settingsSignals,
+  defaultRemoteProvider,
+} from "../states/settings";
 import { buildSectionLabel } from "../lib/md/section";
 import {
   extractFrontmatter,
@@ -230,6 +233,7 @@ const EditorPage: Component = () => {
   onMount(async () => {
     resetFindState();
     await loadFile(params.fileId);
+    document.title = editorState.filename() || "Huji";
     const list = editorState.metas();
     const jump = popPendingJump();
     if (jump) {
@@ -254,6 +258,25 @@ const EditorPage: Component = () => {
     };
     window.addEventListener("beforeunload", handler);
     onCleanup(() => window.removeEventListener("beforeunload", handler));
+  });
+
+  onMount(() => {
+    if (!settingsSignals.wakeLock() || !("wakeLock" in navigator)) return;
+    let lock: WakeLockSentinel | null = null;
+    const acquire = async () => {
+      if (document.visibilityState === "visible") {
+        lock = await (navigator as Navigator & { wakeLock: { request(type: string): Promise<WakeLockSentinel> } }).wakeLock
+          .request("screen")
+          .catch(() => null);
+      }
+    };
+    acquire();
+    const onVisible = () => acquire();
+    document.addEventListener("visibilitychange", onVisible);
+    onCleanup(() => {
+      document.removeEventListener("visibilitychange", onVisible);
+      lock?.release();
+    });
   });
 
   createEffect(async () => {
@@ -755,6 +778,8 @@ const EditorPage: Component = () => {
           class="edit"
           placeholder="Write here!"
           spellcheck={settingsSignals.spellcheck()}
+          autocorrect={settingsSignals.autocorrect() ? "on" : "off"}
+          autocapitalize={settingsSignals.autocapitalize()}
           readOnly={isReadonly()}
           ref={(el) => {
             wholeEl = el;
@@ -804,6 +829,8 @@ const EditorPage: Component = () => {
             class="edit"
             placeholder="Write here!"
             spellcheck={settingsSignals.spellcheck()}
+            autocorrect={settingsSignals.autocorrect() ? "on" : "off"}
+            autocapitalize={settingsSignals.autocapitalize()}
             readOnly={isReadonly()}
             ref={(el) => {
               textareaEl = el;
