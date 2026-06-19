@@ -206,11 +206,15 @@ const SettingsPage: Component = () => {
 
         <label>
           Paragraph indent
-          <input
-            type="checkbox"
-            checked={settingsSignals.previewParaIndent()}
-            onChange={(e) => setPreviewParaIndent(e.currentTarget.checked)}
-          />
+          <select
+            value={settingsSignals.previewParaIndent() ? "on" : "off"}
+            onChange={(e) =>
+              setPreviewParaIndent(e.currentTarget.value === "on")
+            }
+          >
+            <option value="on">On</option>
+            <option value="off">Off</option>
+          </select>
         </label>
       </section>
 
@@ -230,11 +234,13 @@ const SettingsPage: Component = () => {
 
         <label>
           Show context as raw text
-          <input
-            type="checkbox"
-            checked={settingsSignals.contextRaw()}
-            onChange={(e) => setContextRaw(e.currentTarget.checked)}
-          />
+          <select
+            value={settingsSignals.contextRaw() ? "on" : "off"}
+            onChange={(e) => setContextRaw(e.currentTarget.value === "on")}
+          >
+            <option value="on">On</option>
+            <option value="off">Off</option>
+          </select>
         </label>
 
         <label>

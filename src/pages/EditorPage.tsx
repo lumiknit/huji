@@ -619,16 +619,18 @@ const EditorPage: Component = () => {
     if (!textareaEl || !id) return;
     file.text().then((text) => {
       const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0) {
-        sel.deleteFromDocument();
-        const node = document.createTextNode(text);
-        const range = sel.getRangeAt(0);
-        range.insertNode(node);
-        range.setStartAfter(node);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
+      if (!sel || sel.rangeCount === 0) {
+        toast.error("No cursor position — click in the editor first");
+        return;
       }
+      sel.deleteFromDocument();
+      const node = document.createTextNode(text);
+      const range = sel.getRangeAt(0);
+      range.insertNode(node);
+      range.setStartAfter(node);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
       notifyEdit(id);
     });
   };

@@ -145,21 +145,19 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
           </p>
         }
       >
-        <p style={{ "margin-bottom": "0.75rem" }}>
+        <p class="mb-sm">
           <small>
             Review what will be deleted. The most recent copy of each group is
             kept; older versions are removed.
           </small>
         </p>
-        <ul class="files" style={{ "margin-bottom": "1rem" }}>
+        <ul class="files mb-md">
           <For each={plan()}>
             {(group) => (
               <>
-                <li
-                  style={{ "font-weight": "600", "padding-block": "0.35rem" }}
-                >
+                <li class="version-group-header">
                   <span class="file-chevron" />
-                  <span class="file-info" style={{ gap: "0.15rem" }}>
+                  <span class="file-info">
                     <span>{group.displayName}</span>
                   </span>
                 </li>
@@ -170,9 +168,7 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
                       <span class="file-chevron" />
                       <span class="file-info">
                         <span>
-                          <TbOutlineDeviceFloppy
-                            style={{ "vertical-align": "middle" }}
-                          />{" "}
+                          <TbOutlineDeviceFloppy class="icon-middle" />{" "}
                           {item().filename}
                         </span>
                         <small>
@@ -186,19 +182,11 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
 
                 <For each={group.deleteLocal}>
                   {(item) => (
-                    <li
-                      class="version-item"
-                      style={{
-                        opacity: "0.5",
-                        "text-decoration": "line-through",
-                      }}
-                    >
+                    <li class="version-item item-deleted">
                       <span class="file-chevron" />
                       <span class="file-info">
                         <span>
-                          <TbOutlineDeviceFloppy
-                            style={{ "vertical-align": "middle" }}
-                          />{" "}
+                          <TbOutlineDeviceFloppy class="icon-middle" />{" "}
                           {item.filename}
                         </span>
                         <small class="text-danger">
@@ -216,11 +204,7 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
                       <span class="file-chevron" />
                       <span class="file-info">
                         <span>
-                          <TbFillCloud
-                            class="file-cloud-icon"
-                            style={{ "vertical-align": "middle" }}
-                          />{" "}
-                          {item().name}
+                          <TbFillCloud class="file-cloud-icon" /> {item().name}
                         </span>
                         <small>
                           Keep · Cloud · {formatDateTime(item().modifiedAt)}
@@ -236,21 +220,11 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
 
                 <For each={group.deleteRemote}>
                   {(item) => (
-                    <li
-                      class="version-item"
-                      style={{
-                        opacity: "0.5",
-                        "text-decoration": "line-through",
-                      }}
-                    >
+                    <li class="version-item item-deleted">
                       <span class="file-chevron" />
                       <span class="file-info">
                         <span>
-                          <TbFillCloud
-                            class="file-cloud-icon"
-                            style={{ "vertical-align": "middle" }}
-                          />{" "}
-                          {item.name}
+                          <TbFillCloud class="file-cloud-icon" /> {item.name}
                         </span>
                         <small class="text-danger">
                           Delete · Cloud · {formatDateTime(item.modifiedAt)}
@@ -269,7 +243,7 @@ const DeletePreview: Component<DeletePreviewProps> = (props) => {
         </ul>
       </Show>
 
-      <div class="flex-row" style={{ gap: "0.4rem" }}>
+      <div class="button-row">
         <button onClick={props.onDone} disabled={busy()}>
           Cancel
         </button>

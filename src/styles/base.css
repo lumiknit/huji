@@ -301,8 +301,9 @@ section > label {
 
 section > label > input,
 section > label > select {
-  width: auto;
+  width: 50%;
   min-width: 6rem;
+  max-width: 16rem;
   margin-left: auto;
 }
 
@@ -343,6 +344,15 @@ ul.files > li {
   gap: var(--sp-sm);
   padding: var(--sp-sm) 0;
   border-top: 1px solid var(--c-border);
+}
+
+ul.files > li.version-group-header {
+  font-weight: 600;
+  padding-block: 0.35rem;
+}
+
+ul.files > li.version-group-header .file-info {
+  gap: 0.15rem;
 }
 
 ul.files > li.version-item {
@@ -398,6 +408,10 @@ ul.files > li.version-item .file-info span:first-child {
 
 .file-dropdown-item.danger {
   color: var(--c-danger);
+}
+
+.icon-middle {
+  vertical-align: middle;
 }
 
 .file-cloud-icon {
@@ -903,6 +917,30 @@ button.count-label.dim {
   font-size: 0.8rem;
 }
 
+.item-deleted {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.about-title {
+  font-size: 1.5rem;
+  margin-top: var(--sp-md);
+}
+
+.about-desc {
+  font-size: 0.875rem;
+}
+
+.about-body {
+  margin-top: var(--sp-md);
+  font-size: 0.875rem;
+}
+
+.about-link {
+  margin-top: 2rem;
+  text-align: center;
+}
+
 .mb-xs {
   margin-bottom: var(--sp-xs);
 }
@@ -911,8 +949,23 @@ button.count-label.dim {
   margin-bottom: var(--sp-sm);
 }
 
+.mb-md {
+  margin-bottom: var(--sp-md);
+}
+
 .mt-sm {
   margin-top: var(--sp-sm);
+}
+
+.mr-auto {
+  margin-right: auto;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-sm);
 }
 
 .align-end {
@@ -964,6 +1017,13 @@ button.count-label.dim {
 .outline-view {
   overflow-x: auto;
   margin-block: var(--sp-md);
+}
+
+.outline-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-sm);
+  margin-bottom: var(--sp-sm);
 }
 
 .outline-table {
@@ -1046,42 +1106,4 @@ dialog > form > .dialog-actions {
   justify-content: flex-end;
   gap: var(--sp-xs);
   margin-top: var(--sp-xs);
-}
-
-/* ── Find bar ── */
-.find-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-xs);
-  padding: 0 var(--sp-sm);
-  height: var(--form-height);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  margin-bottom: var(--sp-sm);
-  background: var(--c-bg);
-}
-
-.find-bar > input {
-  flex: 1;
-  border: none;
-  padding: 0;
-  height: auto;
-  width: auto;
-  font-size: 0.875rem;
-  background: transparent;
-}
-
-.find-bar-count {
-  font-size: 0.7rem;
-  color: var(--c-muted);
-  white-space: nowrap;
-  min-width: 2.5rem;
-  text-align: right;
-}
-
-.find-bar > button {
-  border: none;
-  height: auto;
-  padding: 0.2rem;
-  background: transparent;
 }

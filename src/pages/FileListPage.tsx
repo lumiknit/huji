@@ -353,11 +353,11 @@ const FileListPage: Component = () => {
       <Show when={hasCloud}>
         <fieldset class="mb-sm">
           <legend>
-            <TbFillCloud style={{ "vertical-align": "middle" }} /> Cloud Sync
+            <TbFillCloud class="icon-middle" /> Cloud Sync
           </legend>
           <Switch>
             <Match when={authenticating()}>
-              <small style={{ color: "var(--c-muted)" }}>Authenticating…</small>
+              <small class="text-muted">Authenticating…</small>
             </Match>
             <Match when={activeProvider() && cloudToken()}>
               <small class="dropbox-account">
@@ -367,19 +367,8 @@ const FileListPage: Component = () => {
                   cloudToken()?.email ??
                   "Connected"}
               </small>
-              <div
-                class="flex-row"
-                style={{
-                  "flex-wrap": "wrap",
-                  gap: "0.4rem",
-                  "margin-top": "0.4rem",
-                }}
-              >
-                <button
-                  class="danger"
-                  onClick={handleDisconnect}
-                  style={{ "margin-right": "auto" }}
-                >
+              <div class="button-row mt-sm">
+                <button class="danger mr-auto" onClick={handleDisconnect}>
                   <TbOutlineLogout />
                   Disconnect
                 </button>
@@ -412,10 +401,7 @@ const FileListPage: Component = () => {
               </div>
             </Match>
             <Match when={true}>
-              <div
-                class="flex-row"
-                style={{ gap: "0.4rem", "align-items": "center" }}
-              >
+              <div class="button-row">
                 <Show when={providers.length > 1}>
                   <select
                     value={selectedProvider()}
@@ -461,10 +447,7 @@ const FileListPage: Component = () => {
           />
         </Match>
         <Match when={true}>
-          <div
-            class="flex-row"
-            style={{ gap: "0.4rem", "margin-bottom": "1rem" }}
-          >
+          <div class="button-row mb-md">
             <button
               class="danger"
               onClick={() => setShowDeletePreview(true)}
@@ -485,8 +468,8 @@ const FileListPage: Component = () => {
         </Match>
       </Switch>
 
-      <p style="margin-top: 2rem; text-align: center;">
-        <A href="/about" style="font-size: 0.75rem; color: var(--c-muted);">
+      <p class="about-link">
+        <A href="/about" class="text-xs text-muted">
           About
         </A>
       </p>

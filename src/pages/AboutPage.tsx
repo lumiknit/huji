@@ -11,18 +11,20 @@ const AboutPage: Component = () => (
       </A>
     </Toolbar>
 
-    <h1 style="font-size: 1.5rem; margin-top: 1rem;">huji</h1>
-    <p style="color: var(--c-muted); font-size: 0.875rem;">
+    <h1 class="about-title">
+      huji <small>v{__APP_VERSION__}</small>
+    </h1>
+    <p class="about-desc text-muted">
       From Korean <em>휴지</em> (hyuji) — a scrap of tissue paper. Write on it
       like you would on a scrap: quickly, without ceremony.
     </p>
 
-    <p style="margin-top: 1rem; font-size: 0.875rem;">
+    <p class="about-body">
       A minimalist in-browser markdown editor. No account, no sync, no server —
       everything stays in your browser's local storage.
     </p>
 
-    <p style="margin-top: 1rem;">
+    <p class="about-body">
       <a
         href="https://github.com/lumiknit/huji#readme"
         target="_blank"
