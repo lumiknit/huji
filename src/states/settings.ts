@@ -39,6 +39,7 @@ export const [autocapitalize, setAutocapitalize] = persisted<
   "off" | "none" | "sentences" | "words"
 >("autocapitalize", "sentences");
 export const [wakeLock, setWakeLock] = persisted("wakeLock", true);
+export const [showWords, setShowWords] = persisted("showWords", false);
 export const [defaultRemoteProvider, setDefaultRemoteProvider] = persisted(
   "defaultRemoteProvider",
   "" as string,

@@ -1,12 +1,8 @@
-import localforage from "localforage";
+import { createIdbStorage } from "../idb_storage";
 
-const store = localforage.createInstance({ name: "huji_settings" });
+const store = createIdbStorage("huji_settings", "kv", 2);
 
 /** AsyncStorage adapter for @solid-primitives/storage */
-export const hujiSettingsStorage = {
-  getItem: (key: string) => store.getItem<string>(key),
-  setItem: (key: string, value: string) => store.setItem(key, value),
-  removeItem: (key: string) => store.removeItem(key),
-};
+export const hujiSettingsStorage = store;
 
 export const clearHujiSettings = () => store.clear();

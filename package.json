@@ -23,7 +23,6 @@
     "dompurify": "^3.4.11",
     "idb": "^8.0.3",
     "js-yaml": "^4.2.0",
-    "localforage": "^1.10.0",
     "marked": "^18.0.5",
     "smol-toml": "^1.6.1",
     "solid-icons": "^1.2.0",

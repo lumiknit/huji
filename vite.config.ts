@@ -41,6 +41,7 @@ export default defineConfig({
           if (
             id.includes("node_modules/solid-js") ||
             id.includes("node_modules/@solidjs") ||
+            id.includes("node_modules/@solid-primitives") ||
             id.includes("node_modules/solid-toast")
           ) {
             return "solid";
@@ -50,12 +51,6 @@ export default defineConfig({
             id.includes("node_modules/dompurify")
           ) {
             return "markdown";
-          }
-          if (
-            id.includes("node_modules/localforage") ||
-            id.includes("node_modules/@solid-primitives/storage")
-          ) {
-            return "storage";
           }
         },
       },

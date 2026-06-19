@@ -5,26 +5,37 @@ type Props = {
   children: JSX.Element;
 };
 
-const ToggleMenu: Component<Props> = (props) => {
-  let detailsEl!: HTMLDetailsElement;
+let menuCount = 0;
 
-  const handleBlur = (e: FocusEvent) => {
-    if (!detailsEl.contains(e.relatedTarget as Node)) {
-      detailsEl.open = false;
-    }
+const ToggleMenu: Component<Props> = (props) => {
+  const id = `toggle-menu-${menuCount++}`;
+  let btnEl!: HTMLButtonElement;
+  let menuEl!: HTMLMenuElement;
+
+  const handleToggle = () => {
+    const btn = btnEl.getBoundingClientRect();
+    const menuW = menuEl.offsetWidth || 176;
+    // 오른쪽 끝이 뷰포트를 벗어나면 우측 정렬
+    const left =
+      btn.left + menuW > window.innerWidth ? btn.right - menuW : btn.left;
+    menuEl.style.left = `${left}px`;
+    menuEl.style.top = `${btn.bottom + 4}px`;
   };
 
   return (
-    <details ref={detailsEl} onBlur={handleBlur}>
-      <summary>{props.label}</summary>
+    <>
+      <button ref={btnEl} popovertarget={id} onClick={handleToggle}>
+        {props.label}
+      </button>
       <menu
-        onClick={() => {
-          detailsEl.open = false;
-        }}
+        ref={menuEl}
+        id={id}
+        popover="auto"
+        onClick={() => menuEl.hidePopover()}
       >
         {props.children}
       </menu>
-    </details>
+    </>
   );
 };
 

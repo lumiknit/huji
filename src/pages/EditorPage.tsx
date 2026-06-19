@@ -57,6 +57,8 @@ import {
 import {
   settingsSignals,
   defaultRemoteProvider,
+  showWords,
+  setShowWords,
 } from "../states/settings";
 import { buildSectionLabel } from "../lib/md/section";
 import {
@@ -265,7 +267,11 @@ const EditorPage: Component = () => {
     let lock: WakeLockSentinel | null = null;
     const acquire = async () => {
       if (document.visibilityState === "visible") {
-        lock = await (navigator as Navigator & { wakeLock: { request(type: string): Promise<WakeLockSentinel> } }).wakeLock
+        lock = await (
+          navigator as Navigator & {
+            wakeLock: { request(type: string): Promise<WakeLockSentinel> };
+          }
+        ).wakeLock
           .request("screen")
           .catch(() => null);
       }
@@ -496,8 +502,6 @@ const EditorPage: Component = () => {
     });
   };
 
-  const [showWords, setShowWords] = createSignal(false);
-
   const [scrollPct, setScrollPct] = createSignal(0);
   const [showScrollPct, setShowScrollPct] = createSignal(false);
   let scrollHideTimer: ReturnType<typeof setTimeout> | undefined;
@@ -651,6 +655,7 @@ const EditorPage: Component = () => {
                   new KeyboardEvent("keydown", {
                     key: "z",
                     ctrlKey: true,
+                    metaKey: true,
                     bubbles: true,
                   }),
                 )
@@ -664,6 +669,7 @@ const EditorPage: Component = () => {
                   new KeyboardEvent("keydown", {
                     key: "z",
                     ctrlKey: true,
+                    metaKey: true,
                     shiftKey: true,
                     bubbles: true,
                   }),
@@ -703,7 +709,7 @@ const EditorPage: Component = () => {
           <button
             class="count-label"
             classList={{ dim: editorState.saveStatus() !== "saved" }}
-            onClick={() => setShowWords((v) => !v)}
+            onClick={() => setShowWords((v: boolean) => !v)}
           >
             {countLabel()}
           </button>
