@@ -40,6 +40,10 @@ export const [autocapitalize, setAutocapitalize] = persisted<
 >("autocapitalize", "sentences");
 export const [wakeLock, setWakeLock] = persisted("wakeLock", true);
 export const [showWords, setShowWords] = persisted("showWords", false);
+export const [typewriterMode, setTypewriterMode] = persisted(
+  "typewriterMode",
+  false,
+);
 export const [defaultRemoteProvider, setDefaultRemoteProvider] = persisted(
   "defaultRemoteProvider",
   "" as string,

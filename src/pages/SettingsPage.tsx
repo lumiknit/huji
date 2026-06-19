@@ -16,6 +16,8 @@ import {
   setAutocorrect,
   setAutocapitalize,
   setWakeLock,
+  typewriterMode,
+  setTypewriterMode,
   setContextSections,
   setContextRaw,
   setMaxWidth,
@@ -136,6 +138,17 @@ const SettingsPage: Component = () => {
             <option value="words">Words</option>
             <option value="none">None</option>
             <option value="off">Off</option>
+          </select>
+        </label>
+
+        <label>
+          Typewriter mode
+          <select
+            value={typewriterMode() ? "on" : "off"}
+            onChange={(e) => setTypewriterMode(e.currentTarget.value === "on")}
+          >
+            <option value="off">Off</option>
+            <option value="on">On</option>
           </select>
         </label>
 

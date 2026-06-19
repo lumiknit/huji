@@ -59,6 +59,7 @@ import {
   defaultRemoteProvider,
   showWords,
   setShowWords,
+  typewriterMode,
 } from "../states/settings";
 import { buildSectionLabel } from "../lib/md/section";
 import {
@@ -78,6 +79,35 @@ import { resetFindState, loadFindContents } from "../states/find";
 import type { SectionMeta } from "../lib/db/schema";
 
 const ALL_ID = "__all__";
+
+const setCaretOffset = (el: HTMLElement, start: number, end: number) => {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const findPos = (offset: number): [Node, number] | null => {
+    let remaining = offset;
+    const walk = (node: Node): [Node, number] | null => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const len = node.textContent?.length ?? 0;
+        if (remaining <= len) return [node, remaining];
+        remaining -= len;
+        return null;
+      }
+      for (const child of node.childNodes) {
+        const r = walk(child);
+        if (r) return r;
+      }
+      return null;
+    };
+    return walk(el);
+  };
+  const s = findPos(start) ?? [el, 0];
+  const e = findPos(end) ?? s;
+  const range = document.createRange();
+  range.setStart(s[0], s[1]);
+  range.setEnd(e[0], e[1]);
+  sel.removeAllRanges();
+  sel.addRange(range);
+};
 
 type ContextSectionProps = {
   meta: () => SectionMeta;
@@ -144,9 +174,25 @@ const EditorPage: Component = () => {
     setShowFind(true);
   };
 
-  let textareaEl: HTMLTextAreaElement | null = null;
-  let wholeEl: HTMLTextAreaElement | null = null;
-  let mirrorEl: HTMLDivElement | undefined;
+  let textareaEl: HTMLDivElement | null = null;
+  let wholeEl: HTMLDivElement | null = null;
+
+  let typewriterRafId: number | null = null;
+  const scheduleTypewriterScroll = () => {
+    if (!typewriterMode() || typewriterRafId !== null) return;
+    typewriterRafId = requestAnimationFrame(() => {
+      typewriterRafId = null;
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      if (rect.height === 0) return;
+      const target =
+        window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;
+      if (Math.abs(target - window.scrollY) < 8) return;
+      window.scrollTo({ top: target, behavior: "smooth" });
+    });
+  };
 
   const activeMeta = createMemo(() =>
     editorState.metas().find((m) => m.id === editorState.activeSectionId()),
@@ -189,26 +235,12 @@ const EditorPage: Component = () => {
   });
 
   const scrollToEditor = () => {
-    if (!textareaEl || !mirrorEl) return;
-    const r = textareaEl.getBoundingClientRect();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
     const hh = document.documentElement.clientHeight / 2;
-
-    mirrorEl.style.width = `${textareaEl.clientWidth}px`;
-    const position = textareaEl.selectionStart;
-    mirrorEl.textContent = textareaEl.value.slice(0, position);
-
-    const span = document.createElement("span");
-    span.textContent = ".";
-    mirrorEl.appendChild(span);
-
-    const spanTop = span.offsetTop;
-
-    // Clear mirror content
-    mirrorEl.textContent = "";
-
-    const absoluteCursorY = window.scrollY + r.top + spanTop;
     window.scrollTo({
-      top: absoluteCursorY - hh,
+      top: window.scrollY + rect.top - hh,
       behavior: "smooth",
     });
   };
@@ -218,13 +250,13 @@ const EditorPage: Component = () => {
     const id = editorState.activeSectionId();
     if (!id) return;
     try {
-      const info = await extractFrontmatter(textareaEl.value);
+      const info = await extractFrontmatter(textareaEl.innerText);
       if (!info) {
         setFmError("Invalid frontmatter");
         return;
       }
       const pretty = await serializeFrontmatter(info.type, info.data);
-      textareaEl.value = pretty;
+      textareaEl.textContent = pretty;
       setFmError("");
       notifyEdit(id);
     } catch (e) {
@@ -292,17 +324,18 @@ const EditorPage: Component = () => {
     const content = await loadSectionContent(id);
     if (editorState.activeSectionId() !== id) return; // race condition guard
     if (textareaEl) {
-      textareaEl.value = content;
+      textareaEl.textContent = content;
       setSectionCount(countText(content));
       const sel = popSectionSelection(id) || { start: 0, end: 0 };
       const len = content.length;
-      textareaEl.setSelectionRange(
-        Math.min(sel.start, len),
-        Math.min(sel.end, len),
-      );
       setTimeout(() => {
         if (!textareaEl) return;
         textareaEl.focus();
+        setCaretOffset(
+          textareaEl,
+          Math.min(sel.start, len),
+          Math.min(sel.end, len),
+        );
         scrollToEditor();
       }, 16);
     }
@@ -322,30 +355,36 @@ const EditorPage: Component = () => {
     }
   };
 
-  const handleKeyDown = (
-    e: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
-    if (
-      e.key === "ArrowUp" &&
-      e.currentTarget.selectionStart === 0 &&
-      e.currentTarget.selectionEnd === 0
-    ) {
-      e.preventDefault();
-      const prev = prevSection();
-      if (prev) {
-        setSectionSelection(prev.id, { start: Infinity, end: Infinity });
-        switchSection(prev.id);
+  const handleKeyDown = (e: KeyboardEvent) => {
+    const el = e.currentTarget as HTMLElement;
+    const sel = window.getSelection();
+    const collapsed = sel?.isCollapsed ?? true;
+    if (e.key === "ArrowUp" && collapsed) {
+      const range = sel?.getRangeAt(0);
+      const pre = range?.cloneRange();
+      pre?.selectNodeContents(el);
+      pre?.setEnd(range!.startContainer, range!.startOffset);
+      if ((pre?.toString().length ?? 1) === 0) {
+        e.preventDefault();
+        const prev = prevSection();
+        if (prev) {
+          setSectionSelection(prev.id, { start: Infinity, end: Infinity });
+          switchSection(prev.id);
+        }
       }
     }
-    if (
-      e.key === "ArrowDown" &&
-      e.currentTarget.selectionStart === e.currentTarget.value.length
-    ) {
-      e.preventDefault();
-      const next = nextSection();
-      if (next) {
-        setSectionSelection(next.id, { start: 0, end: 0 });
-        switchSection(next.id);
+    if (e.key === "ArrowDown" && collapsed) {
+      const range = sel?.getRangeAt(0);
+      const post = range?.cloneRange();
+      post?.selectNodeContents(el);
+      post?.setStart(range!.endContainer, range!.endOffset);
+      if ((post?.toString().length ?? 1) === 0) {
+        e.preventDefault();
+        const next = nextSection();
+        if (next) {
+          setSectionSelection(next.id, { start: 0, end: 0 });
+          switchSection(next.id);
+        }
       }
     }
     if ((e.ctrlKey || e.metaKey) && e.key === "f") {
@@ -382,11 +421,11 @@ const EditorPage: Component = () => {
         await switchSection(newId);
         requestAnimationFrame(() => {
           if (!textareaEl) return;
-          const val = textareaEl.value;
+          const val = textareaEl.textContent ?? "";
           const titleStart = val.indexOf("Title here");
           if (titleStart !== -1) {
-            textareaEl.setSelectionRange(titleStart, titleStart + 10);
             textareaEl.focus();
+            setCaretOffset(textareaEl, titleStart, titleStart + 10);
           }
         });
       }
@@ -404,14 +443,13 @@ const EditorPage: Component = () => {
       );
       if (newId) {
         await switchSection(newId);
-        // Select "Title here" in the new section's textarea for immediate editing
         requestAnimationFrame(() => {
           if (!textareaEl) return;
-          const val = textareaEl.value;
+          const val = textareaEl.textContent ?? "";
           const titleStart = val.indexOf("Title here");
           if (titleStart !== -1) {
-            textareaEl.setSelectionRange(titleStart, titleStart + 10);
             textareaEl.focus();
+            setCaretOffset(textareaEl, titleStart, titleStart + 10);
           }
         });
       }
@@ -540,7 +578,7 @@ const EditorPage: Component = () => {
   const handleWholeSave = async () => {
     if (!wholeEl) return;
     try {
-      await saveWholeContent(wholeEl.value);
+      await saveWholeContent(wholeEl.innerText);
     } catch (e) {
       console.error("Failed to save:", e);
       toast.error("Failed to save");
@@ -579,12 +617,18 @@ const EditorPage: Component = () => {
   const handleFileDrop = (file: File) => {
     const id = editorState.activeSectionId();
     if (!textareaEl || !id) return;
-    const el = textareaEl;
     file.text().then((text) => {
-      const start = el.selectionStart;
-      const end = el.selectionEnd;
-      el.value = el.value.slice(0, start) + text + el.value.slice(end);
-      el.selectionStart = el.selectionEnd = start + text.length;
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        sel.deleteFromDocument();
+        const node = document.createTextNode(text);
+        const range = sel.getRangeAt(0);
+        range.insertNode(node);
+        range.setStartAfter(node);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
       notifyEdit(id);
     });
   };
@@ -602,11 +646,6 @@ const EditorPage: Component = () => {
           onClose={() => setShowFind(false)}
         />
       </Show>
-      <div
-        ref={mirrorEl}
-        class="edit-mirror"
-        style="position: absolute; visibility: hidden; top: 0; left: -9999px; height: 0; overflow: hidden;"
-      />
       <FileDrop onDrop={handleFileDrop} label="Insert as raw text" />
       <Toolbar title={`Edit — ${editorState.filename()}`}>
         <A href="/" title="File list">
@@ -650,31 +689,18 @@ const EditorPage: Component = () => {
         <Show when={!isReadonly()}>
           <ToggleMenu label="Edit">
             <button
-              onClick={() =>
-                textareaEl?.dispatchEvent(
-                  new KeyboardEvent("keydown", {
-                    key: "z",
-                    ctrlKey: true,
-                    metaKey: true,
-                    bubbles: true,
-                  }),
-                )
-              }
+              onClick={() => {
+                textareaEl?.focus();
+                document.execCommand("undo");
+              }}
             >
               <TbOutlineRotate /> Undo
             </button>
             <button
-              onClick={() =>
-                textareaEl?.dispatchEvent(
-                  new KeyboardEvent("keydown", {
-                    key: "z",
-                    ctrlKey: true,
-                    metaKey: true,
-                    shiftKey: true,
-                    bubbles: true,
-                  }),
-                )
-              }
+              onClick={() => {
+                textareaEl?.focus();
+                document.execCommand("redo");
+              }}
             >
               <TbOutlineRotateClockwise /> Redo
             </button>
@@ -780,17 +806,16 @@ const EditorPage: Component = () => {
       </Toolbar>
 
       <Show when={mode() === "all"}>
-        <textarea
+        <div
           class="edit"
-          placeholder="Write here!"
+          contenteditable={isReadonly() ? "false" : "plaintext-only"}
           spellcheck={settingsSignals.spellcheck()}
           autocorrect={settingsSignals.autocorrect() ? "on" : "off"}
           autocapitalize={settingsSignals.autocapitalize()}
-          readOnly={isReadonly()}
           ref={(el) => {
             wholeEl = el;
             loadAllContent().then((content) => {
-              el.value = content;
+              el.textContent = content;
               el.focus();
             });
           }}
@@ -831,13 +856,12 @@ const EditorPage: Component = () => {
         </div>
 
         <div>
-          <textarea
+          <div
             class="edit"
-            placeholder="Write here!"
+            contenteditable={isReadonly() ? "false" : "plaintext-only"}
             spellcheck={settingsSignals.spellcheck()}
             autocorrect={settingsSignals.autocorrect() ? "on" : "off"}
             autocapitalize={settingsSignals.autocapitalize()}
-            readOnly={isReadonly()}
             ref={(el) => {
               textareaEl = el;
               registerActiveTextarea(el);
@@ -847,6 +871,7 @@ const EditorPage: Component = () => {
               const id = editorState.activeSectionId();
               if (id) notifyEdit(id);
               setFmError("");
+              scheduleTypewriterScroll();
             }}
             onBlur={
               isReadonly()

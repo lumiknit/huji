@@ -295,14 +295,14 @@ export const saveSection = async (
 
 // ── Active textarea ref ──
 
-export let activeTextareaRef: HTMLTextAreaElement | null = null;
+export let activeTextareaRef: HTMLElement | null = null;
 
-export const registerActiveTextarea = (el: HTMLTextAreaElement | null) => {
+export const registerActiveTextarea = (el: HTMLElement | null) => {
   activeTextareaRef = el;
 };
 
 export const getActiveTextareaValue = (): string =>
-  activeTextareaRef?.value ?? "";
+  activeTextareaRef?.innerText ?? "";
 
 // ── Debounce / auto-save ──
 

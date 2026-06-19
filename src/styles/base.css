@@ -249,9 +249,8 @@ textarea {
   outline: none;
 }
 
-/* 메인 편집 textarea 및 가상 DOM 미러 */
-textarea.edit,
-.edit-mirror {
+/* 메인 편집 영역 */
+div.edit {
   font-family: var(--editor-font);
   font-size: var(--editor-font-size);
   line-height: var(--editor-line-height);
@@ -260,19 +259,23 @@ textarea.edit,
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  border: 1px solid transparent;
-}
-
-textarea.edit {
-  field-sizing: content;
-  min-height: 4rem;
+  min-height: 1lh;
   margin-block: var(--sp-sm);
   border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  outline: 1px solid var(--c-border);
+  outline-offset: 0px;
   scroll-margin-top: 4rem;
 }
 
-textarea.edit:focus {
-  border-color: var(--c-primary);
+div.edit:focus {
+  outline: none;
+}
+
+div.edit:empty::before {
+  content: "Write here!";
+  color: var(--c-muted);
+  pointer-events: none;
 }
 
 /* ── Settings: section > label 레이아웃 ── */
