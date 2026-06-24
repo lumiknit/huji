@@ -55,7 +55,12 @@ import {
   countText,
 } from "../states/editor_save";
 import {
-  settingsSignals,
+  wakeLock,
+  spellcheck,
+  autocorrect,
+  autocapitalize,
+  contextSections,
+  contextRaw,
   defaultRemoteProvider,
   showWords,
   setShowWords,
@@ -295,7 +300,7 @@ const EditorPage: Component = () => {
   });
 
   onMount(() => {
-    if (!settingsSignals.wakeLock() || !("wakeLock" in navigator)) return;
+    if (!wakeLock() || !("wakeLock" in navigator)) return;
     let lock: WakeLockSentinel | null = null;
     const acquire = async () => {
       if (document.visibilityState === "visible") {
@@ -394,7 +399,7 @@ const EditorPage: Component = () => {
   };
 
   const contextRange = createMemo(() => {
-    const ctx = settingsSignals.contextSections();
+    const ctx = contextSections();
     const list = editorState.metas();
     const idx = activeIdx();
     if (idx === -1)
@@ -811,9 +816,9 @@ const EditorPage: Component = () => {
         <div
           class="edit"
           contenteditable={isReadonly() ? "false" : "plaintext-only"}
-          spellcheck={settingsSignals.spellcheck()}
-          autocorrect={settingsSignals.autocorrect() ? "on" : "off"}
-          autocapitalize={settingsSignals.autocapitalize()}
+          spellcheck={spellcheck()}
+          autocorrect={autocorrect() ? "on" : "off"}
+          autocapitalize={autocapitalize()}
           ref={(el) => {
             wholeEl = el;
             loadAllContent().then((content) => {
@@ -829,7 +834,7 @@ const EditorPage: Component = () => {
       <Show when={mode() === "single"}>
         <For each={contextRange().before}>
           {(m) => (
-            <ContextSection meta={() => m} raw={settingsSignals.contextRaw()} />
+            <ContextSection meta={() => m} raw={contextRaw()} />
           )}
         </For>
 
@@ -861,9 +866,9 @@ const EditorPage: Component = () => {
           <div
             class="edit"
             contenteditable={isReadonly() ? "false" : "plaintext-only"}
-            spellcheck={settingsSignals.spellcheck()}
-            autocorrect={settingsSignals.autocorrect() ? "on" : "off"}
-            autocapitalize={settingsSignals.autocapitalize()}
+            spellcheck={spellcheck()}
+            autocorrect={autocorrect() ? "on" : "off"}
+            autocapitalize={autocapitalize()}
             ref={(el) => {
               textareaEl = el;
               registerActiveTextarea(el);
@@ -927,7 +932,7 @@ const EditorPage: Component = () => {
 
         <For each={contextRange().after}>
           {(m) => (
-            <ContextSection meta={() => m} raw={settingsSignals.contextRaw()} />
+            <ContextSection meta={() => m} raw={contextRaw()} />
           )}
         </For>
       </Show>
