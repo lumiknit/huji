@@ -9,6 +9,7 @@ export type IdbStorage = {
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;
   clear(): Promise<void>;
+  entries(): Promise<[string, string][]>;
 };
 
 const openStore = async (
@@ -66,6 +67,12 @@ export const createIdbStorage = (
     clear: async () => {
       const db = await dbPromise;
       await db.clear(storeName);
+    },
+    entries: async () => {
+      const db = await dbPromise;
+      const keys = await db.getAllKeys(storeName);
+      const values = await db.getAll(storeName);
+      return (keys as string[]).map((k, i) => [k, values[i] as string]);
     },
   };
 };

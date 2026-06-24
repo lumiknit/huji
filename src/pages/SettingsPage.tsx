@@ -3,29 +3,51 @@ import { A } from "@solidjs/router";
 import { TbOutlineArrowLeft, TbOutlineTrash } from "solid-icons/tb";
 import Toolbar from "../components/Toolbar";
 
+import { SERIF_STACK } from "../states/settings";
 import {
-  settingsSignals,
+  editorFont,
   setEditorFont,
+  editorFontSize,
   setEditorFontSize,
+  editorLineHeight,
   setEditorLineHeight,
+  editorFontWeight,
+  setEditorFontWeight,
+  previewFont,
   setPreviewFont,
+  previewFontSize,
   setPreviewFontSize,
+  previewLineHeight,
   setPreviewLineHeight,
+  previewFontWeight,
+  setPreviewFontWeight,
+  previewParaIndent,
   setPreviewParaIndent,
+  spellcheck,
   setSpellcheck,
+  autocorrect,
   setAutocorrect,
+  autocapitalize,
   setAutocapitalize,
+  wakeLock,
   setWakeLock,
   typewriterMode,
   setTypewriterMode,
+  contextSections,
   setContextSections,
+  contextRaw,
   setContextRaw,
+  maxWidth,
   setMaxWidth,
   defaultRemoteProvider,
   setDefaultRemoteProvider,
 } from "../states/settings";
 import { availableProviders } from "../lib/sync/provider";
-import { clearHujiSettings } from "../lib/db/settings-storage";
+import {
+  clearHujiSettings,
+  exportHujiSettings,
+  importHujiSettings,
+} from "../lib/db/settings-storage";
 
 const handleResetAll = async () => {
   if (
@@ -73,7 +95,7 @@ const SettingsPage: Component = () => {
             type="text"
             placeholder="(Default Serif)"
             list="editor-font-family"
-            value={settingsSignals.editorFont()}
+            value={editorFont()}
             onChange={(e) => setEditorFont(e.currentTarget.value)}
           />
           <FontDataList id="editor-font-family" />
@@ -85,7 +107,7 @@ const SettingsPage: Component = () => {
             type="number"
             min={10}
             max={32}
-            value={settingsSignals.editorFontSize()}
+            value={editorFontSize()}
             onChange={(e) => setEditorFontSize(Number(e.currentTarget.value))}
           />
         </label>
@@ -97,15 +119,44 @@ const SettingsPage: Component = () => {
             min={1}
             max={3}
             step={0.1}
-            value={settingsSignals.editorLineHeight()}
+            value={editorLineHeight()}
             onChange={(e) => setEditorLineHeight(Number(e.currentTarget.value))}
           />
         </label>
 
         <label>
+          Font weight
+          <input
+            type="number"
+            min={100}
+            max={900}
+            step={10}
+            value={editorFontWeight()}
+            onChange={(e) =>
+              setEditorFontWeight(Number(e.currentTarget.value))
+            }
+          />
+        </label>
+
+        <div
+          style={{
+            "font-family": editorFont() || SERIF_STACK,
+            "font-size": `${editorFontSize()}px`,
+            "font-weight": editorFontWeight(),
+            "line-height": editorLineHeight(),
+            padding: "0.5em",
+            border: "1px solid var(--c-border)",
+            "border-radius": "var(--radius)",
+            "white-space": "pre-wrap",
+          }}
+        >
+          Hello, 다람쥐, テスト文字
+        </div>
+
+        <label>
           Spellcheck
           <select
-            value={settingsSignals.spellcheck() ? "on" : "off"}
+            value={spellcheck() ? "on" : "off"}
             onChange={(e) => setSpellcheck(e.currentTarget.value === "on")}
           >
             <option value="on">On</option>
@@ -116,7 +167,7 @@ const SettingsPage: Component = () => {
         <label>
           Autocorrect
           <select
-            value={settingsSignals.autocorrect() ? "on" : "off"}
+            value={autocorrect() ? "on" : "off"}
             onChange={(e) => setAutocorrect(e.currentTarget.value === "on")}
           >
             <option value="off">Off</option>
@@ -127,7 +178,7 @@ const SettingsPage: Component = () => {
         <label>
           Autocapitalize
           <select
-            value={settingsSignals.autocapitalize()}
+            value={autocapitalize()}
             onChange={(e) =>
               setAutocapitalize(
                 e.currentTarget.value as "off" | "none" | "sentences" | "words",
@@ -155,7 +206,7 @@ const SettingsPage: Component = () => {
         <label>
           Wake lock (prevent screen sleep)
           <select
-            value={settingsSignals.wakeLock() ? "on" : "off"}
+            value={wakeLock() ? "on" : "off"}
             onChange={(e) => setWakeLock(e.currentTarget.value === "on")}
           >
             <option value="on">On</option>
@@ -173,7 +224,7 @@ const SettingsPage: Component = () => {
             type="text"
             placeholder="(Default Serif)"
             list="preview-font-family"
-            value={settingsSignals.previewFont()}
+            value={previewFont()}
             onChange={(e) => setPreviewFont(e.currentTarget.value)}
           />
           <FontDataList id="preview-font-family" />
@@ -185,7 +236,7 @@ const SettingsPage: Component = () => {
             type="number"
             min={10}
             max={32}
-            value={settingsSignals.previewFontSize()}
+            value={previewFontSize()}
             onChange={(e) => setPreviewFontSize(Number(e.currentTarget.value))}
           />
         </label>
@@ -197,7 +248,7 @@ const SettingsPage: Component = () => {
             min={1}
             max={3}
             step={0.1}
-            value={settingsSignals.previewLineHeight()}
+            value={previewLineHeight()}
             onChange={(e) =>
               setPreviewLineHeight(Number(e.currentTarget.value))
             }
@@ -205,9 +256,23 @@ const SettingsPage: Component = () => {
         </label>
 
         <label>
+          Font weight
+          <input
+            type="number"
+            min={100}
+            max={900}
+            step={10}
+            value={previewFontWeight()}
+            onChange={(e) =>
+              setPreviewFontWeight(Number(e.currentTarget.value))
+            }
+          />
+        </label>
+
+        <label>
           Paragraph indent
           <select
-            value={settingsSignals.previewParaIndent() ? "on" : "off"}
+            value={previewParaIndent() ? "on" : "off"}
             onChange={(e) =>
               setPreviewParaIndent(e.currentTarget.value === "on")
             }
@@ -216,6 +281,20 @@ const SettingsPage: Component = () => {
             <option value="off">Off</option>
           </select>
         </label>
+
+        <div
+          style={{
+            "font-family": previewFont() || SERIF_STACK,
+            "font-size": `${previewFontSize()}px`,
+            "font-weight": previewFontWeight(),
+            "line-height": previewLineHeight(),
+            padding: "0.5em",
+            border: "1px solid var(--c-border)",
+            "border-radius": "var(--radius)",
+          }}
+        >
+          Hello, 다람쥐, テスト文字
+        </div>
       </section>
 
       <section>
@@ -227,7 +306,7 @@ const SettingsPage: Component = () => {
             type="number"
             min={0}
             max={5}
-            value={settingsSignals.contextSections()}
+            value={contextSections()}
             onChange={(e) => setContextSections(Number(e.currentTarget.value))}
           />
         </label>
@@ -235,7 +314,7 @@ const SettingsPage: Component = () => {
         <label>
           Show context as raw text
           <select
-            value={settingsSignals.contextRaw() ? "on" : "off"}
+            value={contextRaw() ? "on" : "off"}
             onChange={(e) => setContextRaw(e.currentTarget.value === "on")}
           >
             <option value="on">On</option>
@@ -250,7 +329,7 @@ const SettingsPage: Component = () => {
             min={320}
             max={1920}
             step={10}
-            value={settingsSignals.maxWidth()}
+            value={maxWidth()}
             onChange={(e) => setMaxWidth(Number(e.currentTarget.value))}
           />
         </label>
@@ -274,6 +353,21 @@ const SettingsPage: Component = () => {
 
       <section>
         <h2>Data</h2>
+        <label>
+          Export settings
+          <button onClick={exportHujiSettings}>Export</button>
+        </label>
+        <label>
+          Import settings
+          <input
+            type="file"
+            accept="application/json"
+            onChange={(e) => {
+              const file = e.currentTarget.files?.[0];
+              if (file) importHujiSettings(file);
+            }}
+          />
+        </label>
         <label>
           Reset all data
           <button class="danger" onClick={handleResetAll}>

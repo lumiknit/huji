@@ -12,10 +12,12 @@
   --editor-font: "BuiltinSerif", serif;
   --editor-font-size: 1rem;
   --editor-line-height: 1.4;
+  --editor-font-weight: 400;
 
   --preview-font: "BuiltinSerif", Times, serif;
   --preview-font-size: 0.875rem;
   --preview-line-height: 1.6;
+  --preview-font-weight: 400;
   --preview-para-indent: 1em;
 
   --form-height: 2rem;

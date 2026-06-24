@@ -253,6 +253,7 @@ textarea {
 div.edit {
   font-family: var(--editor-font);
   font-size: var(--editor-font-size);
+  font-weight: var(--editor-font-weight);
   line-height: var(--editor-line-height);
   padding: var(--sp-sm);
   box-sizing: border-box;
@@ -494,6 +495,7 @@ menu[popover] > hr {
 article.md-body {
   font-family: var(--preview-font);
   font-size: var(--preview-font-size);
+  font-weight: var(--preview-font-weight);
   line-height: var(--preview-line-height);
 
   & h1,
