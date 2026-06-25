@@ -3,8 +3,12 @@ import { A } from "@solidjs/router";
 import { TbOutlineArrowLeft, TbOutlineTrash } from "solid-icons/tb";
 import Toolbar from "../components/Toolbar";
 
-import { SERIF_STACK } from "../states/settings";
+import { SERIF_STACK, type ThemeVariant } from "../states/settings";
 import {
+  themeLight,
+  setThemeLight,
+  themeDark,
+  setThemeDark,
   editorFont,
   setEditorFont,
   editorFontSize,
@@ -77,6 +81,48 @@ const FontDataList: Component<{ id: string }> = (props) => {
   );
 };
 
+const THEME_VARIANTS: { value: ThemeVariant; label: string }[] = [
+  { value: "default", label: "Default" },
+  { value: "warm", label: "Warm" },
+  { value: "cool", label: "Cool" },
+];
+
+type ThemeSwatch = { mode: "light" | "dark"; variant: ThemeVariant };
+
+const ThemePreview: Component<ThemeSwatch> = (props) => {
+  const prefix = () => `--thm-${props.mode}-${props.variant}`;
+  const v = (name: string) => `var(${prefix()}-${name})`;
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: "6px",
+        padding: "6px 8px",
+        background: v("bg"),
+        border: `2px solid ${v("border")}`,
+        "border-radius": "var(--radius)",
+        "font-size": "11px",
+        color: v("fg"),
+        "min-width": "120px",
+        "align-items": "center",
+      }}
+    >
+      <span style={{ flex: 1 }}>Aa</span>
+      <span
+        style={{
+          background: v("primary"),
+          color: v("primary-fg"),
+          padding: "1px 6px",
+          "border-radius": "3px",
+        }}
+      >
+        Btn
+      </span>
+      <span style={{ color: v("muted") }}>…</span>
+    </div>
+  );
+};
+
 const SettingsPage: Component = () => {
   return (
     <main>
@@ -85,6 +131,70 @@ const SettingsPage: Component = () => {
           <TbOutlineArrowLeft />
         </A>
       </Toolbar>
+
+      <section>
+        <h2>Theme</h2>
+
+        <label>
+          Light theme
+          <select
+            value={themeLight()}
+            onChange={(e) => setThemeLight(e.currentTarget.value as ThemeVariant)}
+          >
+            <For each={THEME_VARIANTS}>
+              {(t) => <option value={t.value}>{t.label}</option>}
+            </For>
+          </select>
+        </label>
+        <div style={{ display: "flex", gap: "8px", "flex-wrap": "wrap" }}>
+          <For each={THEME_VARIANTS}>
+            {(t) => (
+              <div
+                style={{
+                  cursor: "pointer",
+                  outline: themeLight() === t.value ? "2px solid var(--c-primary)" : "none",
+                  "outline-offset": "2px",
+                  "border-radius": "var(--radius)",
+                }}
+                onClick={() => setThemeLight(t.value)}
+              >
+                <div style={{ "font-size": "10px", "text-align": "center", "margin-bottom": "2px", color: "var(--c-muted)" }}>{t.label}</div>
+                <ThemePreview mode="light" variant={t.value} />
+              </div>
+            )}
+          </For>
+        </div>
+
+        <label>
+          Dark theme
+          <select
+            value={themeDark()}
+            onChange={(e) => setThemeDark(e.currentTarget.value as ThemeVariant)}
+          >
+            <For each={THEME_VARIANTS}>
+              {(t) => <option value={t.value}>{t.label}</option>}
+            </For>
+          </select>
+        </label>
+        <div style={{ display: "flex", gap: "8px", "flex-wrap": "wrap" }}>
+          <For each={THEME_VARIANTS}>
+            {(t) => (
+              <div
+                style={{
+                  cursor: "pointer",
+                  outline: themeDark() === t.value ? "2px solid var(--c-primary)" : "none",
+                  "outline-offset": "2px",
+                  "border-radius": "var(--radius)",
+                }}
+                onClick={() => setThemeDark(t.value)}
+              >
+                <div style={{ "font-size": "10px", "text-align": "center", "margin-bottom": "2px", color: "var(--c-muted)" }}>{t.label}</div>
+                <ThemePreview mode="dark" variant={t.value} />
+              </div>
+            )}
+          </For>
+        </div>
+      </section>
 
       <section>
         <h2>Editor</h2>
