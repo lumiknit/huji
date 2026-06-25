@@ -31,20 +31,30 @@ import {
   type SearchMode,
 } from "../states/find";
 
-const CONTEXT_LEN = 200;
+const CONTEXT_LEN = 100;
 
 const getContext = (
   text: string,
   start: number,
   end: number,
 ): { before: string; match: string; after: string } => {
-  const before = text.slice(Math.max(0, start - CONTEXT_LEN), start);
-  const match = text.slice(start, end);
-  const after = text.slice(end, end + CONTEXT_LEN);
+  // Clamp to the current line first, then limit to CONTEXT_LEN chars
+  const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+  const lineEnd = (() => {
+    const idx = text.indexOf("\n", end);
+    return idx === -1 ? text.length : idx;
+  })();
+
+  const rawBefore = text.slice(Math.max(lineStart, start - CONTEXT_LEN), start);
+  const rawAfter = text.slice(end, Math.min(lineEnd, end + CONTEXT_LEN));
+
+  const trimmedBefore = start - CONTEXT_LEN > lineStart;
+  const trimmedAfter = end + CONTEXT_LEN < lineEnd;
+
   return {
-    before: (start > CONTEXT_LEN ? "…" : "") + before,
-    match,
-    after: after + (end + CONTEXT_LEN < text.length ? "…" : ""),
+    before: (trimmedBefore ? "…" : "") + rawBefore,
+    match: text.slice(start, end),
+    after: rawAfter + (trimmedAfter ? "…" : ""),
   };
 };
 
