@@ -41,9 +41,6 @@ export type SaveStatus = "saved" | "dirty" | "saving";
 
 export const [fileId, setFileId] = createSignal<string | null>(null);
 export const [metas, setMetas] = createSignal<SectionMeta[]>([]);
-const [activeSectionId, _setActiveSectionId] = createSignal<string | null>(
-  null,
-);
 export const [saveStatus, setSaveStatus] = createSignal<SaveStatus>("saved");
 const [filename, setFilename] = createSignal<string>("");
 
@@ -53,16 +50,27 @@ export const [sectionCount, setSectionCount] = createSignal<SectionCount>({
   words: 0,
 });
 
-export const setActiveSectionId = _setActiveSectionId;
-
 // Bump this to force EditorPage to reload the active section's content from IDB.
 const [activeContentVersion, _setActiveContentVersion] = createSignal(0);
 export const bumpActiveContent = () => _setActiveContentVersion((v) => v + 1);
 
+export type GoToSectionOpts = {
+  selStart?: number;
+  selEnd?: number;
+};
+
+// Single source of truth for the active section + optional selection intent.
+// { equals: false } ensures every goToSection call fires dependent effects,
+// even when the section id doesn't change (e.g. same-section jumps).
+const [_activeSection, _setActiveSection] = createSignal<
+  { id: string | null } & GoToSectionOpts
+>({ id: null }, { equals: false });
+
 export const editorState = {
   fileId,
   metas,
-  activeSectionId,
+  activeSection: _activeSection,
+  activeSectionId: () => _activeSection().id, // convenience getter for consumers that only need the id
   saveStatus,
   filename,
   sectionCount,
@@ -77,20 +85,13 @@ let currentDocId: string | null = null;
 
 export const getCurrentDocId = () => currentDocId;
 
-// Persists cursor position per section within the session
+// Persists cursor position per section within the session (for back-navigation)
 const sectionSelections = new Map<string, { start: number; end: number }>();
 
 export const popSectionSelection = (id: string) => {
   const sel = sectionSelections.get(id);
   sectionSelections.delete(id);
   return sel ?? null;
-};
-
-export const setSectionSelection = (
-  id: string,
-  sel: { start: number; end: number },
-) => {
-  sectionSelections.set(id, sel);
 };
 
 // Used by FindReplacePage to jump to a specific position after navigation
@@ -181,7 +182,7 @@ export const loadFile = async (id: string) => {
   list = await normalizeAndMerge(list);
   setFileId(id);
   setMetas(list);
-  _setActiveSectionId(null);
+  _setActiveSection({ id: null });
   setSaveStatus("saved");
 
   await updateLastUsedAt(list);
@@ -219,12 +220,17 @@ const updateLastUsedAt = async (list: SectionMeta[]) => {
 export { registerActiveTextarea };
 
 /**
- * Save the current active section (reads from textarea ref) then switch to nextId.
+ * Save the current section then navigate to nextId.
+ * Pass selStart/selEnd to explicitly set cursor/selection after the switch.
+ * Special IDs starting with "__" (e.g. "__all__") skip section saving.
  */
-export const switchSection = async (nextId: string | null) => {
+export const goToSection = async (
+  nextId: string | null,
+  opts: GoToSectionOpts = {},
+) => {
   disposeDebounce();
 
-  const id = activeSectionId();
+  const id = _activeSection().id;
   if (id && !id.startsWith("__")) {
     const value = getActiveTextareaValue();
     if (activeTextareaRef && document.activeElement === activeTextareaRef) {
@@ -248,18 +254,18 @@ export const switchSection = async (nextId: string | null) => {
     }
   }
 
-  // nextId might have been merged away — fall back to the nearest surviving section
-  const list = metas();
-  if (
-    nextId &&
-    !nextId.startsWith("__") &&
-    !list.find((m) => m.id === nextId)
-  ) {
-    const fallback = list.find((m) => m.level >= 0) ?? list[0] ?? null;
-    _setActiveSectionId(fallback?.id ?? null);
-  } else {
-    _setActiveSectionId(nextId);
+  // Special IDs (like "__all__") pass through as-is
+  let resolvedId = nextId;
+  if (nextId && !nextId.startsWith("__")) {
+    // nextId might have been merged away — fall back to nearest surviving section
+    const list = metas();
+    if (!list.find((m) => m.id === nextId)) {
+      const fallback = list.find((m) => m.level >= 0) ?? list[0] ?? null;
+      resolvedId = fallback?.id ?? null;
+    }
   }
+
+  _setActiveSection({ id: resolvedId, ...opts });
 };
 
 // ── Section CRUD ──
@@ -339,7 +345,7 @@ export const deleteSection = async (id: string) => {
   await deleteMeta(id);
   await deleteContent(id);
   setMetas((prev) => prev.filter((m) => m.id !== id));
-  if (activeSectionId() === id) _setActiveSectionId(null);
+  if (_activeSection().id === id) _setActiveSection({ id: null });
 };
 
 export const deleteFile = async (id: string) => {

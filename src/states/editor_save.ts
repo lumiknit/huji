@@ -21,6 +21,7 @@ import {
   serializeFrontmatter,
 } from "../lib/md/frontmatter";
 import { FRAC_GAP } from "../lib/utils/fracindex";
+import { batch } from "solid-js";
 import {
   editorState,
   setMetas,
@@ -317,8 +318,10 @@ const debounce = createDebounce(async () => {
   setSaveStatus("saving");
   try {
     await saveSection(id, meta, value);
-    setSectionCount(countText(value));
-    setSaveStatus("saved");
+    batch(() => {
+      setSectionCount(countText(value));
+      setSaveStatus("saved");
+    });
   } catch {
     setSaveStatus("dirty");
   }
@@ -347,8 +350,10 @@ const doFlushSave = async (
   setSaveStatus("saving");
   try {
     const { error } = await saveSection(id, meta, value);
-    if (!error) setSectionCount(countText(value));
-    setSaveStatus(error ? "dirty" : "saved");
+    batch(() => {
+      if (!error) setSectionCount(countText(value));
+      setSaveStatus(error ? "dirty" : "saved");
+    });
     return error;
   } finally {
     savePromise = null;

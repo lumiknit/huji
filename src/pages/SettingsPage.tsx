@@ -132,9 +132,7 @@ const SettingsPage: Component = () => {
             max={900}
             step={10}
             value={editorFontWeight()}
-            onChange={(e) =>
-              setEditorFontWeight(Number(e.currentTarget.value))
-            }
+            onChange={(e) => setEditorFontWeight(Number(e.currentTarget.value))}
           />
         </label>
 

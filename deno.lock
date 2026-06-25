@@ -14,7 +14,7 @@
     "npm:idb@^8.0.3": "8.0.3",
     "npm:js-yaml@^4.2.0": "4.2.0",
     "npm:jsdom@^29.1.1": "29.1.1",
-    "npm:knip@^6.18.0": "6.18.0",
+    "npm:knip@^6.20.0": "6.20.0",
     "npm:marked@^18.0.5": "18.0.5",
     "npm:prettier@^3.8.4": "3.8.4",
     "npm:smol-toml@^1.7.0": "1.7.0",
@@ -1462,8 +1462,8 @@
         "json-buffer"
       ]
     },
-    "knip@6.18.0": {
-      "integrity": "sha512-RlT6fK3epETsEUCVdlz96CiJN3DQJwuxOuQhEeAVWjNRuAUJHWwe+XolTL8vIiwLPZ38tTdPWJUgZyTdskOEog==",
+    "knip@6.20.0": {
+      "integrity": "sha512-q+HYrS7FOERk32GM7g43IdTG7TurN7+YMLZrNpCxubZPYZyQwliBgd18yH4oYQL7YgGtOxP2fCqess3K2XaK2Q==",
       "dependencies": [
         "fdir",
         "formatly",
@@ -2228,7 +2228,7 @@
         "npm:idb@^8.0.3",
         "npm:js-yaml@^4.2.0",
         "npm:jsdom@^29.1.1",
-        "npm:knip@^6.18.0",
+        "npm:knip@^6.20.0",
         "npm:marked@^18.0.5",
         "npm:prettier@^3.8.4",
         "npm:smol-toml@^1.7.0",

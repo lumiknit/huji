@@ -33,8 +33,7 @@ import toast from "solid-toast";
 import {
   editorState,
   loadFile,
-  switchSection,
-  setActiveSectionId,
+  goToSection,
   loadSectionContent,
   loadAllContent,
   addSection,
@@ -42,7 +41,6 @@ import {
   disposeEditor,
   popSectionSelection,
   popPendingJump,
-  setSectionSelection,
   getCurrentDocId,
   importMarkdownText,
   setSectionCount,
@@ -276,14 +274,13 @@ const EditorPage: Component = () => {
     const list = editorState.metas();
     const jump = popPendingJump();
     if (jump) {
-      setSectionSelection(jump.sectionId, {
-        start: jump.start,
-        end: jump.end,
+      await goToSection(jump.sectionId, {
+        selStart: jump.start,
+        selEnd: jump.end,
       });
-      await switchSection(jump.sectionId);
     } else {
       const first = list.find((m) => m.level !== -1) ?? list[0];
-      if (first) await switchSection(first.id);
+      if (first) await goToSection(first.id);
     }
   });
 
@@ -323,26 +320,32 @@ const EditorPage: Component = () => {
   });
 
   createEffect(async () => {
-    const id = editorState.activeSectionId();
-    editorState.activeContentVersion(); // reactive dep: re-run when content is externally updated
+    const target = editorState.activeSection(); // { equals: false }: fires on every goToSection
+    editorState.activeContentVersion(); // also re-run on external content updates
+    const id = target.id;
     if (!id || id === ALL_ID) return;
     const content = await loadSectionContent(id);
     if (editorState.activeSectionId() !== id) return; // race condition guard
     if (textareaEl) {
       textareaEl.textContent = content;
       setSectionCount(countText(content));
-      const sel = popSectionSelection(id) || { start: 0, end: 0 };
+      // Explicit jump target takes priority; fall back to saved cursor for back-navigation
+      const popped = popSectionSelection(id);
+      const stored =
+        target.selStart !== undefined
+          ? { start: target.selStart, end: target.selEnd ?? target.selStart }
+          : (popped ?? { start: 0, end: 0 });
       const len = content.length;
       setTimeout(() => {
         if (!textareaEl) return;
-        textareaEl.focus();
+        textareaEl.focus({ preventScroll: true });
         setCaretOffset(
           textareaEl,
-          Math.min(sel.start, len),
-          Math.min(sel.end, len),
+          Math.min(stored.start, len),
+          Math.min(stored.end, len),
         );
         scrollToEditor();
-      }, 16);
+      }, 50);
     }
   });
 
@@ -353,10 +356,9 @@ const EditorPage: Component = () => {
       return;
     }
     if (id === ALL_ID) {
-      await switchSection(null);
-      setActiveSectionId(ALL_ID);
+      await goToSection(ALL_ID);
     } else {
-      await switchSection(id);
+      await goToSection(id);
     }
   };
 
@@ -373,8 +375,7 @@ const EditorPage: Component = () => {
         e.preventDefault();
         const prev = prevSection();
         if (prev) {
-          setSectionSelection(prev.id, { start: Infinity, end: Infinity });
-          switchSection(prev.id);
+          goToSection(prev.id, { selStart: Infinity, selEnd: Infinity });
         }
       }
     }
@@ -387,14 +388,23 @@ const EditorPage: Component = () => {
         e.preventDefault();
         const next = nextSection();
         if (next) {
-          setSectionSelection(next.id, { start: 0, end: 0 });
-          switchSection(next.id);
+          goToSection(next.id, { selStart: 0, selEnd: 0 });
         }
       }
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === "f") {
-      e.preventDefault();
-      openFind();
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case "f": {
+          e.preventDefault();
+          openFind();
+          return;
+        }
+        case "s": {
+          e.preventDefault();
+          handleSave();
+          return;
+        }
+      }
     }
   };
 
@@ -423,7 +433,7 @@ const EditorPage: Component = () => {
     try {
       const newId = await addSectionBefore(id);
       if (newId) {
-        await switchSection(newId);
+        await goToSection(newId);
         requestAnimationFrame(() => {
           if (!textareaEl) return;
           const val = textareaEl.textContent ?? "";
@@ -447,7 +457,7 @@ const EditorPage: Component = () => {
         id && !id.startsWith("__") ? id : undefined,
       );
       if (newId) {
-        await switchSection(newId);
+        await goToSection(newId);
         requestAnimationFrame(() => {
           if (!textareaEl) return;
           const val = textareaEl.textContent ?? "";
@@ -833,9 +843,7 @@ const EditorPage: Component = () => {
 
       <Show when={mode() === "single"}>
         <For each={contextRange().before}>
-          {(m) => (
-            <ContextSection meta={() => m} raw={contextRaw()} />
-          )}
+          {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
         </For>
 
         <div class="section-nav">
@@ -843,11 +851,10 @@ const EditorPage: Component = () => {
             {(prev) => (
               <button
                 onClick={() => {
-                  setSectionSelection(prev().id, {
-                    start: Infinity,
-                    end: Infinity,
+                  goToSection(prev().id, {
+                    selStart: Infinity,
+                    selEnd: Infinity,
                   });
-                  switchSection(prev().id);
                 }}
               >
                 <TbOutlineArrowUp /> Prev section
@@ -877,7 +884,6 @@ const EditorPage: Component = () => {
               if (isReadonly()) return;
               const id = editorState.activeSectionId();
               if (id) notifyEdit(id);
-              setFmError("");
               scheduleTypewriterScroll();
             }}
             onBlur={
@@ -907,11 +913,7 @@ const EditorPage: Component = () => {
             {(next) => (
               <button
                 onClick={() => {
-                  setSectionSelection(next().id, {
-                    start: 0,
-                    end: 0,
-                  });
-                  switchSection(next().id);
+                  goToSection(next().id, { selStart: 0, selEnd: 0 });
                 }}
               >
                 <TbOutlineArrowDown />
@@ -931,9 +933,7 @@ const EditorPage: Component = () => {
         </div>
 
         <For each={contextRange().after}>
-          {(m) => (
-            <ContextSection meta={() => m} raw={contextRaw()} />
-          )}
+          {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
         </For>
       </Show>
     </main>

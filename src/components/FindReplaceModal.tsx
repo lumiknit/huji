@@ -6,7 +6,7 @@ import {
   TbOutlineArrowRight,
 } from "solid-icons/tb";
 
-import { switchSection, setSectionSelection } from "../states/editor";
+import { goToSection } from "../states/editor";
 import {
   findQuery,
   findQueryRaw,
@@ -73,9 +73,11 @@ const FindReplaceModal: Component<Props> = (props) => {
     start: number;
     end: number;
   }) => {
-    setSectionSelection(m.sectionId, { start: m.start, end: m.end });
-    await switchSection(m.sectionId);
-    props.onClose();
+    // close() fires the native close event → onClose → setShowFind(false)
+    // Proper dialog close releases the modal focus trap before we focus the editor
+    dialogEl.close();
+    await new Promise<void>((r) => setTimeout(r, 50));
+    await goToSection(m.sectionId, { selStart: m.start, selEnd: m.end });
   };
 
   return (

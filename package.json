@@ -1,7 +1,7 @@
 {
   "name": "huji",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "author": "lumiknit <aasr4r4@gmail.com>",
   "license": "MPL-2.0",
@@ -37,7 +37,7 @@
     "eslint": "^10.5.0",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
-    "knip": "^6.18.0",
+    "knip": "^6.20.0",
     "prettier": "^3.8.4",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.62.0",

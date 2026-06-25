@@ -79,7 +79,6 @@ export const [maxWidth, setMaxWidth_] = persisted("maxWidth", 720);
 export const setMaxWidth = (v: number) =>
   setMaxWidth_(Math.min(1920, Math.max(640, v)));
 
-
 /** Call once at app root — syncs all settings to CSS vars reactively. */
 export const useSettingsInit = () => {
   createEffect(() => {
