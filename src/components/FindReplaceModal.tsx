@@ -4,9 +4,11 @@ import {
   TbOutlineReplace,
   TbOutlineX,
   TbOutlineArrowRight,
+  TbOutlineNote,
 } from "solid-icons/tb";
 
 import { goToSection } from "../states/editor";
+import { openSticker } from "../states/sticker";
 import {
   findQuery,
   findQueryRaw,
@@ -200,6 +202,12 @@ const FindReplaceModal: Component<Props> = (props) => {
                                 onClick={() => goToMatch(match)}
                               >
                                 <TbOutlineArrowRight /> Jump
+                              </button>
+                              <button
+                                title="Open section in Sticker"
+                                onClick={() => openSticker(match.sectionId)}
+                              >
+                                <TbOutlineNote /> Sticker
                               </button>
                               <button
                                 title="Replace this match"

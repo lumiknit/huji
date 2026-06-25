@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, createMemo } from "solid-js";
 import type { SectionMeta } from "../lib/db/schema";
 import {
   getFileMetas,
@@ -17,7 +17,7 @@ import {
   putContents,
 } from "../lib/db/content";
 import { genId, genUniqueId } from "../lib/utils/id";
-import { splitSections } from "../lib/md/section";
+import { splitSections, buildSectionLabel } from "../lib/md/section";
 import {
   extractFrontmatter,
   parseDocument,
@@ -66,6 +66,15 @@ const [_activeSection, _setActiveSection] = createSignal<
   { id: string | null } & GoToSectionOpts
 >({ id: null }, { equals: false });
 
+const sectionLabels = createMemo(() => {
+  const list = metas();
+  const map = new Map<string, string>();
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].level >= 0) map.set(list[i].id, buildSectionLabel(list, i));
+  }
+  return map;
+});
+
 export const editorState = {
   fileId,
   metas,
@@ -75,6 +84,7 @@ export const editorState = {
   filename,
   sectionCount,
   activeContentVersion,
+  sectionLabels,
 };
 
 // ── Session state ──

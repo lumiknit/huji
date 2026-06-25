@@ -23,6 +23,7 @@ import {
   TbOutlinePaperclip,
   TbOutlineShare,
   TbOutlineCursorText,
+  TbOutlineNote,
   TbOutlineCloudUpload,
   TbOutlineCopy,
   TbOutlineArrowUp,
@@ -64,7 +65,6 @@ import {
   setShowWords,
   typewriterMode,
 } from "../states/settings";
-import { buildSectionLabel } from "../lib/md/section";
 import {
   extractFrontmatter,
   serializeFrontmatter,
@@ -78,7 +78,9 @@ import MarkdownView from "../components/MarkdownView";
 import FileDrop from "../components/FileDrop";
 import Toolbar from "../components/Toolbar";
 import FindReplaceModal from "../components/FindReplaceModal";
+import Sticker from "../components/Sticker";
 import { resetFindState, loadFindContents } from "../states/find";
+import { stickerOpen, toggleSticker } from "../states/sticker";
 import type { SectionMeta } from "../lib/db/schema";
 
 const ALL_ID = "__all__";
@@ -209,15 +211,7 @@ const EditorPage: Component = () => {
     editorState.metas().filter((m) => m.level >= 0),
   );
 
-  // Pre-compute labels once per metas change, keyed by section id
-  const sectionLabels = createMemo(() => {
-    const list = editorState.metas();
-    const map = new Map<string, string>();
-    list.forEach((_, i) => {
-      if (list[i].level >= 0) map.set(list[i].id, buildSectionLabel(list, i));
-    });
-    return map;
-  });
+  const sectionLabels = editorState.sectionLabels;
 
   const activeIdx = createMemo(() => {
     const id = editorState.activeSectionId();
@@ -663,6 +657,9 @@ const EditorPage: Component = () => {
           onClose={() => setShowFind(false)}
         />
       </Show>
+      <Show when={stickerOpen()}>
+        <Sticker />
+      </Show>
       <FileDrop onDrop={handleFileDrop} label="Insert as raw text" />
       <Toolbar title={`Edit — ${editorState.filename()}`}>
         <A href="/" title="File list">
@@ -724,6 +721,10 @@ const EditorPage: Component = () => {
             <hr />
             <button onClick={openFind}>
               <TbOutlineSearch /> Find / Replace
+            </button>
+            <button onClick={toggleSticker}>
+              <TbOutlineNote />{" "}
+              {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
             </button>
             <Show when={isFrontmatter()}>
               <hr />
