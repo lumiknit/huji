@@ -139,7 +139,9 @@ const SettingsPage: Component = () => {
           Light theme
           <select
             value={themeLight()}
-            onChange={(e) => setThemeLight(e.currentTarget.value as ThemeVariant)}
+            onChange={(e) =>
+              setThemeLight(e.currentTarget.value as ThemeVariant)
+            }
           >
             <For each={THEME_VARIANTS}>
               {(t) => <option value={t.value}>{t.label}</option>}
@@ -152,13 +154,25 @@ const SettingsPage: Component = () => {
               <div
                 style={{
                   cursor: "pointer",
-                  outline: themeLight() === t.value ? "2px solid var(--c-primary)" : "none",
+                  outline:
+                    themeLight() === t.value
+                      ? "2px solid var(--c-primary)"
+                      : "none",
                   "outline-offset": "2px",
                   "border-radius": "var(--radius)",
                 }}
                 onClick={() => setThemeLight(t.value)}
               >
-                <div style={{ "font-size": "10px", "text-align": "center", "margin-bottom": "2px", color: "var(--c-muted)" }}>{t.label}</div>
+                <div
+                  style={{
+                    "font-size": "10px",
+                    "text-align": "center",
+                    "margin-bottom": "2px",
+                    color: "var(--c-muted)",
+                  }}
+                >
+                  {t.label}
+                </div>
                 <ThemePreview mode="light" variant={t.value} />
               </div>
             )}
@@ -169,7 +183,9 @@ const SettingsPage: Component = () => {
           Dark theme
           <select
             value={themeDark()}
-            onChange={(e) => setThemeDark(e.currentTarget.value as ThemeVariant)}
+            onChange={(e) =>
+              setThemeDark(e.currentTarget.value as ThemeVariant)
+            }
           >
             <For each={THEME_VARIANTS}>
               {(t) => <option value={t.value}>{t.label}</option>}
@@ -182,13 +198,25 @@ const SettingsPage: Component = () => {
               <div
                 style={{
                   cursor: "pointer",
-                  outline: themeDark() === t.value ? "2px solid var(--c-primary)" : "none",
+                  outline:
+                    themeDark() === t.value
+                      ? "2px solid var(--c-primary)"
+                      : "none",
                   "outline-offset": "2px",
                   "border-radius": "var(--radius)",
                 }}
                 onClick={() => setThemeDark(t.value)}
               >
-                <div style={{ "font-size": "10px", "text-align": "center", "margin-bottom": "2px", color: "var(--c-muted)" }}>{t.label}</div>
+                <div
+                  style={{
+                    "font-size": "10px",
+                    "text-align": "center",
+                    "margin-bottom": "2px",
+                    color: "var(--c-muted)",
+                  }}
+                >
+                  {t.label}
+                </div>
                 <ThemePreview mode="dark" variant={t.value} />
               </div>
             )}

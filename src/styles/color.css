@@ -5,76 +5,76 @@
 
 :root {
   /* light · default */
-  --thm-light-default-bg:         #ffffff;
-  --thm-light-default-fg:         #000000;
-  --thm-light-default-bg-subtle:  #f5f5f5;
-  --thm-light-default-border:     #cccccc;
-  --thm-light-default-primary:    #0066cc;
+  --thm-light-default-bg: #ffffff;
+  --thm-light-default-fg: #000000;
+  --thm-light-default-bg-subtle: #f5f5f5;
+  --thm-light-default-border: #cccccc;
+  --thm-light-default-primary: #0066cc;
   --thm-light-default-primary-fg: #ffffff;
-  --thm-light-default-muted:      #666666;
-  --thm-light-default-overlay:    rgba(0, 0, 0, 0.04);
-  --thm-light-default-badge-l:    82%;
-  --thm-light-default-badge-fg:   #111111;
+  --thm-light-default-muted: #666666;
+  --thm-light-default-overlay: rgba(0, 0, 0, 0.04);
+  --thm-light-default-badge-l: 82%;
+  --thm-light-default-badge-fg: #111111;
 
   /* light · warm */
-  --thm-light-warm-bg:         #fdf6e3;
-  --thm-light-warm-fg:         #5a5040;
-  --thm-light-warm-bg-subtle:  #f0ead8;
-  --thm-light-warm-border:     #d8cebc;
-  --thm-light-warm-primary:    #b07830;
+  --thm-light-warm-bg: #fdf6e3;
+  --thm-light-warm-fg: #5a5040;
+  --thm-light-warm-bg-subtle: #f0ead8;
+  --thm-light-warm-border: #d8cebc;
+  --thm-light-warm-primary: #b07830;
   --thm-light-warm-primary-fg: #ffffff;
-  --thm-light-warm-muted:      #9a8e80;
-  --thm-light-warm-overlay:    rgba(90, 80, 64, 0.04);
-  --thm-light-warm-badge-l:    78%;
-  --thm-light-warm-badge-fg:   #3a2a10;
+  --thm-light-warm-muted: #9a8e80;
+  --thm-light-warm-overlay: rgba(90, 80, 64, 0.04);
+  --thm-light-warm-badge-l: 78%;
+  --thm-light-warm-badge-fg: #3a2a10;
 
   /* light · cool */
-  --thm-light-cool-bg:         #eef4fb;
-  --thm-light-cool-fg:         #4a6278;
-  --thm-light-cool-bg-subtle:  #dfe7ef;
-  --thm-light-cool-border:     #c0d0e0;
-  --thm-light-cool-primary:    #3a7abf;
+  --thm-light-cool-bg: #eef4fb;
+  --thm-light-cool-fg: #4a6278;
+  --thm-light-cool-bg-subtle: #dfe7ef;
+  --thm-light-cool-border: #c0d0e0;
+  --thm-light-cool-primary: #3a7abf;
   --thm-light-cool-primary-fg: #ffffff;
-  --thm-light-cool-muted:      #7a98b0;
-  --thm-light-cool-overlay:    rgba(74, 98, 120, 0.04);
-  --thm-light-cool-badge-l:    80%;
-  --thm-light-cool-badge-fg:   #1e3a50;
+  --thm-light-cool-muted: #7a98b0;
+  --thm-light-cool-overlay: rgba(74, 98, 120, 0.04);
+  --thm-light-cool-badge-l: 80%;
+  --thm-light-cool-badge-fg: #1e3a50;
 
   /* dark · default */
-  --thm-dark-default-bg:         #000000;
-  --thm-dark-default-fg:         #ffffff;
-  --thm-dark-default-bg-subtle:  #111111;
-  --thm-dark-default-border:     #333333;
-  --thm-dark-default-primary:    #4da6ff;
+  --thm-dark-default-bg: #000000;
+  --thm-dark-default-fg: #ffffff;
+  --thm-dark-default-bg-subtle: #111111;
+  --thm-dark-default-border: #333333;
+  --thm-dark-default-primary: #4da6ff;
   --thm-dark-default-primary-fg: #000000;
-  --thm-dark-default-muted:      #999999;
-  --thm-dark-default-overlay:    rgba(255, 255, 255, 0.04);
-  --thm-dark-default-badge-l:    35%;
-  --thm-dark-default-badge-fg:   #eeeeee;
+  --thm-dark-default-muted: #999999;
+  --thm-dark-default-overlay: rgba(255, 255, 255, 0.04);
+  --thm-dark-default-badge-l: 35%;
+  --thm-dark-default-badge-fg: #eeeeee;
 
   /* dark · warm */
-  --thm-dark-warm-bg:         #1a1410;
-  --thm-dark-warm-fg:         #c8b89a;
-  --thm-dark-warm-bg-subtle:  #261e1a;
-  --thm-dark-warm-border:     #3a2e28;
-  --thm-dark-warm-primary:    #d4955a;
+  --thm-dark-warm-bg: #1a1410;
+  --thm-dark-warm-fg: #c8b89a;
+  --thm-dark-warm-bg-subtle: #261e1a;
+  --thm-dark-warm-border: #3a2e28;
+  --thm-dark-warm-primary: #d4955a;
   --thm-dark-warm-primary-fg: #1a0e08;
-  --thm-dark-warm-muted:      #7d6e60;
-  --thm-dark-warm-overlay:    rgba(200, 184, 154, 0.04);
-  --thm-dark-warm-badge-l:    30%;
-  --thm-dark-warm-badge-fg:   #d5c5a8;
+  --thm-dark-warm-muted: #7d6e60;
+  --thm-dark-warm-overlay: rgba(200, 184, 154, 0.04);
+  --thm-dark-warm-badge-l: 30%;
+  --thm-dark-warm-badge-fg: #d5c5a8;
 
   /* dark · cool */
-  --thm-dark-cool-bg:         #1e2a3a;
-  --thm-dark-cool-fg:         #b8c9d9;
-  --thm-dark-cool-bg-subtle:  #243242;
-  --thm-dark-cool-border:     #2d3f52;
-  --thm-dark-cool-primary:    #5b9fd4;
+  --thm-dark-cool-bg: #1e2a3a;
+  --thm-dark-cool-fg: #b8c9d9;
+  --thm-dark-cool-bg-subtle: #243242;
+  --thm-dark-cool-border: #2d3f52;
+  --thm-dark-cool-primary: #5b9fd4;
   --thm-dark-cool-primary-fg: #0a1a28;
-  --thm-dark-cool-muted:      #6a8090;
-  --thm-dark-cool-overlay:    rgba(184, 201, 217, 0.04);
-  --thm-dark-cool-badge-l:    30%;
-  --thm-dark-cool-badge-fg:   #dce8f0;
+  --thm-dark-cool-muted: #6a8090;
+  --thm-dark-cool-overlay: rgba(184, 201, 217, 0.04);
+  --thm-dark-cool-badge-l: 30%;
+  --thm-dark-cool-badge-fg: #dce8f0;
 }
 
 /* ── Semantic variable mapping ───────────────────────────
@@ -85,101 +85,101 @@
 /* Fallback: light OS, no class */
 :root {
   color-scheme: light dark;
-  --c-bg:         var(--thm-light-default-bg);
-  --c-fg:         var(--thm-light-default-fg);
-  --c-bg-subtle:  var(--thm-light-default-bg-subtle);
-  --c-border:     var(--thm-light-default-border);
-  --c-primary:    var(--thm-light-default-primary);
+  --c-bg: var(--thm-light-default-bg);
+  --c-fg: var(--thm-light-default-fg);
+  --c-bg-subtle: var(--thm-light-default-bg-subtle);
+  --c-border: var(--thm-light-default-border);
+  --c-primary: var(--thm-light-default-primary);
   --c-primary-fg: var(--thm-light-default-primary-fg);
-  --c-muted:      var(--thm-light-default-muted);
-  --c-overlay:    var(--thm-light-default-overlay);
-  --badge-l:      var(--thm-light-default-badge-l);
-  --badge-fg:     var(--thm-light-default-badge-fg);
-  --c-success:    #228b22;
+  --c-muted: var(--thm-light-default-muted);
+  --c-overlay: var(--thm-light-default-overlay);
+  --badge-l: var(--thm-light-default-badge-l);
+  --badge-fg: var(--thm-light-default-badge-fg);
+  --c-success: #228b22;
   --c-success-fg: #ffffff;
-  --c-danger:     #cc0000;
-  --c-danger-fg:  #ffffff;
+  --c-danger: #cc0000;
+  --c-danger-fg: #ffffff;
 }
 
 /* ── Light theme classes ── */
 :root.theme-light-default {
-  --c-bg:         var(--thm-light-default-bg);
-  --c-fg:         var(--thm-light-default-fg);
-  --c-bg-subtle:  var(--thm-light-default-bg-subtle);
-  --c-border:     var(--thm-light-default-border);
-  --c-primary:    var(--thm-light-default-primary);
+  --c-bg: var(--thm-light-default-bg);
+  --c-fg: var(--thm-light-default-fg);
+  --c-bg-subtle: var(--thm-light-default-bg-subtle);
+  --c-border: var(--thm-light-default-border);
+  --c-primary: var(--thm-light-default-primary);
   --c-primary-fg: var(--thm-light-default-primary-fg);
-  --c-muted:      var(--thm-light-default-muted);
-  --c-overlay:    var(--thm-light-default-overlay);
-  --badge-l:      var(--thm-light-default-badge-l);
-  --badge-fg:     var(--thm-light-default-badge-fg);
+  --c-muted: var(--thm-light-default-muted);
+  --c-overlay: var(--thm-light-default-overlay);
+  --badge-l: var(--thm-light-default-badge-l);
+  --badge-fg: var(--thm-light-default-badge-fg);
 }
 :root.theme-light-warm {
-  --c-bg:         var(--thm-light-warm-bg);
-  --c-fg:         var(--thm-light-warm-fg);
-  --c-bg-subtle:  var(--thm-light-warm-bg-subtle);
-  --c-border:     var(--thm-light-warm-border);
-  --c-primary:    var(--thm-light-warm-primary);
+  --c-bg: var(--thm-light-warm-bg);
+  --c-fg: var(--thm-light-warm-fg);
+  --c-bg-subtle: var(--thm-light-warm-bg-subtle);
+  --c-border: var(--thm-light-warm-border);
+  --c-primary: var(--thm-light-warm-primary);
   --c-primary-fg: var(--thm-light-warm-primary-fg);
-  --c-muted:      var(--thm-light-warm-muted);
-  --c-overlay:    var(--thm-light-warm-overlay);
-  --badge-l:      var(--thm-light-warm-badge-l);
-  --badge-fg:     var(--thm-light-warm-badge-fg);
+  --c-muted: var(--thm-light-warm-muted);
+  --c-overlay: var(--thm-light-warm-overlay);
+  --badge-l: var(--thm-light-warm-badge-l);
+  --badge-fg: var(--thm-light-warm-badge-fg);
 }
 :root.theme-light-cool {
-  --c-bg:         var(--thm-light-cool-bg);
-  --c-fg:         var(--thm-light-cool-fg);
-  --c-bg-subtle:  var(--thm-light-cool-bg-subtle);
-  --c-border:     var(--thm-light-cool-border);
-  --c-primary:    var(--thm-light-cool-primary);
+  --c-bg: var(--thm-light-cool-bg);
+  --c-fg: var(--thm-light-cool-fg);
+  --c-bg-subtle: var(--thm-light-cool-bg-subtle);
+  --c-border: var(--thm-light-cool-border);
+  --c-primary: var(--thm-light-cool-primary);
   --c-primary-fg: var(--thm-light-cool-primary-fg);
-  --c-muted:      var(--thm-light-cool-muted);
-  --c-overlay:    var(--thm-light-cool-overlay);
-  --badge-l:      var(--thm-light-cool-badge-l);
-  --badge-fg:     var(--thm-light-cool-badge-fg);
+  --c-muted: var(--thm-light-cool-muted);
+  --c-overlay: var(--thm-light-cool-overlay);
+  --badge-l: var(--thm-light-cool-badge-l);
+  --badge-fg: var(--thm-light-cool-badge-fg);
 }
 
 /* ── Dark theme classes (active only under dark color scheme) ── */
 @media (prefers-color-scheme: dark) {
   :root,
   :root.theme-dark-default {
-    --c-bg:         var(--thm-dark-default-bg);
-    --c-fg:         var(--thm-dark-default-fg);
-    --c-bg-subtle:  var(--thm-dark-default-bg-subtle);
-    --c-border:     var(--thm-dark-default-border);
-    --c-primary:    var(--thm-dark-default-primary);
+    --c-bg: var(--thm-dark-default-bg);
+    --c-fg: var(--thm-dark-default-fg);
+    --c-bg-subtle: var(--thm-dark-default-bg-subtle);
+    --c-border: var(--thm-dark-default-border);
+    --c-primary: var(--thm-dark-default-primary);
     --c-primary-fg: var(--thm-dark-default-primary-fg);
-    --c-muted:      var(--thm-dark-default-muted);
-    --c-overlay:    var(--thm-dark-default-overlay);
-    --badge-l:      var(--thm-dark-default-badge-l);
-    --badge-fg:     var(--thm-dark-default-badge-fg);
-    --c-success:    #5adb5a;
+    --c-muted: var(--thm-dark-default-muted);
+    --c-overlay: var(--thm-dark-default-overlay);
+    --badge-l: var(--thm-dark-default-badge-l);
+    --badge-fg: var(--thm-dark-default-badge-fg);
+    --c-success: #5adb5a;
     --c-success-fg: #000000;
-    --c-danger:     #ff6666;
-    --c-danger-fg:  #000000;
+    --c-danger: #ff6666;
+    --c-danger-fg: #000000;
   }
   :root.theme-dark-warm {
-    --c-bg:         var(--thm-dark-warm-bg);
-    --c-fg:         var(--thm-dark-warm-fg);
-    --c-bg-subtle:  var(--thm-dark-warm-bg-subtle);
-    --c-border:     var(--thm-dark-warm-border);
-    --c-primary:    var(--thm-dark-warm-primary);
+    --c-bg: var(--thm-dark-warm-bg);
+    --c-fg: var(--thm-dark-warm-fg);
+    --c-bg-subtle: var(--thm-dark-warm-bg-subtle);
+    --c-border: var(--thm-dark-warm-border);
+    --c-primary: var(--thm-dark-warm-primary);
     --c-primary-fg: var(--thm-dark-warm-primary-fg);
-    --c-muted:      var(--thm-dark-warm-muted);
-    --c-overlay:    var(--thm-dark-warm-overlay);
-    --badge-l:      var(--thm-dark-warm-badge-l);
-    --badge-fg:     var(--thm-dark-warm-badge-fg);
+    --c-muted: var(--thm-dark-warm-muted);
+    --c-overlay: var(--thm-dark-warm-overlay);
+    --badge-l: var(--thm-dark-warm-badge-l);
+    --badge-fg: var(--thm-dark-warm-badge-fg);
   }
   :root.theme-dark-cool {
-    --c-bg:         var(--thm-dark-cool-bg);
-    --c-fg:         var(--thm-dark-cool-fg);
-    --c-bg-subtle:  var(--thm-dark-cool-bg-subtle);
-    --c-border:     var(--thm-dark-cool-border);
-    --c-primary:    var(--thm-dark-cool-primary);
+    --c-bg: var(--thm-dark-cool-bg);
+    --c-fg: var(--thm-dark-cool-fg);
+    --c-bg-subtle: var(--thm-dark-cool-bg-subtle);
+    --c-border: var(--thm-dark-cool-border);
+    --c-primary: var(--thm-dark-cool-primary);
     --c-primary-fg: var(--thm-dark-cool-primary-fg);
-    --c-muted:      var(--thm-dark-cool-muted);
-    --c-overlay:    var(--thm-dark-cool-overlay);
-    --badge-l:      var(--thm-dark-cool-badge-l);
-    --badge-fg:     var(--thm-dark-cool-badge-fg);
+    --c-muted: var(--thm-dark-cool-muted);
+    --c-overlay: var(--thm-dark-cool-overlay);
+    --badge-l: var(--thm-dark-cool-badge-l);
+    --badge-fg: var(--thm-dark-cool-badge-fg);
   }
 }
