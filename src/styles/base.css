@@ -642,7 +642,17 @@ article.md-body {
   color: var(--c-fg);
 }
 
-/* ── 에디터 컨텍스트 섹션 ── */
+/* ── Editor context section ── */
+.section-preview-container {
+  min-height: 50svh;
+}
+
+.section-preview-container-before {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
 .section-preview {
   padding-block: var(--sp-md);
   opacity: 0.6;

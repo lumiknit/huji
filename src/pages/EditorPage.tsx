@@ -842,9 +842,11 @@ const EditorPage: Component = () => {
       </Show>
 
       <Show when={mode() === "single"}>
-        <For each={contextRange().before}>
-          {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
-        </For>
+        <div class="section-preview-container section-preview-container-before">
+          <For each={contextRange().before}>
+            {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
+          </For>
+        </div>
 
         <div class="section-nav">
           <Show when={prevSection()}>
@@ -932,9 +934,11 @@ const EditorPage: Component = () => {
           </Show>
         </div>
 
-        <For each={contextRange().after}>
-          {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
-        </For>
+        <div class="section-preview-container section-preview-container-after">
+          <For each={contextRange().after}>
+            {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
+          </For>
+        </div>
       </Show>
     </main>
   );
