@@ -6,6 +6,7 @@ import {
   TbOutlineRefresh,
 } from "solid-icons/tb";
 import toast from "solid-toast";
+import { aconfirm } from "../components/CommonDialog";
 import Toolbar from "../components/Toolbar";
 import { editorState } from "../states/editor";
 
@@ -121,7 +122,7 @@ const ReorderPage: Component = () => {
       ]
         .filter(Boolean)
         .join("\n");
-      if (!confirm(`${msg}\n\nProceed?`)) return;
+      if (!(await aconfirm(`${msg}\n\nProceed?`))) return;
     }
 
     const result = parseReorderText(text());

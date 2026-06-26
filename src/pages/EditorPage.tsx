@@ -128,7 +128,7 @@ const ContextSection: Component<ContextSectionProps> = (props) => {
         when={!props.raw && props.meta().level !== -1}
         fallback={<pre class="pre-wrap">{content() ?? ""}</pre>}
       >
-        <MarkdownView sectionId={props.meta().id} content={content() ?? ""} />
+        <MarkdownView content={content() ?? ""} />
       </Show>
     </div>
   );
@@ -201,7 +201,7 @@ const EditorPage: Component = () => {
   };
 
   const activeMeta = createMemo(() =>
-    editorState.metas().find((m) => m.id === editorState.activeSectionId()),
+    editorState.metasMap().get(editorState.activeSectionId() ?? ""),
   );
   const isFrontmatter = createMemo(() => activeMeta()?.level === -1);
 
@@ -556,20 +556,22 @@ const EditorPage: Component = () => {
   const [showScrollPct, setShowScrollPct] = createSignal(false);
   let scrollHideTimer: ReturnType<typeof setTimeout> | undefined;
 
+  let scrollRafId: number | null = null;
   const handleScroll = () => {
-    if (!textareaEl || mode() !== "single") return;
-    const r = textareaEl.getBoundingClientRect();
-    const centerY = window.scrollY + window.innerHeight / 2;
-    const pct = Math.round(
-      Math.min(
-        100,
-        Math.max(0, ((centerY - (window.scrollY + r.top)) / r.height) * 100),
-      ),
-    );
-    setScrollPct(pct);
-    setShowScrollPct(true);
-    clearTimeout(scrollHideTimer);
-    scrollHideTimer = setTimeout(() => setShowScrollPct(false), 1000);
+    if (scrollRafId !== null) return;
+    scrollRafId = requestAnimationFrame(() => {
+      scrollRafId = null;
+      if (!textareaEl || mode() !== "single") return;
+      const r = textareaEl.getBoundingClientRect();
+      const centerY = window.innerHeight / 2;
+      const pct = Math.round(
+        Math.min(100, Math.max(0, ((centerY - r.top) / r.height) * 100)),
+      );
+      setScrollPct(pct);
+      setShowScrollPct(true);
+      clearTimeout(scrollHideTimer);
+      scrollHideTimer = setTimeout(() => setShowScrollPct(false), 1000);
+    });
   };
 
   onMount(() =>
@@ -577,6 +579,7 @@ const EditorPage: Component = () => {
   );
   onCleanup(() => {
     window.removeEventListener("scroll", handleScroll);
+    if (scrollRafId !== null) cancelAnimationFrame(scrollRafId);
     clearTimeout(scrollHideTimer);
   });
 

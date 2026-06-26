@@ -21,6 +21,7 @@ import {
   TbOutlineGitFork,
 } from "solid-icons/tb";
 import toast from "solid-toast";
+import { aconfirm } from "./CommonDialog";
 
 import { serializeFrontmatter, parseDocument } from "../lib/md/frontmatter";
 import { genId } from "../lib/utils/id";
@@ -261,7 +262,7 @@ const FileList: Component<FileListProps> = (props) => {
   };
 
   const handleDelete = async (fileId: string) => {
-    if (!confirm("Delete this file?")) return;
+    if (!(await aconfirm("Delete this file?"))) return;
     await deleteLocalFile(fileId);
     props.onRefetch();
     toast.success("Deleted");

@@ -2,7 +2,6 @@ import { type Component, createMemo } from "solid-js";
 import { renderMarkdown } from "../lib/md/render";
 
 type Props = {
-  sectionId: string;
   content: string;
 };
 

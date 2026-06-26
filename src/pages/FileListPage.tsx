@@ -32,6 +32,7 @@ import { genId } from "../lib/utils/id";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { ensureRenderRules } from "../lib/db/defaults";
 import FileDrop from "../components/FileDrop";
+import { aprompt } from "../components/CommonDialog";
 import FileList from "../components/FileList";
 import DeletePreview from "../components/DeletePreview";
 import { type FileSummary } from "../components/file_list";
@@ -167,8 +168,6 @@ const FileListPage: Component = () => {
     createSignal<SyncProviderName>(providers[0]?.name ?? "dropbox");
 
   let fileInputEl!: HTMLInputElement;
-  let newDialogEl!: HTMLDialogElement;
-  let newTitleEl!: HTMLInputElement;
 
   onMount(async () => {
     const params = new URLSearchParams(location.search);
@@ -199,16 +198,10 @@ const FileListPage: Component = () => {
     }
   });
 
-  const handleNew = () => {
-    newTitleEl.value = "";
-    newDialogEl.showModal();
-    newTitleEl.focus();
-  };
-
-  const handleNewSubmit = async (e: SubmitEvent) => {
-    e.preventDefault();
-    if ((e.submitter as HTMLButtonElement)?.value !== "ok") return;
-    const fileId = await createNewFile(newTitleEl.value.trim());
+  const handleNew = async () => {
+    const title = await aprompt("New file title");
+    if (title === null) return;
+    const fileId = await createNewFile(title.trim());
     navigate(`/edit/${fileId}`);
   };
 
@@ -321,20 +314,6 @@ const FileListPage: Component = () => {
 
   return (
     <main>
-      <dialog ref={newDialogEl}>
-        <form method="dialog" onSubmit={handleNewSubmit}>
-          <h2>New file</h2>
-          <input ref={newTitleEl} type="text" placeholder="Title" autofocus />
-          <div class="dialog-actions">
-            <button type="submit" value="cancel">
-              Cancel
-            </button>
-            <button type="submit" value="ok" class="primary">
-              OK
-            </button>
-          </div>
-        </form>
-      </dialog>
       <FileDrop onDrop={handleDrop} label="Import file" />
       <Toolbar title="Files">
         <strong class="brand">huji</strong>

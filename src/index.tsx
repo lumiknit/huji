@@ -2,6 +2,7 @@
 import { render } from "solid-js/web";
 import { Route, HashRouter } from "@solidjs/router";
 import { Toaster } from "solid-toast";
+import CommonDialog from "./components/CommonDialog";
 import { type Component, type JSX } from "solid-js";
 import { useSettingsInit } from "./states/settings";
 
@@ -20,6 +21,7 @@ const Layout: Component<LayoutProps> = (props) => {
   return (
     <>
       <Toaster position="bottom-center" toastOptions={{ duration: 3000 }} />
+      <CommonDialog />
       {props.children}
     </>
   );

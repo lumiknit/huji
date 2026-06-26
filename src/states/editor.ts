@@ -17,7 +17,7 @@ import {
   putContents,
 } from "../lib/db/content";
 import { genId, genUniqueId } from "../lib/utils/id";
-import { splitSections, buildSectionLabel } from "../lib/md/section";
+import { splitSections } from "../lib/md/section";
 import {
   extractFrontmatter,
   parseDocument,
@@ -66,11 +66,27 @@ const [_activeSection, _setActiveSection] = createSignal<
   { id: string | null } & GoToSectionOpts
 >({ id: null }, { equals: false });
 
+const metasMap = createMemo(() => {
+  const map = new Map<string, SectionMeta>();
+  for (const m of metas()) map.set(m.id, m);
+  return map;
+});
+
 const sectionLabels = createMemo(() => {
   const list = metas();
   const map = new Map<string, string>();
-  for (let i = 0; i < list.length; i++) {
-    if (list[i].level >= 0) map.set(list[i].id, buildSectionLabel(list, i));
+  const counters = [0, 0, 0, 0, 0, 0, 0];
+  for (const m of list) {
+    if (m.level < 0) continue;
+    if (m.level === 0) {
+      map.set(m.id, "(no-heading)");
+      continue;
+    }
+    counters[m.level]++;
+    for (let l = m.level + 1; l <= 6; l++) counters[l] = 0;
+    const parts: number[] = [];
+    for (let l = 1; l <= m.level; l++) parts.push(counters[l]);
+    map.set(m.id, parts.join("-") + ". " + m.heading);
   }
   return map;
 });
@@ -78,6 +94,7 @@ const sectionLabels = createMemo(() => {
 export const editorState = {
   fileId,
   metas,
+  metasMap,
   activeSection: _activeSection,
   activeSectionId: () => _activeSection().id, // convenience getter for consumers that only need the id
   saveStatus,

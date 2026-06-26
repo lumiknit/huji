@@ -55,10 +55,13 @@ import {
   exportHujiSettings,
   importHujiSettings,
 } from "../lib/db/settings-storage";
+import { aconfirm } from "../components/CommonDialog";
 
 const handleResetAll = async () => {
   if (
-    !confirm("Delete ALL data (documents + settings)? This cannot be undone.")
+    !(await aconfirm(
+      "Delete ALL data (documents + settings)? This cannot be undone.",
+    ))
   )
     return;
   await clearHujiSettings();
