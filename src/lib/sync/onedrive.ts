@@ -156,8 +156,7 @@ export async function list(
   const files = parsed.data.value
     .map((e) => driveItemSchema.safeParse(e))
     .filter(
-      (r) =>
-        r.success && r.data.file !== undefined && isMDFile(r.data.name),
+      (r) => r.success && r.data.file !== undefined && isMDFile(r.data.name),
     )
     .map((r) => {
       const d = (r as { success: true; data: z.infer<typeof driveItemSchema> })
