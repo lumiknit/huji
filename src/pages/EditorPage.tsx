@@ -61,6 +61,7 @@ import {
   contextSections,
   contextRaw,
   defaultRemoteProvider,
+  saveFormat,
   showWords,
   setShowWords,
   typewriterMode,
@@ -69,7 +70,7 @@ import {
   extractFrontmatter,
   serializeFrontmatter,
 } from "../lib/md/frontmatter";
-import { loadRawMarkdown, downloadBlob } from "../lib/export";
+import { loadRawMarkdown, downloadBlob, packMDBlob } from "../lib/export";
 import { sanitizeFilename, packBackupName } from "../lib/path";
 import { getProvider } from "../lib/sync/provider";
 import type { SyncProviderName } from "../lib/sync/interface";
@@ -487,7 +488,9 @@ const EditorPage: Component = () => {
     try {
       const { md, filename } = await loadRawMarkdown(params.fileId);
       const base = sanitizeFilename(filename.replace(/\.[^.]+$/, ""));
-      downloadBlob(md, "text/markdown", `${base}.md`);
+      const fmt = saveFormat();
+      const blob = await packMDBlob(md, { gzip: fmt === "md.gz" });
+      downloadBlob(blob, "text/markdown", `${base}.${fmt}`);
     } catch (e) {
       console.error("Download failed:", e);
       toast.error("Download failed");
@@ -498,6 +501,7 @@ const EditorPage: Component = () => {
     try {
       const { md, filename } = await loadRawMarkdown(params.fileId);
       const base = sanitizeFilename(filename.replace(/\.[^.]+$/, ""));
+      // Always share as plain .md — recipients may not support .md.gz.
       const file = new File([md], `${base}.md`, { type: "text/markdown" });
       if (!navigator.share) {
         toast.error("Share is not supported in this browser");
@@ -533,13 +537,12 @@ const EditorPage: Component = () => {
     const p = (async () => {
       const { md, filename } = await loadRawMarkdown(params.fileId);
       const base = sanitizeFilename(filename.replace(/\.[^.]+$/, ""));
-      const backupName = `${packBackupName(base, getCurrentDocId() ?? "")}.md`;
+      const fmt = saveFormat();
+      const stem = packBackupName(base, getCurrentDocId() ?? "");
+      const backupName = `${stem}.${fmt}`;
       const token = await provider.ensureToken();
-      await provider.upload(
-        token,
-        backupName,
-        new Blob([md], { type: "text/markdown" }),
-      );
+      const blob = await packMDBlob(md, { gzip: fmt === "md.gz" });
+      await provider.upload(token, backupName, blob);
       return backupName;
     })();
     toast.promise(p, {

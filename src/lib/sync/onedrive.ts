@@ -6,6 +6,7 @@ import {
   type SyncFile,
   type SyncToken,
 } from "./interface";
+import { isMDFile } from "../path";
 
 const AUTH_URL =
   "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
@@ -156,7 +157,7 @@ export async function list(
     .map((e) => driveItemSchema.safeParse(e))
     .filter(
       (r) =>
-        r.success && r.data.file !== undefined && r.data.name.endsWith(".md"),
+        r.success && r.data.file !== undefined && isMDFile(r.data.name),
     )
     .map((r) => {
       const d = (r as { success: true; data: z.infer<typeof driveItemSchema> })

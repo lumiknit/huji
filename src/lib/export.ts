@@ -90,6 +90,27 @@ export const buildPlainText = (entries: ExportEntry[]): string =>
       .join("\n\n"),
   );
 
+/** Pack markdown string into a Blob, optionally gzip-compressed. */
+export const packMDBlob = async (
+  md: string,
+  opts?: { gzip?: boolean },
+): Promise<Blob> => {
+  const raw = new Blob([md], { type: "text/markdown" });
+  if (!opts?.gzip) return raw;
+  const stream = raw.stream().pipeThrough(new CompressionStream("gzip"));
+  return new Response(stream).blob();
+};
+
+/** Unpack a markdown Blob to string. Detects gzip via magic bytes (1f 8b). */
+export const unpackMDBlob = async (blob: Blob): Promise<string> => {
+  const header = new Uint8Array(await blob.slice(0, 2).arrayBuffer());
+  if (header.length >= 2 && header[0] === 0x1f && header[1] === 0x8b) {
+    const stream = blob.stream().pipeThrough(new DecompressionStream("gzip"));
+    return new Response(stream).text();
+  }
+  return blob.text();
+};
+
 export const downloadBlob = (
   content: string | Blob,
   mime: string,

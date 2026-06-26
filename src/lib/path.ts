@@ -1,3 +1,7 @@
+/** Returns true if the filename is a supported markdown file (.md or .md.gz). */
+export const isMDFile = (name: string): boolean =>
+  name.endsWith(".md") || name.endsWith(".md.gz");
+
 /**
  * Replace ASCII characters that are unsafe across OS/filesystems and
  * whitespace with '_', then collapse consecutive '_' into one.
@@ -43,9 +47,9 @@ export function packBackupName(
 export function unpackBackupName(
   filename: string,
 ): { title: string; id: string } | null {
-  const stem = filename.replace(/\.(md|markdown|txt)$/i, "");
+  const stem = filename.replace(/\.(md\.gz|md|markdown|txt)$/i, "");
   const m = stem.match(
-    /^(.*)\.(|[a-z0-9]+-[a-z0-9]+)\.(\d{2}-\d{2}-\d{2}T\d{2}-\d{2})$/i,
+    /^(.*)\.([A-Za-z0-9_-]*)\.(\d{2}-\d{2}-\d{2}T\d{2}-\d{2})$/,
   );
   if (m) return { title: m[1], id: m[2] };
   return null;

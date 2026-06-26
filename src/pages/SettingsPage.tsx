@@ -45,6 +45,9 @@ import {
   setMaxWidth,
   defaultRemoteProvider,
   setDefaultRemoteProvider,
+  saveFormat,
+  setSaveFormat,
+  type SaveFormat,
 } from "../states/settings";
 import { availableProviders } from "../lib/sync/provider";
 import {
@@ -483,6 +486,16 @@ const SettingsPage: Component = () => {
             <For each={availableProviders()}>
               {(p) => <option value={p.name}>{p.name}</option>}
             </For>
+          </select>
+        </label>
+        <label>
+          Save format
+          <select
+            value={saveFormat()}
+            onChange={(e) => setSaveFormat(e.currentTarget.value as SaveFormat)}
+          >
+            <option value="md.gz">.md.gz (compressed, recommended)</option>
+            <option value="md">.md (plain text)</option>
           </select>
         </label>
       </section>

@@ -68,6 +68,11 @@ export const [defaultRemoteProvider, setDefaultRemoteProvider] = persisted(
   "defaultRemoteProvider",
   "" as string,
 );
+export type SaveFormat = "md" | "md.gz";
+export const [saveFormat, setSaveFormat] = persisted<SaveFormat>(
+  "saveFormat",
+  "md.gz",
+);
 export const [contextRaw, setContextRaw] = persisted("contextRaw", false);
 export const [contextSections, setContextSections_] = persisted(
   "contextSections",

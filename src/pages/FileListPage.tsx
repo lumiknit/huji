@@ -45,6 +45,7 @@ import {
   resolveCallbackProvider,
 } from "../lib/sync/provider";
 import { unpackBackupName } from "../lib/path";
+import { unpackMDBlob } from "../lib/export";
 import { setDefaultRemoteProvider } from "../states/settings";
 import Toolbar from "../components/Toolbar";
 
@@ -134,11 +135,11 @@ const createNewFile = async (filename: string): Promise<string> => {
 };
 
 export const importMarkdownFile = async (file: File): Promise<string> => {
-  const text = await file.text();
+  const text = await unpackMDBlob(file);
   const unpacked = unpackBackupName(file.name);
   const filename = unpacked
     ? unpacked.title
-    : file.name.replace(/\.(md|markdown|txt)$/i, "");
+    : file.name.replace(/\.(md\.gz|md|markdown|txt)$/i, "");
   return importMarkdownText(text, filename);
 };
 
@@ -281,6 +282,21 @@ const FileListPage: Component = () => {
     setCloudCursor(undefined);
   };
 
+  const handleCloudDelete = (f: SyncFile) => {
+    const provider = activeProvider();
+    if (!provider) return;
+    const p = (async () => {
+      const token = await provider.ensureToken();
+      await provider.delete(token, f.name);
+      setCloudFiles((prev) => prev?.filter((c) => c.name !== f.name) ?? null);
+    })();
+    toast.promise(p, {
+      loading: `Deleting ${f.name}…`,
+      success: "Deleted",
+      error: (e) => `Delete failed: ${(e as Error).message}`,
+    });
+  };
+
   const handleCloudImport = (f: SyncFile) => {
     const provider = activeProvider();
     if (!provider) return;
@@ -343,7 +359,7 @@ const FileListPage: Component = () => {
           <input
             ref={fileInputEl}
             type="file"
-            accept="text/*"
+            accept=".md,.md.gz,.markdown,.txt"
             class="hidden"
             onChange={handleFileInput}
           />
@@ -464,6 +480,7 @@ const FileListPage: Component = () => {
             search={search()}
             onRefetch={refetch}
             onCloudImport={handleCloudImport}
+            onCloudDelete={handleCloudDelete}
           />
         </Match>
       </Switch>

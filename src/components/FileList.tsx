@@ -18,6 +18,7 @@ import {
   TbOutlineChevronRight,
   TbOutlineDots,
   TbOutlineGitBranch,
+  TbOutlineGitFork,
 } from "solid-icons/tb";
 import toast from "solid-toast";
 
@@ -45,6 +46,7 @@ type DropdownMenuProps = {
   id: string;
   openMenu: Accessor<string | null>;
   setOpenMenu: Setter<string | null>;
+  onRevise: () => void;
   onFork: () => void;
   onDelete: () => void;
 };
@@ -82,10 +84,19 @@ const DropdownMenu: Component<DropdownMenuProps> = (props) => {
             class="file-dropdown-item"
             onClick={() => {
               props.setOpenMenu(null);
+              props.onRevise();
+            }}
+          >
+            <TbOutlineGitBranch /> Revise
+          </div>
+          <div
+            class="file-dropdown-item"
+            onClick={() => {
+              props.setOpenMenu(null);
               props.onFork();
             }}
           >
-            <TbOutlineGitBranch /> Fork
+            <TbOutlineGitFork /> Fork
           </div>
           <div
             class="file-dropdown-item danger"
@@ -133,30 +144,78 @@ const ChevronSlot: Component<ChevronSlotProps> = (props) => (
 
 type CloudFileInfoProps = {
   item: CloudListItem;
+  openMenu: Accessor<string | null>;
+  setOpenMenu: Setter<string | null>;
   onClick: () => void;
+  onDelete: () => void;
 };
 
-const CloudFileInfo: Component<CloudFileInfoProps> = (props) => (
-  <a
-    class="file-info"
-    href="#"
-    onClick={(e) => {
-      e.preventDefault();
-      props.onClick();
-    }}
-  >
-    <span>
-      <TbFillCloud class="file-cloud-icon" /> {props.item.displayName}
-    </span>
-    <small>
-      {formatDateTime(props.item.file.modifiedAt)}
-      <Show when={props.item.file.size !== undefined}>
-        {" · "}
-        {formatSize(props.item.file.size!)}
-      </Show>
-    </small>
-  </a>
-);
+const CloudFileInfo: Component<CloudFileInfoProps> = (props) => {
+  let anchorEl: HTMLDivElement | undefined;
+
+  onMount(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        props.openMenu() === props.item.file.name &&
+        anchorEl &&
+        !anchorEl.contains(e.target as Node)
+      ) {
+        props.setOpenMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    onCleanup(() => document.removeEventListener("mousedown", handler));
+  });
+
+  return (
+    <>
+      <a
+        class="file-info"
+        href="#"
+        onClick={(e) => {
+          e.preventDefault();
+          props.onClick();
+        }}
+      >
+        <span>
+          <TbFillCloud class="file-cloud-icon" /> {props.item.displayName}
+        </span>
+        <small>
+          {formatDateTime(props.item.file.modifiedAt)}
+          <Show when={props.item.file.size !== undefined}>
+            {" · "}
+            {formatSize(props.item.file.size!)}
+          </Show>
+        </small>
+      </a>
+      <div class="file-menu-anchor" ref={anchorEl}>
+        <button
+          title="Menu"
+          onClick={() =>
+            props.setOpenMenu((prev) =>
+              prev === props.item.file.name ? null : props.item.file.name,
+            )
+          }
+        >
+          <TbOutlineDots />
+        </button>
+        <Show when={props.openMenu() === props.item.file.name}>
+          <div class="file-dropdown">
+            <div
+              class="file-dropdown-item danger"
+              onClick={() => {
+                props.setOpenMenu(null);
+                props.onDelete();
+              }}
+            >
+              <TbOutlineTrash /> Delete
+            </div>
+          </div>
+        </Show>
+      </div>
+    </>
+  );
+};
 
 // ── FileList ─────────────────────────────────────────────────────────────────
 
@@ -167,6 +226,7 @@ type FileListProps = {
   search: string;
   onRefetch: () => void;
   onCloudImport: (f: SyncFile) => void;
+  onCloudDelete: (f: SyncFile) => void;
 };
 
 const FileList: Component<FileListProps> = (props) => {
@@ -207,21 +267,35 @@ const FileList: Component<FileListProps> = (props) => {
     toast.success("Deleted");
   };
 
+  const forkOrRevise = async (
+    item: LocalListItem,
+    newId: boolean,
+  ): Promise<string> => {
+    const { md } = await loadRawMarkdown(item.fileId);
+    const doc = await parseDocument(md);
+    const fmData: Record<string, unknown> = {
+      ...(doc.frontmatter?.data ?? {}),
+      ...(newId ? { _id: genId() } : {}),
+    };
+    const fmType = doc.frontmatter?.type ?? "yaml";
+    const newFm = await serializeFrontmatter(fmType, fmData);
+    const newText = doc.body ? newFm + "\n" + doc.body : newFm;
+    const newFileId = await importMarkdownText(newText, item.filename);
+    navigate(`/edit/${newFileId}`);
+    return item.filename;
+  };
+
+  const handleRevise = (item: LocalListItem) => {
+    const p = forkOrRevise(item, false);
+    toast.promise(p, {
+      loading: "Revising…",
+      success: (name) => `Revising '${name}'`,
+      error: (e) => `Revise failed: ${(e as Error).message}`,
+    });
+  };
+
   const handleFork = (item: LocalListItem) => {
-    const p = (async () => {
-      const { md } = await loadRawMarkdown(item.fileId);
-      const doc = await parseDocument(md);
-      const fmData: Record<string, unknown> = {
-        ...(doc.frontmatter?.data ?? {}),
-        _id: genId(),
-      };
-      const fmType = doc.frontmatter?.type ?? "yaml";
-      const newFm = await serializeFrontmatter(fmType, fmData);
-      const newText = doc.body ? newFm + "\n" + doc.body : newFm;
-      const newFileId = await importMarkdownText(newText, item.filename);
-      navigate(`/edit/${newFileId}`);
-      return item.filename;
-    })();
+    const p = forkOrRevise(item, true);
     toast.promise(p, {
       loading: "Forking…",
       success: (name) => `Forked '${name}' as a new document`,
@@ -252,6 +326,7 @@ const FileList: Component<FileListProps> = (props) => {
             id={item.fileId}
             openMenu={openMenu}
             setOpenMenu={setOpenMenu}
+            onRevise={() => handleRevise(item)}
             onFork={() => handleFork(item)}
             onDelete={() => void handleDelete(item.fileId)}
           />
@@ -261,7 +336,10 @@ const FileList: Component<FileListProps> = (props) => {
     return (
       <CloudFileInfo
         item={item}
+        openMenu={openMenu}
+        setOpenMenu={setOpenMenu}
         onClick={() => props.onCloudImport(item.file)}
+        onDelete={() => props.onCloudDelete(item.file)}
       />
     );
   };

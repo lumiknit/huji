@@ -6,6 +6,7 @@ import {
   type SyncFile,
   type SyncToken,
 } from "./interface";
+import { isMDFile } from "../path";
 
 const AUTH_URL = "https://www.dropbox.com/oauth2/authorize";
 const TOKEN_URL = "https://api.dropboxapi.com/oauth2/token";
@@ -199,7 +200,7 @@ export async function list(
       (e) =>
         e[".tag"] === "file" &&
         typeof e["name"] === "string" &&
-        (e["name"] as string).endsWith(".md"),
+        isMDFile(e["name"] as string),
     )
     .map((e) => {
       const f = fileEntrySchema.safeParse(e);
