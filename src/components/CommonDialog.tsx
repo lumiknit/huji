@@ -6,18 +6,23 @@ type DialogState =
 
 const [state, setState] = createSignal<DialogState | null>(null);
 
-const open = (s: DialogState) => {
-  if (state() !== null) {
-    throw new Error("CommonDialog: another dialog is already open");
-  }
+const open = (s: DialogState): boolean => {
+  if (state() !== null) return false;
   setState(s);
+  return true;
 };
 
 export const aprompt = (message: string): Promise<string | null> =>
-  new Promise((resolve) => open({ type: "prompt", message, resolve }));
+  new Promise((resolve, reject) => {
+    if (!open({ type: "prompt", message, resolve }))
+      reject(new Error("CommonDialog: another dialog is already open"));
+  });
 
 export const aconfirm = (message: string): Promise<boolean> =>
-  new Promise((resolve) => open({ type: "confirm", message, resolve }));
+  new Promise((resolve, reject) => {
+    if (!open({ type: "confirm", message, resolve }))
+      reject(new Error("CommonDialog: another dialog is already open"));
+  });
 
 const CommonDialog: Component = () => {
   let dialogEl!: HTMLDialogElement;
