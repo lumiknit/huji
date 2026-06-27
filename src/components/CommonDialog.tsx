@@ -52,8 +52,8 @@ const CommonDialog: Component = () => {
           <input ref={inputEl} type="text" />
         </Show>
         <div class="dialog-actions">
-          <button value="cancel">Cancel</button>
-          <button value="ok" class="primary">
+          <button type="button" value="cancel" onClick={() => dialogEl.close("cancel")}>Cancel</button>
+          <button type="submit" value="ok" class="primary">
             OK
           </button>
         </div>
