@@ -43,6 +43,8 @@ import {
   setContextRaw,
   maxWidth,
   setMaxWidth,
+  stickerWidth,
+  setStickerWidth,
   defaultRemoteProvider,
   setDefaultRemoteProvider,
   saveFormat,
@@ -473,6 +475,18 @@ const SettingsPage: Component = () => {
             step={10}
             value={maxWidth()}
             onChange={(e) => setMaxWidth(Number(e.currentTarget.value))}
+          />
+        </label>
+
+        <label>
+          Sticker width (px)
+          <input
+            type="number"
+            min={180}
+            max={480}
+            step={10}
+            value={stickerWidth()}
+            onChange={(e) => setStickerWidth(Number(e.currentTarget.value))}
           />
         </label>
       </section>

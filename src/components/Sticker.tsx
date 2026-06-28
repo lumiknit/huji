@@ -3,14 +3,12 @@ import {
   createSignal,
   createMemo,
   createResource,
+  createEffect,
   Show,
   For,
 } from "solid-js";
 import {
   TbOutlineX,
-  TbOutlineLayoutSidebarLeftCollapse,
-  TbOutlineLayoutSidebarRightCollapse,
-  TbOutlineLayoutBottombarCollapse,
   TbOutlineSearch,
   TbOutlineChevronDown,
   TbOutlineChevronUp,
@@ -26,8 +24,8 @@ import {
   stickerLayout,
   cycleLayout,
   closeSticker,
-  type StickerLayout,
 } from "../states/sticker";
+import { stickerWidth } from "../states/settings";
 
 // ── Inline search helpers ──
 
@@ -75,24 +73,6 @@ const highlightMatches = (container: HTMLElement, query: string): Element[] => {
   return results;
 };
 
-// ── Layout cycle icon ──
-
-const LayoutIcon: Component<{ layout: StickerLayout }> = (props) => (
-  <Show
-    when={props.layout === "left"}
-    fallback={
-      <Show
-        when={props.layout === "right"}
-        fallback={<TbOutlineLayoutBottombarCollapse />}
-      >
-        <TbOutlineLayoutSidebarRightCollapse />
-      </Show>
-    }
-  >
-    <TbOutlineLayoutSidebarLeftCollapse />
-  </Show>
-);
-
 // ── Main component ──
 
 const Sticker: Component = () => {
@@ -124,6 +104,19 @@ const Sticker: Component = () => {
 
   const html = createMemo(() => renderMarkdown(content() ?? ""));
 
+  // Auto-focus search input when opened
+  createEffect(() => {
+    if (showSearch() && searchInputEl) {
+      searchInputEl.focus();
+    }
+  });
+
+  // Reset scroll top on section change
+  createEffect(() => {
+    resolvedSectionId();
+    if (bodyEl) bodyEl.scrollTop = 0;
+  });
+
   const runSearch = (q: string) => {
     if (!bodyEl) return;
     const found = highlightMatches(bodyEl, q);
@@ -140,20 +133,46 @@ const Sticker: Component = () => {
     m[next].scrollIntoView({ block: "nearest" });
   };
 
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      if (showSearch()) {
+        setShowSearch(false);
+        setSearchQuery("");
+        runSearch("");
+      } else {
+        closeSticker();
+      }
+    }
+  };
+
   const layout = stickerLayout;
 
   return (
     <div
       class="sticker"
+      onKeyDown={handleKeyDown}
+      style={{
+        width:
+          layout() !== "collapsed"
+            ? `min(75vw, ${stickerWidth()}px)`
+            : undefined,
+      }}
       classList={{
-        "sticker-left": layout() === "left",
-        "sticker-right": layout() === "right",
+        "sticker-left": layout() === "left" || layout() === "left-long",
+        "sticker-right": layout() === "right" || layout() === "right-long",
+        "sticker-long": layout() === "left-long" || layout() === "right-long",
         "sticker-collapsed": layout() === "collapsed",
       }}
     >
       {/* Header */}
       <div class="sticker-header">
-        <TbOutlineNote class="sticker-icon" />
+        <button
+          class="sticker-btn sticker-icon-btn"
+          title="Change layout"
+          onClick={cycleLayout}
+        >
+          <TbOutlineNote class="sticker-icon" />
+        </button>
         <Show when={layout() !== "collapsed"}>
           <select
             class="sticker-section-select"
@@ -183,9 +202,6 @@ const Sticker: Component = () => {
             <TbOutlineSearch />
           </button>
         </Show>
-        <button class="sticker-btn" title="Change layout" onClick={cycleLayout}>
-          <LayoutIcon layout={layout()} />
-        </button>
         <button
           class="sticker-btn"
           title="Close sticker"
@@ -225,7 +241,7 @@ const Sticker: Component = () => {
 
       {/* Body */}
       <Show when={layout() !== "collapsed"}>
-        <div
+        <article
           ref={(el) => {
             bodyEl = el;
           }}

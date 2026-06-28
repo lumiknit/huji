@@ -653,9 +653,13 @@ const EditorPage: Component = () => {
   return (
     <main>
       <Show when={mode() === "single"}>
-        <div class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}>
+        <button
+          class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}
+          onClick={scrollToEditor}
+          title="Jump to current selection"
+        >
           {scrollPct()}%
-        </div>
+        </button>
       </Show>
       <Show when={showFind()}>
         <FindReplaceModal
@@ -767,11 +771,6 @@ const EditorPage: Component = () => {
 
         <span class="spacer" />
 
-        <Show when={mode() === "single"}>
-          <button onClick={scrollToEditor} title="Jump to editor">
-            <TbOutlineCursorText />
-          </button>
-        </Show>
         <A href={`/preview/${params.fileId}`} title="Preview">
           <TbOutlineEye />
         </A>
@@ -784,49 +783,57 @@ const EditorPage: Component = () => {
           />
         </Show>
 
-        {/* Section select — wraps to next line via flex-wrap */}
-        <select onChange={handleSectionChange}>
-          <optgroup label="Special">
-            <option
-              value="__outline__"
-              selected={editorState.activeSectionId() === "__outline__"}
-            >
-              Outline / Reorder
-            </option>
-            <option
-              value={ALL_ID}
-              selected={editorState.activeSectionId() === ALL_ID}
-            >
-              Whole file
-            </option>
-          </optgroup>
-          <Show when={fmMetas().length > 0}>
-            <optgroup label="FrontMatter">
-              <For each={fmMetas()}>
+        {/* Sticker toggle button & Section select */}
+        <div class="toolbar-group">
+          <button
+            onClick={toggleSticker}
+            title={stickerOpen() ? "Hide Sticker" : "Show Sticker"}
+          >
+            <TbOutlineNote />
+          </button>
+          <select onChange={handleSectionChange}>
+            <optgroup label="Special">
+              <option
+                value="__outline__"
+                selected={editorState.activeSectionId() === "__outline__"}
+              >
+                Outline / Reorder
+              </option>
+              <option
+                value={ALL_ID}
+                selected={editorState.activeSectionId() === ALL_ID}
+              >
+                Whole file
+              </option>
+            </optgroup>
+            <Show when={fmMetas().length > 0}>
+              <optgroup label="FrontMatter">
+                <For each={fmMetas()}>
+                  {(m) => (
+                    <option
+                      value={m.id}
+                      selected={editorState.activeSectionId() === m.id}
+                    >
+                      [{m.heading}]
+                    </option>
+                  )}
+                </For>
+              </optgroup>
+            </Show>
+            <optgroup label="Sections">
+              <For each={bodyMetas()}>
                 {(m) => (
                   <option
                     value={m.id}
                     selected={editorState.activeSectionId() === m.id}
                   >
-                    [{m.heading}]
+                    {sectionLabels().get(m.id) ?? m.heading}
                   </option>
                 )}
               </For>
             </optgroup>
-          </Show>
-          <optgroup label="Sections">
-            <For each={bodyMetas()}>
-              {(m) => (
-                <option
-                  value={m.id}
-                  selected={editorState.activeSectionId() === m.id}
-                >
-                  {sectionLabels().get(m.id) ?? m.heading}
-                </option>
-              )}
-            </For>
-          </optgroup>
-        </select>
+          </select>
+        </div>
       </Toolbar>
 
       <Show when={mode() === "all"}>

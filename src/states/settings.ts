@@ -84,6 +84,10 @@ export const [maxWidth, setMaxWidth_] = persisted("maxWidth", 720);
 export const setMaxWidth = (v: number) =>
   setMaxWidth_(Math.min(1920, Math.max(640, v)));
 
+export const [stickerWidth, setStickerWidth_] = persisted("stickerWidth", 320);
+export const setStickerWidth = (v: number) =>
+  setStickerWidth_(Math.min(480, Math.max(180, v)));
+
 export type ThemeVariant = "default" | "warm" | "cool";
 export const [themeLight, setThemeLight] = persisted<ThemeVariant>(
   "themeLight",
@@ -117,5 +121,25 @@ export const useSettingsInit = () => {
     [...cl].filter((c) => c.startsWith("theme-")).forEach((c) => cl.remove(c));
     cl.add(`theme-light-${light}`);
     cl.add(`theme-dark-${dark}`);
+
+    const LIGHT_BG: Record<string, string> = {
+      default: "#ffffff",
+      warm: "#fdf6e3",
+      cool: "#eef4fb",
+    };
+    const DARK_BG: Record<string, string> = {
+      default: "#000000",
+      warm: "#1a1410",
+      cool: "#1e2a3a",
+    };
+    const lightMeta = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"][media*="light"]',
+    );
+    const darkMeta = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"][media*="dark"]',
+    );
+    if (lightMeta)
+      lightMeta.content = LIGHT_BG[light ?? "default"] ?? "#ffffff";
+    if (darkMeta) darkMeta.content = DARK_BG[dark ?? "default"] ?? "#000000";
   });
 };

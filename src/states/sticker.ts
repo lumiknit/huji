@@ -1,18 +1,35 @@
 import { createSignal, batch } from "solid-js";
+import { makePersisted } from "@solid-primitives/storage";
+import { hujiSettingsStorage } from "../lib/db/settings-storage";
 
-export type StickerLayout = "left" | "right" | "collapsed";
+export type StickerLayout =
+  | "left"
+  | "left-long"
+  | "right"
+  | "right-long"
+  | "collapsed";
 
-export const [stickerOpen, setStickerOpen] = createSignal(false);
+const persisted = <T>(key: string, def: T) =>
+  makePersisted(createSignal<T>(def), {
+    name: key,
+    storage: hujiSettingsStorage,
+  });
+
+export const [stickerOpen, setStickerOpen] = persisted("stickerOpen", false);
 export const [stickerSectionId, setStickerSectionId] = createSignal<
   string | null
 >(null);
-export const [stickerLayout, setStickerLayout] =
-  createSignal<StickerLayout>("left");
+export const [stickerLayout, setStickerLayout] = persisted<StickerLayout>(
+  "stickerLayout",
+  "right",
+);
 
 export const cycleLayout = () => {
   setStickerLayout((l) => {
-    if (l === "left") return "right";
-    if (l === "right") return "collapsed";
+    if (l === "left") return "left-long";
+    if (l === "left-long") return "right";
+    if (l === "right") return "right-long";
+    if (l === "right-long") return "collapsed";
     return "left";
   });
 };
@@ -20,7 +37,7 @@ export const cycleLayout = () => {
 export const openSticker = (sectionId?: string) => {
   batch(() => {
     if (sectionId) setStickerSectionId(sectionId);
-    if (stickerLayout() === "collapsed") setStickerLayout("left");
+    if (stickerLayout() === "collapsed") setStickerLayout("right");
     setStickerOpen(true);
   });
 };

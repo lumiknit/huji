@@ -1,7 +1,7 @@
 {
   "name": "huji",
   "private": true,
-  "version": "0.3.1",
+  "version": "0.3.2",
   "type": "module",
   "author": "lumiknit <aasr4r4@gmail.com>",
   "license": "MPL-2.0",
@@ -22,7 +22,7 @@
     "docx": "^9.7.1",
     "dompurify": "^3.4.11",
     "idb": "^8.0.3",
-    "js-yaml": "^4.3.0",
+    "js-yaml": "^5.2.0",
     "marked": "^18.0.5",
     "smol-toml": "^1.7.0",
     "solid-icons": "^1.2.0",
@@ -33,7 +33,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25.9.4",
+    "@types/node": "^26.0.1",
     "eslint": "^10.6.0",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
