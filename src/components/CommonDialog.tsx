@@ -13,15 +13,13 @@ const open = (s: DialogState): boolean => {
 };
 
 export const aprompt = (message: string): Promise<string | null> =>
-  new Promise((resolve, reject) => {
-    if (!open({ type: "prompt", message, resolve }))
-      reject(new Error("CommonDialog: another dialog is already open"));
+  new Promise((resolve) => {
+    if (!open({ type: "prompt", message, resolve })) resolve(null);
   });
 
 export const aconfirm = (message: string): Promise<boolean> =>
-  new Promise((resolve, reject) => {
-    if (!open({ type: "confirm", message, resolve }))
-      reject(new Error("CommonDialog: another dialog is already open"));
+  new Promise((resolve) => {
+    if (!open({ type: "confirm", message, resolve })) resolve(false);
   });
 
 const CommonDialog: Component = () => {
@@ -30,6 +28,7 @@ const CommonDialog: Component = () => {
 
   createEffect(() => {
     if (state()) {
+      dialogEl.returnValue = "";
       dialogEl.showModal();
       if (state()?.type === "prompt") setTimeout(() => inputEl?.focus());
     }

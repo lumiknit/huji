@@ -111,10 +111,12 @@ const Sticker: Component = () => {
     }
   });
 
-  // Reset scroll top on section change
+  // Reset scroll and clear stale search matches on section change
   createEffect(() => {
     resolvedSectionId();
     if (bodyEl) bodyEl.scrollTop = 0;
+    setMatches([]);
+    setMatchIdx(0);
   });
 
   const runSearch = (q: string) => {
@@ -132,6 +134,16 @@ const Sticker: Component = () => {
     setMatchIdx(next);
     m[next].scrollIntoView({ block: "nearest" });
   };
+
+  // Close search when layout collapses
+  createEffect(() => {
+    if (layout() === "collapsed" && showSearch()) {
+      setShowSearch(false);
+      setSearchQuery("");
+      setMatches([]);
+      setMatchIdx(0);
+    }
+  });
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Escape") {
