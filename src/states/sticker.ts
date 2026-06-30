@@ -3,11 +3,7 @@ import { makePersisted } from "@solid-primitives/storage";
 import { hujiSettingsStorage } from "../lib/db/settings-storage";
 
 export type StickerLayout =
-  | "left"
-  | "left-long"
-  | "right"
-  | "right-long"
-  | "collapsed";
+  "left" | "left-long" | "right" | "right-long" | "collapsed";
 
 const persisted = <T>(key: string, def: T) =>
   makePersisted(createSignal<T>(def), {

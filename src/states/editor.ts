@@ -1,4 +1,4 @@
-import { createSignal, createMemo } from "solid-js";
+import { batch, createSignal, createMemo } from "solid-js";
 import type { SectionMeta } from "../lib/db/schema";
 import {
   getFileMetas,
@@ -259,7 +259,6 @@ export const goToSection = async (
     const meta = metas().find((m) => m.id === id);
     if (meta) {
       await saveSection(id, meta, value);
-      setSaveStatus("saved");
     }
   }
 
@@ -274,7 +273,10 @@ export const goToSection = async (
     }
   }
 
-  _setActiveSection({ id: resolvedId, ...opts });
+  batch(() => {
+    setSaveStatus("saved");
+    _setActiveSection({ id: resolvedId, ...opts });
+  });
 };
 
 // ── Section CRUD ──

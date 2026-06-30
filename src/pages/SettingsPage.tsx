@@ -1,4 +1,4 @@
-import { type Component, For } from "solid-js";
+import { type Component, For, createMemo } from "solid-js";
 import { A } from "@solidjs/router";
 import { TbOutlineArrowLeft, TbOutlineTrash } from "solid-icons/tb";
 import Toolbar from "../components/Toolbar";
@@ -17,6 +17,8 @@ import {
   setEditorLineHeight,
   editorFontWeight,
   setEditorFontWeight,
+  editorParaIndent,
+  setEditorParaIndent,
   previewFont,
   setPreviewFont,
   previewFontSize,
@@ -27,6 +29,8 @@ import {
   setPreviewFontWeight,
   previewParaIndent,
   setPreviewParaIndent,
+  previewSameAsEditor,
+  setPreviewSameAsEditor,
   spellcheck,
   setSpellcheck,
   autocorrect,
@@ -131,7 +135,25 @@ const ThemePreview: Component<ThemeSwatch> = (props) => {
   );
 };
 
+const SAMPLE_TEXT = "Hello, 다람쥐, テスト文字";
+
 const SettingsPage: Component = () => {
+  const effectivePreviewFont = createMemo(() =>
+    previewSameAsEditor() ? editorFont() : previewFont(),
+  );
+  const effectivePreviewFontSize = createMemo(() =>
+    previewSameAsEditor() ? editorFontSize() : previewFontSize(),
+  );
+  const effectivePreviewLineHeight = createMemo(() =>
+    previewSameAsEditor() ? editorLineHeight() : previewLineHeight(),
+  );
+  const effectivePreviewFontWeight = createMemo(() =>
+    previewSameAsEditor() ? editorFontWeight() : previewFontWeight(),
+  );
+  const effectivePreviewParaIndent = createMemo(() =>
+    previewSameAsEditor() ? editorParaIndent() : previewParaIndent(),
+  );
+
   return (
     <main>
       <Toolbar title="Settings">
@@ -233,22 +255,102 @@ const SettingsPage: Component = () => {
       </section>
 
       <section>
-        <h2>Editor</h2>
+        <h2>Typography</h2>
 
-        <label>
-          Font family
-          <input
-            type="text"
-            placeholder="(Default Serif)"
-            list="editor-font-family"
-            value={editorFont()}
-            onChange={(e) => setEditorFont(e.currentTarget.value)}
-          />
-          <FontDataList id="editor-font-family" />
-        </label>
+        {/* Table header */}
+        <div
+          style={{
+            display: "grid",
+            "grid-template-columns": "1fr 1fr 1fr",
+            gap: "0.5rem",
+            "font-size": "0.75rem",
+            "font-weight": 600,
+            color: "var(--c-muted)",
+            "text-transform": "uppercase",
+            "letter-spacing": "0.05em",
+            "padding-bottom": "0.25rem",
+            "border-bottom": "1px solid var(--c-border)",
+            "margin-bottom": "0.25rem",
+          }}
+        >
+          <span />
+          <span>Editor</span>
+          <span>
+            Preview
+            <label
+              style={{
+                display: "flex",
+                "align-items": "center",
+                gap: "0.25rem",
+                "font-weight": 400,
+                "text-transform": "none",
+                "letter-spacing": 0,
+                "margin-top": "0.2rem",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={previewSameAsEditor()}
+                onChange={(e) =>
+                  setPreviewSameAsEditor(e.currentTarget.checked)
+                }
+                style={{ width: "auto", margin: 0 }}
+              />
+              Same as editor
+            </label>
+          </span>
+        </div>
 
-        <label>
-          Font size (px)
+        {/* Font family */}
+        <div
+          style={{
+            display: "grid",
+            "grid-template-columns": "1fr 1fr 1fr",
+            gap: "0.5rem",
+            "align-items": "center",
+            "padding-block": "var(--sp-xs)",
+            "font-size": "0.875rem",
+          }}
+        >
+          <span>Font family</span>
+          <div>
+            <input
+              type="text"
+              placeholder="(Default Serif)"
+              list="editor-font-family"
+              value={editorFont()}
+              onChange={(e) => setEditorFont(e.currentTarget.value)}
+              style={{ width: "100%" }}
+            />
+            <FontDataList id="editor-font-family" />
+          </div>
+          <div>
+            <input
+              type="text"
+              placeholder="(Default Serif)"
+              list="preview-font-family"
+              value={previewFont()}
+              disabled={previewSameAsEditor()}
+              onChange={(e) => setPreviewFont(e.currentTarget.value)}
+              style={{ width: "100%" }}
+            />
+            <FontDataList id="preview-font-family" />
+          </div>
+        </div>
+
+        {/* Font size */}
+        <div
+          style={{
+            display: "grid",
+            "grid-template-columns": "1fr 1fr 1fr",
+            gap: "0.5rem",
+            "align-items": "center",
+            "padding-block": "var(--sp-xs)",
+            "font-size": "0.875rem",
+          }}
+        >
+          <span>Font size (px)</span>
           <input
             type="number"
             min={10}
@@ -256,10 +358,28 @@ const SettingsPage: Component = () => {
             value={editorFontSize()}
             onChange={(e) => setEditorFontSize(Number(e.currentTarget.value))}
           />
-        </label>
+          <input
+            type="number"
+            min={10}
+            max={32}
+            value={previewFontSize()}
+            disabled={previewSameAsEditor()}
+            onChange={(e) => setPreviewFontSize(Number(e.currentTarget.value))}
+          />
+        </div>
 
-        <label>
-          Line height
+        {/* Line height */}
+        <div
+          style={{
+            display: "grid",
+            "grid-template-columns": "1fr 1fr 1fr",
+            gap: "0.5rem",
+            "align-items": "center",
+            "padding-block": "var(--sp-xs)",
+            "font-size": "0.875rem",
+          }}
+        >
+          <span>Line height</span>
           <input
             type="number"
             min={1}
@@ -268,10 +388,31 @@ const SettingsPage: Component = () => {
             value={editorLineHeight()}
             onChange={(e) => setEditorLineHeight(Number(e.currentTarget.value))}
           />
-        </label>
+          <input
+            type="number"
+            min={1}
+            max={3}
+            step={0.1}
+            value={previewLineHeight()}
+            disabled={previewSameAsEditor()}
+            onChange={(e) =>
+              setPreviewLineHeight(Number(e.currentTarget.value))
+            }
+          />
+        </div>
 
-        <label>
-          Font weight
+        {/* Font weight */}
+        <div
+          style={{
+            display: "grid",
+            "grid-template-columns": "1fr 1fr 1fr",
+            gap: "0.5rem",
+            "align-items": "center",
+            "padding-block": "var(--sp-xs)",
+            "font-size": "0.875rem",
+          }}
+        >
+          <span>Font weight</span>
           <input
             type="number"
             min={100}
@@ -280,22 +421,121 @@ const SettingsPage: Component = () => {
             value={editorFontWeight()}
             onChange={(e) => setEditorFontWeight(Number(e.currentTarget.value))}
           />
-        </label>
+          <input
+            type="number"
+            min={100}
+            max={900}
+            step={10}
+            value={previewFontWeight()}
+            disabled={previewSameAsEditor()}
+            onChange={(e) =>
+              setPreviewFontWeight(Number(e.currentTarget.value))
+            }
+          />
+        </div>
 
+        {/* Paragraph indent */}
         <div
           style={{
-            "font-family": editorFont() || SERIF_STACK,
-            "font-size": `${editorFontSize()}px`,
-            "font-weight": editorFontWeight(),
-            "line-height": editorLineHeight(),
-            padding: "0.5em",
-            border: "1px solid var(--c-border)",
-            "border-radius": "var(--radius)",
-            "white-space": "pre-wrap",
+            display: "grid",
+            "grid-template-columns": "1fr 1fr 1fr",
+            gap: "0.5rem",
+            "align-items": "center",
+            "padding-block": "var(--sp-xs)",
+            "font-size": "0.875rem",
           }}
         >
-          Hello, 다람쥐, テスト文字
+          <span>Paragraph indent</span>
+          <select
+            value={editorParaIndent() ? "on" : "off"}
+            onChange={(e) =>
+              setEditorParaIndent(e.currentTarget.value === "on")
+            }
+          >
+            <option value="on">On</option>
+            <option value="off">Off</option>
+          </select>
+          <select
+            value={previewParaIndent() ? "on" : "off"}
+            disabled={previewSameAsEditor()}
+            onChange={(e) =>
+              setPreviewParaIndent(e.currentTarget.value === "on")
+            }
+          >
+            <option value="on">On</option>
+            <option value="off">Off</option>
+          </select>
         </div>
+
+        {/* Side-by-side preview */}
+        <div
+          style={{
+            display: "grid",
+            "grid-template-columns": "1fr 1fr",
+            gap: "0.5rem",
+            "margin-top": "0.75rem",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                "font-size": "0.7rem",
+                color: "var(--c-muted)",
+                "margin-bottom": "0.25rem",
+                "text-transform": "uppercase",
+                "letter-spacing": "0.05em",
+              }}
+            >
+              Editor
+            </div>
+            <div
+              style={{
+                "font-family": editorFont() || SERIF_STACK,
+                "font-size": `${editorFontSize()}px`,
+                "font-weight": editorFontWeight(),
+                "line-height": editorLineHeight(),
+                padding: "0.5em",
+                border: "1px solid var(--c-border)",
+                "border-radius": "var(--radius)",
+                "white-space": "pre-wrap",
+              }}
+            >
+              {SAMPLE_TEXT}
+            </div>
+          </div>
+          <div>
+            <div
+              style={{
+                "font-size": "0.7rem",
+                color: "var(--c-muted)",
+                "margin-bottom": "0.25rem",
+                "text-transform": "uppercase",
+                "letter-spacing": "0.05em",
+              }}
+            >
+              Preview
+            </div>
+            <div
+              style={{
+                "font-family": effectivePreviewFont() || SERIF_STACK,
+                "font-size": `${effectivePreviewFontSize()}px`,
+                "font-weight": effectivePreviewFontWeight(),
+                "line-height": effectivePreviewLineHeight(),
+                "text-indent": effectivePreviewParaIndent() ? "1em" : "0",
+                padding: "0.5em",
+                border: "1px solid var(--c-border)",
+                "border-radius": "var(--radius)",
+                "white-space": "pre-wrap",
+              }}
+            >
+              {SAMPLE_TEXT}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Editor</h2>
 
         <label>
           Spellcheck
@@ -357,88 +597,6 @@ const SettingsPage: Component = () => {
             <option value="off">Off</option>
           </select>
         </label>
-      </section>
-
-      <section>
-        <h2>Preview</h2>
-
-        <label>
-          Font family
-          <input
-            type="text"
-            placeholder="(Default Serif)"
-            list="preview-font-family"
-            value={previewFont()}
-            onChange={(e) => setPreviewFont(e.currentTarget.value)}
-          />
-          <FontDataList id="preview-font-family" />
-        </label>
-
-        <label>
-          Font size (px)
-          <input
-            type="number"
-            min={10}
-            max={32}
-            value={previewFontSize()}
-            onChange={(e) => setPreviewFontSize(Number(e.currentTarget.value))}
-          />
-        </label>
-
-        <label>
-          Line height
-          <input
-            type="number"
-            min={1}
-            max={3}
-            step={0.1}
-            value={previewLineHeight()}
-            onChange={(e) =>
-              setPreviewLineHeight(Number(e.currentTarget.value))
-            }
-          />
-        </label>
-
-        <label>
-          Font weight
-          <input
-            type="number"
-            min={100}
-            max={900}
-            step={10}
-            value={previewFontWeight()}
-            onChange={(e) =>
-              setPreviewFontWeight(Number(e.currentTarget.value))
-            }
-          />
-        </label>
-
-        <label>
-          Paragraph indent
-          <select
-            value={previewParaIndent() ? "on" : "off"}
-            onChange={(e) =>
-              setPreviewParaIndent(e.currentTarget.value === "on")
-            }
-          >
-            <option value="on">On</option>
-            <option value="off">Off</option>
-          </select>
-        </label>
-
-        <div
-          style={{
-            "font-family": previewFont() || SERIF_STACK,
-            "font-size": `${previewFontSize()}px`,
-            "font-weight": previewFontWeight(),
-            "line-height": previewLineHeight(),
-            padding: "0.5em",
-            border: "1px solid var(--c-border)",
-            "border-radius": "var(--radius)",
-          }}
-        >
-          Hello, 다람쥐, テスト文字
-        </div>
       </section>
 
       <section>

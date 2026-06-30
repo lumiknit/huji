@@ -86,7 +86,9 @@ const Editor: Component<EditorProps> = (props) => {
         const anchor = Math.min(selection?.anchor ?? 0, value.length);
         const head = Math.min(selection?.head ?? anchor, value.length);
         if (opts?.resetHistory && builtExtensions) {
-          view!.setState(createEditorState(value, { anchor, head }, builtExtensions));
+          view!.setState(
+            createEditorState(value, { anchor, head }, builtExtensions),
+          );
           // Re-apply compartments that may have been reconfigured since mount
           view!.dispatch({
             effects: [

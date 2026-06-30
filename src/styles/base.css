@@ -296,13 +296,13 @@ div.edit:empty::before {
   margin-block: var(--sp-sm);
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
-  outline: 1px solid var(--c-border);
-  outline-offset: 0px;
+  outline: none;
+  transition: border-color 0.2s ease;
   scroll-margin-top: 4rem;
 }
 
 .cm-editor-wrap:focus-within {
-  outline: none;
+  border-color: transparent;
 }
 
 /* ── Settings: section > label 레이아웃 ── */
@@ -312,7 +312,7 @@ section > h2 {
   color: var(--c-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-top: var(--sp-lg);
+  margin-top: var(--sp-xl);
   margin-bottom: var(--sp-sm);
   padding-bottom: var(--sp-xs);
   border-bottom: 1px solid var(--c-border);

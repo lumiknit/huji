@@ -49,9 +49,17 @@ export const [previewFontWeight, setPreviewFontWeight_] = persisted(
 );
 export const setPreviewFontWeight = (v: number) =>
   setPreviewFontWeight_(Math.min(900, Math.max(100, v)));
+export const [editorParaIndent, setEditorParaIndent] = persisted(
+  "editorParaIndent",
+  false,
+);
 export const [previewParaIndent, setPreviewParaIndent] = persisted(
   "previewParaIndent",
   true,
+);
+export const [previewSameAsEditor, setPreviewSameAsEditor] = persisted(
+  "previewSameAsEditor",
+  false,
 );
 export const [spellcheck, setSpellcheck] = persisted("spellcheck", true);
 export const [autocorrect, setAutocorrect] = persisted("autocorrect", false);
@@ -103,15 +111,34 @@ export const useSettingsInit = () => {
   createEffect(() => {
     const r = document.documentElement.style;
     r.setProperty("--max-width", `${maxWidth()}px`);
+    const same = previewSameAsEditor();
     r.setProperty("--editor-font", resolveFont(editorFont()));
     r.setProperty("--editor-font-size", `${editorFontSize()}px`);
     r.setProperty("--editor-line-height", String(editorLineHeight()));
     r.setProperty("--editor-font-weight", String(editorFontWeight()));
-    r.setProperty("--preview-font", resolveFont(previewFont()));
-    r.setProperty("--preview-font-size", `${previewFontSize()}px`);
-    r.setProperty("--preview-line-height", String(previewLineHeight()));
-    r.setProperty("--preview-font-weight", String(previewFontWeight()));
-    r.setProperty("--preview-para-indent", previewParaIndent() ? "1em" : "0");
+    const editorIndentVal = editorParaIndent() ? "1em" : "0";
+    r.setProperty("--editor-para-indent", editorIndentVal);
+    r.setProperty("--typo-indent", editorIndentVal);
+    r.setProperty(
+      "--preview-font",
+      resolveFont(same ? editorFont() : previewFont()),
+    );
+    r.setProperty(
+      "--preview-font-size",
+      `${same ? editorFontSize() : previewFontSize()}px`,
+    );
+    r.setProperty(
+      "--preview-line-height",
+      String(same ? editorLineHeight() : previewLineHeight()),
+    );
+    r.setProperty(
+      "--preview-font-weight",
+      String(same ? editorFontWeight() : previewFontWeight()),
+    );
+    r.setProperty(
+      "--preview-para-indent",
+      (same ? editorParaIndent() : previewParaIndent()) ? "1em" : "0",
+    );
   });
 
   createEffect(() => {

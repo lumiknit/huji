@@ -34,7 +34,7 @@ export function spellcheckExtension(enabled: boolean): Extension {
 
 export function langExtension(lang: EditorLanguage): Extension {
   if (lang !== "markdown") return [];
-  return [markdown({ extensions: [GFM] }), livePreviewPlugin, livePreviewTheme];
+  return [markdown({ extensions: [GFM] }), livePreviewPlugin];
 }
 
 export function buildExtensions(opts: {
@@ -81,6 +81,7 @@ export function buildExtensions(opts: {
   }
 
   return [
+    livePreviewTheme,
     history(),
     keymap.of([
       ...sectionNavKeys,

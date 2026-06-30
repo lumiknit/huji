@@ -38,7 +38,7 @@ function buildDecoSet(view: EditorView): DecorationSet {
     enter(node): boolean | void {
       switch (node.name) {
         case "FencedCode": {
-          for (let pos = Math.max(node.from, vpFrom); pos <= doc.length; ) {
+          for (let pos = Math.max(node.from, vpFrom); pos <= doc.length;) {
             const line = doc.lineAt(pos);
             if (line.from > vpTo) break;
             builder.add(line.from, line.from, DECO.codeBlock);
@@ -86,7 +86,7 @@ function buildDecoSet(view: EditorView): DecorationSet {
         case "Blockquote": {
           const outermost = node.node.parent?.name !== "Blockquote";
           let child = node.node.firstChild;
-          for (let pos = Math.max(node.from, vpFrom); pos <= node.to; ) {
+          for (let pos = Math.max(node.from, vpFrom); pos <= node.to;) {
             const line = doc.lineAt(pos);
             if (line.from > vpTo) break;
             while (child && child.from < line.from) child = child.nextSibling;

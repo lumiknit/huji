@@ -296,10 +296,14 @@ const EditorPage: Component = () => {
         : (popped ?? { start: 0, end: 0 });
     const len = content.length;
     requestAnimationFrame(() => {
-      editorCommander.setValue(content, {
-        anchor: Math.min(stored.start, len),
-        head: Math.min(stored.end, len),
-      }, { resetHistory: true });
+      editorCommander.setValue(
+        content,
+        {
+          anchor: Math.min(stored.start, len),
+          head: Math.min(stored.end, len),
+        },
+        { resetHistory: true },
+      );
       editorCommander.focus();
     });
   });
@@ -316,7 +320,6 @@ const EditorPage: Component = () => {
       await goToSection(id);
     }
   };
-
 
   const contextRange = createMemo(() => {
     const ctx = contextSections();
@@ -423,13 +426,13 @@ const EditorPage: Component = () => {
     }
   };
 
-  const canBackup = () => {
+  const canBackup = createMemo(() => {
     const name = defaultRemoteProvider();
     if (!name) return false;
     const provider = getProvider(name as SyncProviderName);
     if (!provider) return false;
     return !!provider.loadToken()?.refreshToken;
-  };
+  });
 
   const handleBackup = (providerName?: string) => {
     const name = providerName ?? defaultRemoteProvider();
@@ -792,7 +795,8 @@ const EditorPage: Component = () => {
             }
             onPrevSection={() => {
               const prev = prevSection();
-              if (prev) goToSection(prev.id, { selStart: Infinity, selEnd: Infinity });
+              if (prev)
+                goToSection(prev.id, { selStart: Infinity, selEnd: Infinity });
             }}
             onNextSection={() => {
               const next = nextSection();

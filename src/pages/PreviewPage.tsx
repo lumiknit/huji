@@ -229,15 +229,24 @@ const OutlineView: Component<OutlineProps> = (props) => {
     setCheckedIds(newSet);
   });
 
-  const rows = createMemo(() =>
+  const rowTexts = createMemo(() =>
     props.entries.map((e) => {
       const excluded = isExcludedEntry(e);
       const text = excluded ? "" : plainText(e.content);
-      const chars = excluded ? 0 : countChars(text, countMode());
       const words = excluded ? 0 : countWords(text);
-      return { entry: e, excluded, chars, words };
+      return { entry: e, excluded, text, words };
     }),
   );
+
+  const rows = createMemo(() => {
+    const mode = countMode();
+    return rowTexts().map((r) => ({
+      entry: r.entry,
+      excluded: r.excluded,
+      words: r.words,
+      chars: r.excluded ? 0 : countChars(r.text, mode),
+    }));
+  });
 
   const nonExcludedRows = createMemo(() => rows().filter((r) => !r.excluded));
   const allChecked = createMemo(() => {

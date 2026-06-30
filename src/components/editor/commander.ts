@@ -7,7 +7,11 @@ export type EditorCommander = {
   scrollToEdge: (edge: "start" | "end") => void;
   focus: () => void;
   getValue: () => string;
-  setValue: (value: string, selection?: { anchor: number; head: number }, opts?: { resetHistory?: boolean }) => void;
+  setValue: (
+    value: string,
+    selection?: { anchor: number; head: number },
+    opts?: { resetHistory?: boolean },
+  ) => void;
   setSelection: (anchor: number, head: number) => void;
   setLanguage: (lang: EditorLanguage) => void;
   insertAtCursor: (text: string) => void;
