@@ -9,6 +9,7 @@ import {
   For,
   Show,
 } from "solid-js";
+import { Dynamic } from "solid-js/web";
 import { useParams, useNavigate, useSearchParams, A } from "@solidjs/router";
 import {
   TbOutlineDeviceFloppy,
@@ -69,6 +70,8 @@ import { sanitizeFilename, packBackupName } from "../lib/path";
 import { getProvider } from "../lib/sync/provider";
 import type { SyncProviderName } from "../lib/sync/interface";
 import Editor from "../components/editor/Editor";
+import LightEditor from "../components/editor/LightEditor";
+import { lightEditor } from "../states/settings";
 import { createCommander } from "../components/editor/commander";
 import ToggleMenu from "../components/ToggleMenu";
 import MarkdownView from "../components/MarkdownView";
@@ -726,7 +729,8 @@ const EditorPage: Component = () => {
       </Toolbar>
 
       <Show when={mode() === "all"}>
-        <Editor
+        <Dynamic
+          component={lightEditor() ? LightEditor : Editor}
           language="markdown"
           commander={wholeCommander}
           readonly={isReadonly()}
@@ -767,7 +771,8 @@ const EditorPage: Component = () => {
         </div>
 
         <div>
-          <Editor
+          <Dynamic
+            component={lightEditor() ? LightEditor : Editor}
             language={isFrontmatter() ? "yaml" : "markdown"}
             commander={editorCommander}
             readonly={isReadonly()}

@@ -41,6 +41,8 @@ import {
   setWakeLock,
   typewriterMode,
   setTypewriterMode,
+  lightEditor,
+  setLightEditor,
   contextSections,
   setContextSections,
   contextRaw,
@@ -586,6 +588,17 @@ const SettingsPage: Component = () => {
           >
             <option value="off">Off</option>
             <option value="on">On</option>
+          </select>
+        </label>
+
+        <label>
+          Light editor (textarea)
+          <select
+            value={lightEditor() ? "on" : "off"}
+            onChange={(e) => setLightEditor(e.currentTarget.value === "on")}
+          >
+            <option value="off">Off (CodeMirror)</option>
+            <option value="on">On (lightweight)</option>
           </select>
         </label>
 
