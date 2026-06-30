@@ -21,4 +21,6 @@
   --preview-para-indent: 1em;
 
   --form-height: 2rem;
+
+  --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
 }

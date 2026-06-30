@@ -99,6 +99,10 @@
   --c-success-fg: #ffffff;
   --c-danger: #cc0000;
   --c-danger-fg: #ffffff;
+
+  /* CodeMirror selection colors */
+  --cm-selection: color-mix(in srgb, var(--c-primary) 20%, transparent);
+  --cm-sel-focus: color-mix(in srgb, var(--c-primary) 35%, transparent);
 }
 
 /* ── Light theme classes ── */

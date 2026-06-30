@@ -31,8 +31,6 @@ import {
   normalizeAndMerge,
   saveSection,
   getActiveTextareaValue,
-  registerActiveTextarea,
-  activeTextareaRef,
 } from "./editor_save";
 
 export type SaveStatus = "saved" | "dirty" | "saving";
@@ -244,8 +242,6 @@ const updateLastUsedAt = async (list: SectionMeta[]) => {
 
 // ── Section navigation ──
 
-export { registerActiveTextarea };
-
 /**
  * Save the current section then navigate to nextId.
  * Pass selStart/selEnd to explicitly set cursor/selection after the switch.
@@ -260,20 +256,6 @@ export const goToSection = async (
   const id = _activeSection().id;
   if (id && !id.startsWith("__")) {
     const value = getActiveTextareaValue();
-    if (activeTextareaRef && document.activeElement === activeTextareaRef) {
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0);
-        const pre = range.cloneRange();
-        pre.selectNodeContents(activeTextareaRef);
-        pre.setEnd(range.startContainer, range.startOffset);
-        const start = pre.toString().length;
-        const preEnd = range.cloneRange();
-        preEnd.selectNodeContents(activeTextareaRef);
-        preEnd.setEnd(range.endContainer, range.endOffset);
-        sectionSelections.set(id, { start, end: preEnd.toString().length });
-      }
-    }
     const meta = metas().find((m) => m.id === id);
     if (meta) {
       await saveSection(id, meta, value);

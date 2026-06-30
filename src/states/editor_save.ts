@@ -294,16 +294,15 @@ export const saveSection = async (
   return { error: "" };
 };
 
-// ── Active textarea ref ──
+// ── Active value getter ──
 
-export let activeTextareaRef: HTMLElement | null = null;
+let activeValueGetter: (() => string) | null = null;
 
-export const registerActiveTextarea = (el: HTMLElement | null) => {
-  activeTextareaRef = el;
+export const registerValueGetter = (fn: (() => string) | null) => {
+  activeValueGetter = fn;
 };
 
-export const getActiveTextareaValue = (): string =>
-  activeTextareaRef?.innerText ?? "";
+export const getActiveTextareaValue = (): string => activeValueGetter?.() ?? "";
 
 // ── Debounce / auto-save ──
 

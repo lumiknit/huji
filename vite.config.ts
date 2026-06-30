@@ -52,6 +52,12 @@ export default defineConfig({
           ) {
             return "markdown";
           }
+          if (
+            id.includes("node_modules/@codemirror") ||
+            id.includes("node_modules/@lezer")
+          ) {
+            return "codemirror";
+          }
         },
       },
     },

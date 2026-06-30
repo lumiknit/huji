@@ -22,7 +22,6 @@ import {
   TbOutlineDownload,
   TbOutlinePaperclip,
   TbOutlineShare,
-  TbOutlineCursorText,
   TbOutlineNote,
   TbOutlineCloudUpload,
   TbOutlineCopy,
@@ -45,7 +44,6 @@ import {
   getCurrentDocId,
   importMarkdownText,
   setSectionCount,
-  registerActiveTextarea,
 } from "../states/editor";
 import {
   notifyEdit,
@@ -55,16 +53,12 @@ import {
 } from "../states/editor_save";
 import {
   wakeLock,
-  spellcheck,
-  autocorrect,
-  autocapitalize,
   contextSections,
   contextRaw,
   defaultRemoteProvider,
   saveFormat,
   showWords,
   setShowWords,
-  typewriterMode,
 } from "../states/settings";
 import {
   extractFrontmatter,
@@ -74,6 +68,8 @@ import { loadRawMarkdown, downloadBlob, packMDBlob } from "../lib/export";
 import { sanitizeFilename, packBackupName } from "../lib/path";
 import { getProvider } from "../lib/sync/provider";
 import type { SyncProviderName } from "../lib/sync/interface";
+import Editor from "../components/editor/Editor";
+import { createCommander } from "../components/editor/commander";
 import ToggleMenu from "../components/ToggleMenu";
 import MarkdownView from "../components/MarkdownView";
 import FileDrop from "../components/FileDrop";
@@ -85,35 +81,6 @@ import { stickerOpen, toggleSticker } from "../states/sticker";
 import type { SectionMeta } from "../lib/db/schema";
 
 const ALL_ID = "__all__";
-
-const setCaretOffset = (el: HTMLElement, start: number, end: number) => {
-  const sel = window.getSelection();
-  if (!sel) return;
-  const findPos = (offset: number): [Node, number] | null => {
-    let remaining = offset;
-    const walk = (node: Node): [Node, number] | null => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const len = node.textContent?.length ?? 0;
-        if (remaining <= len) return [node, remaining];
-        remaining -= len;
-        return null;
-      }
-      for (const child of node.childNodes) {
-        const r = walk(child);
-        if (r) return r;
-      }
-      return null;
-    };
-    return walk(el);
-  };
-  const s = findPos(start) ?? [el, 0];
-  const e = findPos(end) ?? s;
-  const range = document.createRange();
-  range.setStart(s[0], s[1]);
-  range.setEnd(e[0], e[1]);
-  sel.removeAllRanges();
-  sel.addRange(range);
-};
 
 type ContextSectionProps = {
   meta: () => SectionMeta;
@@ -173,31 +140,14 @@ const EditorPage: Component = () => {
   const [fmError, setFmError] = createSignal("");
   const [showFind, setShowFind] = createSignal(false);
 
+  const editorCommander = createCommander();
+  const wholeCommander = createCommander();
+
   const openFind = async () => {
     const id = editorState.activeSectionId();
     if (id && !id.startsWith("__")) await flushSave(id);
     await loadFindContents();
     setShowFind(true);
-  };
-
-  let textareaEl: HTMLDivElement | null = null;
-  let wholeEl: HTMLDivElement | null = null;
-
-  let typewriterRafId: number | null = null;
-  const scheduleTypewriterScroll = () => {
-    if (!typewriterMode() || typewriterRafId !== null) return;
-    typewriterRafId = requestAnimationFrame(() => {
-      typewriterRafId = null;
-      const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0) return;
-      const range = sel.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      if (rect.height === 0) return;
-      const target =
-        window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;
-      if (Math.abs(target - window.scrollY) < 8) return;
-      window.scrollTo({ top: target, behavior: "smooth" });
-    });
   };
 
   const activeMeta = createMemo(() =>
@@ -244,23 +194,40 @@ const EditorPage: Component = () => {
   };
 
   const prettifyFrontmatter = async () => {
-    if (!textareaEl || !isFrontmatter()) return;
+    if (!isFrontmatter()) return;
     const id = editorState.activeSectionId();
     if (!id) return;
     try {
-      const info = await extractFrontmatter(textareaEl.innerText);
+      const info = await extractFrontmatter(editorCommander.getValue());
       if (!info) {
         setFmError("Invalid frontmatter");
         return;
       }
       const pretty = await serializeFrontmatter(info.type, info.data);
-      textareaEl.textContent = pretty;
+      editorCommander.setValue(pretty);
       setFmError("");
       notifyEdit(id);
     } catch (e) {
       setFmError(String(e));
     }
   };
+
+  // Switch language when active section type changes
+  createEffect(() => {
+    const lang = isFrontmatter() ? "yaml" : "markdown";
+    if (mode() === "single") {
+      editorCommander.setLanguage(lang);
+    }
+  });
+
+  // Load whole-file content when entering all mode
+  createEffect(async () => {
+    if (mode() !== "all") return;
+    const content = await loadAllContent();
+    if (mode() !== "all") return; // guard: mode may have changed during await
+    wholeCommander.setValue(content);
+    wholeCommander.focus();
+  });
 
   onMount(async () => {
     resetFindState();
@@ -321,27 +288,20 @@ const EditorPage: Component = () => {
     if (!id || id === ALL_ID) return;
     const content = await loadSectionContent(id);
     if (editorState.activeSectionId() !== id) return; // race condition guard
-    if (textareaEl) {
-      textareaEl.textContent = content;
-      setSectionCount(countText(content));
-      // Explicit jump target takes priority; fall back to saved cursor for back-navigation
-      const popped = popSectionSelection(id);
-      const stored =
-        target.selStart !== undefined
-          ? { start: target.selStart, end: target.selEnd ?? target.selStart }
-          : (popped ?? { start: 0, end: 0 });
-      const len = content.length;
-      setTimeout(() => {
-        if (!textareaEl) return;
-        textareaEl.focus({ preventScroll: true });
-        setCaretOffset(
-          textareaEl,
-          Math.min(stored.start, len),
-          Math.min(stored.end, len),
-        );
-        scrollToEditor();
-      }, 50);
-    }
+    setSectionCount(countText(content));
+    const popped = popSectionSelection(id);
+    const stored =
+      target.selStart !== undefined
+        ? { start: target.selStart, end: target.selEnd ?? target.selStart }
+        : (popped ?? { start: 0, end: 0 });
+    const len = content.length;
+    requestAnimationFrame(() => {
+      editorCommander.setValue(content, {
+        anchor: Math.min(stored.start, len),
+        head: Math.min(stored.end, len),
+      }, { resetHistory: true });
+      editorCommander.focus();
+    });
   });
 
   const handleSectionChange = async (e: Event) => {
@@ -357,51 +317,6 @@ const EditorPage: Component = () => {
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    const el = e.currentTarget as HTMLElement;
-    const sel = window.getSelection();
-    const collapsed = sel?.isCollapsed ?? true;
-    if (e.key === "ArrowUp" && collapsed) {
-      const range = sel?.getRangeAt(0);
-      const pre = range?.cloneRange();
-      pre?.selectNodeContents(el);
-      pre?.setEnd(range!.startContainer, range!.startOffset);
-      if ((pre?.toString().length ?? 1) === 0) {
-        e.preventDefault();
-        const prev = prevSection();
-        if (prev) {
-          goToSection(prev.id, { selStart: Infinity, selEnd: Infinity });
-        }
-      }
-    }
-    if (e.key === "ArrowDown" && collapsed) {
-      const range = sel?.getRangeAt(0);
-      const post = range?.cloneRange();
-      post?.selectNodeContents(el);
-      post?.setStart(range!.endContainer, range!.endOffset);
-      if ((post?.toString().length ?? 1) === 0) {
-        e.preventDefault();
-        const next = nextSection();
-        if (next) {
-          goToSection(next.id, { selStart: 0, selEnd: 0 });
-        }
-      }
-    }
-    if (e.ctrlKey || e.metaKey) {
-      switch (e.key) {
-        case "f": {
-          e.preventDefault();
-          openFind();
-          return;
-        }
-        case "s": {
-          e.preventDefault();
-          handleSave();
-          return;
-        }
-      }
-    }
-  };
 
   const contextRange = createMemo(() => {
     const ctx = contextSections();
@@ -422,6 +337,15 @@ const EditorPage: Component = () => {
     return "none";
   });
 
+  const selectTitleHere = () => {
+    const val = editorCommander.getValue();
+    const titleStart = val.indexOf("Title here");
+    if (titleStart !== -1) {
+      editorCommander.focus();
+      editorCommander.setSelection(titleStart, titleStart + 10);
+    }
+  };
+
   const handleAddSectionBefore = async () => {
     const id = editorState.activeSectionId();
     if (!id || id.startsWith("__")) return;
@@ -429,15 +353,7 @@ const EditorPage: Component = () => {
       const newId = await addSectionBefore(id);
       if (newId) {
         await goToSection(newId);
-        requestAnimationFrame(() => {
-          if (!textareaEl) return;
-          const val = textareaEl.textContent ?? "";
-          const titleStart = val.indexOf("Title here");
-          if (titleStart !== -1) {
-            textareaEl.focus();
-            setCaretOffset(textareaEl, titleStart, titleStart + 10);
-          }
-        });
+        requestAnimationFrame(selectTitleHere);
       }
     } catch (e) {
       console.error("Failed to add section:", e);
@@ -453,15 +369,7 @@ const EditorPage: Component = () => {
       );
       if (newId) {
         await goToSection(newId);
-        requestAnimationFrame(() => {
-          if (!textareaEl) return;
-          const val = textareaEl.textContent ?? "";
-          const titleStart = val.indexOf("Title here");
-          if (titleStart !== -1) {
-            textareaEl.focus();
-            setCaretOffset(textareaEl, titleStart, titleStart + 10);
-          }
-        });
+        requestAnimationFrame(selectTitleHere);
       }
     } catch (e) {
       console.error("Failed to add section:", e);
@@ -561,8 +469,9 @@ const EditorPage: Component = () => {
     if (scrollRafId !== null) return;
     scrollRafId = requestAnimationFrame(() => {
       scrollRafId = null;
-      if (!textareaEl || mode() !== "single") return;
-      const r = textareaEl.getBoundingClientRect();
+      const container = editorCommander.getContainer();
+      if (!container || mode() !== "single") return;
+      const r = container.getBoundingClientRect();
       const centerY = window.innerHeight / 2;
       const pct = Math.round(
         Math.min(100, Math.max(0, ((centerY - r.top) / r.height) * 100)),
@@ -591,9 +500,8 @@ const EditorPage: Component = () => {
   };
 
   const handleWholeSave = async () => {
-    if (!wholeEl) return;
     try {
-      await saveWholeContent(wholeEl.innerText);
+      await saveWholeContent(wholeCommander.getValue());
     } catch (e) {
       console.error("Failed to save:", e);
       toast.error("Failed to save");
@@ -631,21 +539,9 @@ const EditorPage: Component = () => {
 
   const handleFileDrop = (file: File) => {
     const id = editorState.activeSectionId();
-    if (!textareaEl || !id) return;
+    if (!id) return;
     file.text().then((text) => {
-      const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0) {
-        toast.error("No cursor position — click in the editor first");
-        return;
-      }
-      sel.deleteFromDocument();
-      const node = document.createTextNode(text);
-      const range = sel.getRangeAt(0);
-      range.insertNode(node);
-      range.setStartAfter(node);
-      range.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(range);
+      editorCommander.insertAtCursor(text);
       notifyEdit(id);
     });
   };
@@ -712,20 +608,10 @@ const EditorPage: Component = () => {
 
         <Show when={!isReadonly()}>
           <ToggleMenu label="Edit">
-            <button
-              onClick={() => {
-                textareaEl?.focus();
-                document.execCommand("undo");
-              }}
-            >
+            <button onClick={() => editorCommander.undo()}>
               <TbOutlineRotate /> Undo
             </button>
-            <button
-              onClick={() => {
-                textareaEl?.focus();
-                document.execCommand("redo");
-              }}
-            >
+            <button onClick={() => editorCommander.redo()}>
               <TbOutlineRotateClockwise /> Redo
             </button>
             <hr />
@@ -837,20 +723,12 @@ const EditorPage: Component = () => {
       </Toolbar>
 
       <Show when={mode() === "all"}>
-        <div
-          class="edit"
-          contenteditable={isReadonly() ? "false" : "plaintext-only"}
-          spellcheck={spellcheck()}
-          autocorrect={autocorrect() ? "on" : "off"}
-          autocapitalize={autocapitalize()}
-          ref={(el) => {
-            wholeEl = el;
-            loadAllContent().then((content) => {
-              el.textContent = content;
-              el.focus();
-            });
-          }}
-          onInput={() => !isReadonly() && notifyEdit("__all__")}
+        <Editor
+          language="markdown"
+          commander={wholeCommander}
+          readonly={isReadonly()}
+          onChange={() => !isReadonly() && notifyEdit("__all__")}
+          onSave={() => handleSave()}
           onBlur={isReadonly() ? undefined : handleWholeSave}
         />
       </Show>
@@ -886,22 +764,17 @@ const EditorPage: Component = () => {
         </div>
 
         <div>
-          <div
-            class="edit"
-            contenteditable={isReadonly() ? "false" : "plaintext-only"}
-            spellcheck={spellcheck()}
-            autocorrect={autocorrect() ? "on" : "off"}
-            autocapitalize={autocapitalize()}
-            ref={(el) => {
-              textareaEl = el;
-              registerActiveTextarea(el);
-            }}
-            onInput={() => {
+          <Editor
+            language={isFrontmatter() ? "yaml" : "markdown"}
+            commander={editorCommander}
+            readonly={isReadonly()}
+            onChange={() => {
               if (isReadonly()) return;
               const id = editorState.activeSectionId();
               if (id) notifyEdit(id);
-              scheduleTypewriterScroll();
             }}
+            onSave={() => handleSave()}
+            onFind={() => openFind()}
             onBlur={
               isReadonly()
                 ? undefined
@@ -917,7 +790,14 @@ const EditorPage: Component = () => {
                     }
                   }
             }
-            onKeyDown={handleKeyDown}
+            onPrevSection={() => {
+              const prev = prevSection();
+              if (prev) goToSection(prev.id, { selStart: Infinity, selEnd: Infinity });
+            }}
+            onNextSection={() => {
+              const next = nextSection();
+              if (next) goToSection(next.id, { selStart: 0, selEnd: 0 });
+            }}
           />
           <Show when={fmError()}>
             <p class="error-text">{fmError()}</p>

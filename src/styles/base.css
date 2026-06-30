@@ -284,6 +284,27 @@ div.edit:empty::before {
   pointer-events: none;
 }
 
+/* CodeMirror 편집 영역 */
+.cm-editor-wrap {
+  font-family: var(--editor-font);
+  font-size: var(--editor-font-size);
+  font-weight: var(--editor-font-weight);
+  line-height: var(--editor-line-height);
+  padding: var(--sp-sm);
+  box-sizing: border-box;
+  min-height: 1lh;
+  margin-block: var(--sp-sm);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  outline: 1px solid var(--c-border);
+  outline-offset: 0px;
+  scroll-margin-top: 4rem;
+}
+
+.cm-editor-wrap:focus-within {
+  outline: none;
+}
+
 /* ── Settings: section > label 레이아웃 ── */
 section > h2 {
   font-size: 0.75rem;
