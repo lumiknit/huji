@@ -447,23 +447,23 @@ const SettingsPage: Component = () => {
         >
           <span>Paragraph indent</span>
           <select
-            value={editorParaIndent() ? "on" : "off"}
-            onChange={(e) =>
-              setEditorParaIndent(e.currentTarget.value === "on")
-            }
+            value={String(editorParaIndent())}
+            onChange={(e) => setEditorParaIndent(Number(e.currentTarget.value))}
           >
-            <option value="on">On</option>
-            <option value="off">Off</option>
+            <option value="0">None</option>
+            <option value="0.5">0.5</option>
+            <option value="1">1.0</option>
           </select>
           <select
-            value={previewParaIndent() ? "on" : "off"}
+            value={String(previewParaIndent())}
             disabled={previewSameAsEditor()}
             onChange={(e) =>
-              setPreviewParaIndent(e.currentTarget.value === "on")
+              setPreviewParaIndent(Number(e.currentTarget.value))
             }
           >
-            <option value="on">On</option>
-            <option value="off">Off</option>
+            <option value="0">None</option>
+            <option value="0.5">0.5</option>
+            <option value="1">1.0</option>
           </select>
         </div>
 
@@ -521,7 +521,9 @@ const SettingsPage: Component = () => {
                 "font-size": `${effectivePreviewFontSize()}px`,
                 "font-weight": effectivePreviewFontWeight(),
                 "line-height": effectivePreviewLineHeight(),
-                "text-indent": effectivePreviewParaIndent() ? "1em" : "0",
+                "text-indent": effectivePreviewParaIndent()
+                  ? `${effectivePreviewParaIndent()}em`
+                  : "0",
                 padding: "0.5em",
                 border: "1px solid var(--c-border)",
                 "border-radius": "var(--radius)",

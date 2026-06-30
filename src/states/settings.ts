@@ -49,13 +49,25 @@ export const [previewFontWeight, setPreviewFontWeight_] = persisted(
 );
 export const setPreviewFontWeight = (v: number) =>
   setPreviewFontWeight_(Math.min(900, Math.max(100, v)));
-export const [editorParaIndent, setEditorParaIndent] = persisted(
+const toIndentEm = (v: unknown): number => {
+  if (v === true) return 1;
+  if (v === false) return 0;
+  if (v === 0.5 || v === 1) return v;
+  return 0;
+};
+
+const persistedIndent = (key: string, def: number) => {
+  const [get, set] = persisted<number>(key, def);
+  return [() => toIndentEm(get()), set] as [() => number, (v: number) => void];
+};
+
+export const [editorParaIndent, setEditorParaIndent] = persistedIndent(
   "editorParaIndent",
-  false,
+  0,
 );
-export const [previewParaIndent, setPreviewParaIndent] = persisted(
+export const [previewParaIndent, setPreviewParaIndent] = persistedIndent(
   "previewParaIndent",
-  true,
+  1,
 );
 export const [previewSameAsEditor, setPreviewSameAsEditor] = persisted(
   "previewSameAsEditor",
@@ -116,7 +128,9 @@ export const useSettingsInit = () => {
     r.setProperty("--editor-font-size", `${editorFontSize()}px`);
     r.setProperty("--editor-line-height", String(editorLineHeight()));
     r.setProperty("--editor-font-weight", String(editorFontWeight()));
-    const editorIndentVal = editorParaIndent() ? "1em" : "0";
+    const editorIndentVal = editorParaIndent()
+      ? `${editorParaIndent()}em`
+      : "0";
     r.setProperty("--editor-para-indent", editorIndentVal);
     r.setProperty("--typo-indent", editorIndentVal);
     r.setProperty(
@@ -137,7 +151,10 @@ export const useSettingsInit = () => {
     );
     r.setProperty(
       "--preview-para-indent",
-      (same ? editorParaIndent() : previewParaIndent()) ? "1em" : "0",
+      (() => {
+        const v = same ? editorParaIndent() : previewParaIndent();
+        return v ? `${v}em` : "0";
+      })(),
     );
   });
 

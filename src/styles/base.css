@@ -174,7 +174,9 @@ button {
   flex-shrink: 0;
 }
 
-button:disabled {
+button:disabled,
+input:disabled,
+select:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
