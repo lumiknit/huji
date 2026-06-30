@@ -531,8 +531,7 @@ const EditorPage: Component = () => {
       } else {
         const id = editorState.activeSectionId();
         if (id) {
-          const err = await flushSave(id);
-          if (err) throw new Error(err);
+          await flushSave(id);
         }
       }
     })();
@@ -783,21 +782,6 @@ const EditorPage: Component = () => {
             }}
             onSave={() => handleSave()}
             onFind={() => openFind()}
-            onBlur={
-              isReadonly()
-                ? undefined
-                : async () => {
-                    const id = editorState.activeSectionId();
-                    if (!id) return;
-                    try {
-                      const err = await flushSave(id);
-                      setFmError(err);
-                    } catch (err) {
-                      console.error("Failed to save:", err);
-                      toast.error("Failed to save");
-                    }
-                  }
-            }
             onPrevSection={() => {
               const prev = prevSection();
               if (prev)

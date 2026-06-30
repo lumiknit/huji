@@ -29,7 +29,7 @@ import { sanitizeFilename } from "../lib/path";
 import {
   disposeDebounce,
   normalizeAndMerge,
-  saveSection,
+  normalizeSectionOnLeave,
   getActiveTextareaValue,
 } from "./editor_save";
 
@@ -258,7 +258,7 @@ export const goToSection = async (
     const value = getActiveTextareaValue();
     const meta = metas().find((m) => m.id === id);
     if (meta) {
-      await saveSection(id, meta, value);
+      await normalizeSectionOnLeave(id, meta, value);
     }
   }
 

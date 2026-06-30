@@ -11,7 +11,6 @@ export type RawSection = {
 export const splitSections = (body: string): RawSection[] => {
   if (!body.trim()) return [];
 
-  const lines = body.split("\n");
   const sections: RawSection[] = [];
   let currentLevel = 0;
   let currentHeading = "";
@@ -25,7 +24,13 @@ export const splitSections = (body: string): RawSection[] => {
     sections.push({ level: currentLevel, heading: currentHeading, raw });
   };
 
-  for (const line of lines) {
+  let pos = 0;
+  while (pos <= body.length) {
+    const nl = body.indexOf("\n", pos);
+    const lineEnd = nl === -1 ? body.length : nl;
+    const line = body.slice(pos, lineEnd);
+    pos = lineEnd + 1;
+    if (nl === -1 && line === "") break;
     const fenceMatch = line.match(/^(`{3,}|~{3,})/);
     if (fenceMatch) {
       if (!inFence) {
@@ -62,7 +67,8 @@ export const splitSections = (body: string): RawSection[] => {
 export const extractHeading = (
   raw: string,
 ): { level: number; heading: string } => {
-  const firstLine = raw.split("\n")[0] ?? "";
+  const nl = raw.indexOf("\n");
+  const firstLine = nl === -1 ? raw : raw.slice(0, nl);
   const m = firstLine.match(/^(#{1,6})\s+(.*)$/);
   if (m) return { level: m[1].length, heading: m[2].trim() };
   return { level: 0, heading: "" };

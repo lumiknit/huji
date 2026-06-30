@@ -3,16 +3,15 @@ import {
   putMeta,
   putMetas,
   deleteMeta,
-  deleteMetas,
   normalizeFracIndices,
 } from "../lib/db/meta";
 import {
   getContents,
   putContent,
   deleteContent,
-  deleteContents,
   putContents,
 } from "../lib/db/content";
+import { getDB } from "../lib/db";
 import { createDebounce } from "../lib/utils/debounce";
 import { genUniqueId } from "../lib/utils/id";
 import { normalizeSectionText, splitSections } from "../lib/md/section";
@@ -33,7 +32,15 @@ import {
 
 const countWords = (text: string) => {
   let n = 0;
-  for (const _ of text.matchAll(/\S+/g)) n++;
+  let inWord = false;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) <= 32) {
+      inWord = false;
+    } else if (!inWord) {
+      n++;
+      inWord = true;
+    }
+  }
   return n;
 };
 
@@ -44,11 +51,17 @@ export const countText = (text: string) => ({
 
 // ── Normalization helpers ──
 
+type MergeResult = {
+  metas: SectionMeta[];
+  mergedInto: Map<string, string>; // deletedId -> absorbing section id
+};
+
 const mergeNoHeadingSections = async (
   list: SectionMeta[],
-): Promise<SectionMeta[]> => {
+): Promise<MergeResult> => {
+  const empty: MergeResult = { metas: list, mergedInto: new Map() };
   const firstBodyIdx = list.findIndex((m) => m.level >= 0);
-  if (firstBodyIdx === -1) return list;
+  if (firstBodyIdx === -1) return empty;
 
   const candidateIds = new Set<string>();
   for (let i = firstBodyIdx; i < list.length; i++) {
@@ -57,13 +70,14 @@ const mergeNoHeadingSections = async (
       if (i > firstBodyIdx) candidateIds.add(list[i - 1].id);
     }
   }
-  if (candidateIds.size === 0) return list;
+  if (candidateIds.size === 0) return empty;
 
   const fetched = await getContents([...candidateIds]);
 
   const toDelete: string[] = [];
   const toDeleteSet = new Set<string>();
   const updatedContent = new Map<string, string>();
+  const mergedInto = new Map<string, string>();
 
   for (let i = firstBodyIdx + 1; i < list.length; i++) {
     if (list[i].level !== 0) continue;
@@ -78,34 +92,38 @@ const mergeNoHeadingSections = async (
 
     const prevContent = updatedContent.get(prevId) ?? fetched.get(prevId) ?? "";
     const curContent = fetched.get(curId) ?? "";
-    const merged = (prevContent + "\n\n" + curContent).trim();
-
-    updatedContent.set(prevId, merged);
+    updatedContent.set(prevId, (prevContent + "\n\n" + curContent).trim());
     toDelete.push(curId);
     toDeleteSet.add(curId);
+    mergedInto.set(curId, prevId);
   }
 
-  if (toDelete.length === 0) return list;
+  if (toDelete.length === 0) return empty;
 
   const now = new Date().toISOString();
-  await putContents(
-    [...updatedContent.entries()].map(([id, content]) => ({
-      id,
-      content,
-      updatedAt: now,
-    })),
-  );
-  await deleteMetas(toDelete);
-  await deleteContents(toDelete);
 
-  return list.filter((m) => !toDelete.includes(m.id));
+  // Single multi-store transaction: update merged content + delete orphans atomically
+  const db = await getDB();
+  const tx = db.transaction(["meta", "content"], "readwrite");
+  const metaStore = tx.objectStore("meta");
+  const contentStore = tx.objectStore("content");
+  await Promise.all([
+    ...[...updatedContent.entries()].map(([id, content]) =>
+      contentStore.put({ id, content, updatedAt: now }),
+    ),
+    ...toDelete.map((id) => metaStore.delete(id)),
+    ...toDelete.map((id) => contentStore.delete(id)),
+    tx.done,
+  ]);
+
+  return { metas: list.filter((m) => !toDelete.includes(m.id)), mergedInto };
 };
 
 export const normalizeAndMerge = async (
   list: SectionMeta[],
 ): Promise<SectionMeta[]> => {
   const normalized = await normalizeFracIndices(list);
-  return mergeNoHeadingSections(normalized);
+  return (await mergeNoHeadingSections(normalized)).metas;
 };
 
 // ── Section insert helpers ──
@@ -174,43 +192,52 @@ const applyDocIdProtection = async (raw: string): Promise<string> => {
 
 // ── Core save ──
 
-const saveRaw = async (id: string, trimmed: string) => {
+/**
+ * Write content to IDB and update meta if heading/level changed.
+ * Returns the updated SectionMeta if it changed, null otherwise.
+ * Does NOT call setMetas — callers are responsible for applying the result.
+ */
+const saveRaw = async (
+  id: string,
+  trimmed: string,
+): Promise<SectionMeta | null> => {
   const now = new Date().toISOString();
   await putContent({ id, content: trimmed, updatedAt: now });
   const meta = editorState.metas().find((m) => m.id === id);
-  if (!meta || meta.level === -1) return;
+  if (!meta || meta.level === -1) return null;
   const { heading, level } = extractHeadingFromRaw(trimmed);
   if (meta.heading !== heading || meta.level !== level) {
     const updated = { ...meta, heading, level, updatedAt: now };
-    setMetas((prev) => prev.map((m) => (m.id === id ? updated : m)));
     await putMeta(updated);
+    return updated;
   }
+  return null;
 };
 
 const extractHeadingFromRaw = (
   raw: string,
 ): { heading: string; level: number } => {
-  const firstLine = raw.split("\n")[0] ?? "";
+  const nl = raw.indexOf("\n");
+  const firstLine = nl === -1 ? raw : raw.slice(0, nl);
   const m = firstLine.match(/^(#{1,6})\s+(.*)$/);
   if (m) return { level: m[1].length, heading: m[2].trim() };
   return { level: 0, heading: "" };
 };
 
 /**
- * Save the given section content to IDB.
- * Returns `{ error, newValue }` — newValue is set when the textarea should be
- * updated (e.g. _id protection rewrote the frontmatter, or trailing content
- * was split into a new section).
+ * Normalize and save the current section on navigation away.
+ * Handles frontmatter _id protection, section splitting, and merging.
+ * Called only from goToSection — not during auto-save.
  */
-export const saveSection = async (
+export const normalizeSectionOnLeave = async (
   id: string,
   meta: SectionMeta,
   value: string,
-): Promise<{ error: string; newValue?: string }> => {
+): Promise<void> => {
   if (meta.level === -1) {
     const rawFixed = await applyDocIdProtection(value);
     const info = await extractFrontmatter(rawFixed);
-    if (!info) return { error: "Invalid frontmatter" };
+    if (!info) return;
 
     const now = new Date().toISOString();
     const fm = rawFixed.slice(0, info.end);
@@ -225,27 +252,26 @@ export const saveSection = async (
 
     if (rest) {
       await insertSectionsAfterFrontmatter(meta, rest, now);
-      return { error: "", newValue: fm };
     }
-
-    return { error: "", newValue: rawFixed !== value ? rawFixed : undefined };
+    return;
   }
 
   // ── Regular section ──
   const { current, added } = normalizeSectionText(value.trim());
 
-  const canDelete =
-    current.raw === "" &&
-    editorState.metas().filter((m) => m.level >= 0).length > 1;
+  const bodyMetas = editorState.metas().filter((m) => m.level >= 0);
+  const canDelete = current.raw === "" && bodyMetas.length > 1;
   if (canDelete) {
     await deleteMeta(id);
     await deleteContent(id);
     setMetas((prev) => prev.filter((m) => m.id !== id));
-    return { error: "" };
+    return;
   }
 
-  await saveRaw(id, current.raw);
-  let updatedMetas = editorState.metas();
+  const updatedMeta = await saveRaw(id, current.raw);
+  let updatedMetas = updatedMeta
+    ? editorState.metas().map((m) => (m.id === id ? updatedMeta : m))
+    : editorState.metas();
 
   if (added.length > 0) {
     const existingIds = new Set(updatedMetas.map((m) => m.id));
@@ -286,12 +312,20 @@ export const saveSection = async (
       (a, b) => a.fracIndex - b.fracIndex,
     );
     updatedMetas = await normalizeAndMerge(allMetas);
+    setMetas(updatedMetas);
+    return;
   } else {
-    updatedMetas = await normalizeAndMerge(updatedMetas);
+    // normalizeFracIndices is cheap (early-exits when no reindex needed).
+    // mergeNoHeadingSections only matters when level-0 sections exist; skip
+    // the IDB read when there are none.
+    const normalized = await normalizeFracIndices(updatedMetas);
+    if (normalized.some((m) => m.level === 0)) {
+      const result = await mergeNoHeadingSections(normalized);
+      setMetas(result.metas);
+      return;
+    }
+    setMetas(normalized);
   }
-
-  setMetas(updatedMetas);
-  return { error: "" };
 };
 
 // ── Active value getter ──
@@ -306,18 +340,16 @@ export const getActiveTextareaValue = (): string => activeValueGetter?.() ?? "";
 
 // ── Debounce / auto-save ──
 
-let pendingId: string | null = null;
-
-const debounce = createDebounce(async () => {
-  if (!pendingId) return;
-  const id = pendingId;
+const debounce = createDebounce(async (id: string) => {
   const value = getActiveTextareaValue();
   const meta = editorState.metas().find((m) => m.id === id);
   if (!meta) return;
   setSaveStatus("saving");
   try {
-    await saveSection(id, meta, value);
+    const updated = await saveRaw(id, value.trim());
     batch(() => {
+      if (updated)
+        setMetas((prev) => prev.map((m) => (m.id === id ? updated : m)));
       setSectionCount(countText(value));
       setSaveStatus("saved");
     });
@@ -327,48 +359,35 @@ const debounce = createDebounce(async () => {
 });
 
 export const notifyEdit = (id: string) => {
-  pendingId = id;
   setSaveStatus("dirty");
-  debounce.notify();
+  debounce.notify(id);
 };
 
 export const disposeDebounce = () => {
   debounce.dispose();
-  pendingId = null;
 };
 
-// ── Manual flush (concurrency guard) ──
-
-let savePromise: Promise<string> | null = null;
-
-const doFlushSave = async (
-  id: string,
-  meta: SectionMeta,
-  value: string,
-): Promise<string> => {
-  setSaveStatus("saving");
-  try {
-    const { error } = await saveSection(id, meta, value);
-    batch(() => {
-      if (!error) setSectionCount(countText(value));
-      setSaveStatus(error ? "dirty" : "saved");
-    });
-    return error;
-  } finally {
-    savePromise = null;
-  }
-};
+// ── Manual flush ──
 
 /**
- * Manually flush a save. Reads value from the active textarea ref.
- * Concurrent calls while a save is in progress return the same promise.
+ * Flush pending edits to IDB without normalization.
+ * Called before navigation; normalizeSectionOnLeave handles the full normalize.
  */
-export const flushSave = (id: string): Promise<string> => {
-  if (savePromise) return savePromise;
-  const meta = editorState.metas().find((m) => m.id === id);
-  if (!meta) return Promise.resolve("");
-  savePromise = doFlushSave(id, meta, getActiveTextareaValue());
-  return savePromise;
+export const flushSave = async (id: string): Promise<void> => {
+  debounce.dispose();
+  const value = getActiveTextareaValue();
+  setSaveStatus("saving");
+  try {
+    const updated = await saveRaw(id, value.trim());
+    batch(() => {
+      if (updated)
+        setMetas((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      setSectionCount(countText(value));
+      setSaveStatus("saved");
+    });
+  } catch {
+    setSaveStatus("dirty");
+  }
 };
 
 // ── Whole-file save ──
@@ -404,9 +423,20 @@ export const saveWholeContent = async (raw: string): Promise<void> => {
     newContents.push({ id: newId, content: s.raw, updatedAt: now });
   }
 
-  await Promise.all([putMetas(newMetas), putContents(newContents)]);
-  await deleteMetas(deleteIds);
-  await deleteContents(deleteIds);
+  // Single multi-store transaction: put new + delete old atomically
+  const db = await getDB();
+  const tx = db.transaction(["meta", "content"], "readwrite");
+  const metaStore = tx.objectStore("meta");
+  const contentStore = tx.objectStore("content");
+  await Promise.all([
+    ...newMetas.map((m) => metaStore.put(m)),
+    ...newContents.map((c) =>
+      contentStore.put({ ...c, content: c.content.trim() }),
+    ),
+    ...deleteIds.map((id) => metaStore.delete(id)),
+    ...deleteIds.map((id) => contentStore.delete(id)),
+    tx.done,
+  ]);
 
   const allMetas = [...(fmMeta ? [fmMeta] : []), ...newMetas];
   setMetas(allMetas);

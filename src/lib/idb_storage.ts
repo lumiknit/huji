@@ -70,8 +70,13 @@ export const createIdbStorage = (
     },
     entries: async () => {
       const db = await dbPromise;
-      const keys = await db.getAllKeys(storeName);
-      const values = await db.getAll(storeName);
+      // Use a single transaction so keys and values are consistent
+      const tx = db.transaction(storeName, "readonly");
+      const [keys, values] = await Promise.all([
+        tx.store.getAllKeys(),
+        tx.store.getAll(),
+      ]);
+      await tx.done;
       return (keys as string[]).map((k, i) => [k, values[i] as string]);
     },
   };

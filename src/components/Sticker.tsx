@@ -76,7 +76,7 @@ const highlightMatches = (container: HTMLElement, query: string): Element[] => {
 // ── Main component ──
 
 const Sticker: Component = () => {
-  let bodyEl!: HTMLDivElement;
+  let bodyEl!: HTMLElement;
   let searchInputEl!: HTMLInputElement;
 
   const [searchQuery, setSearchQuery] = createSignal("");

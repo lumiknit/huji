@@ -20,31 +20,36 @@ export const createDebouncedSignal = <T>(
   return [value, set];
 };
 
-const DEBOUNCE_IDLE_MS = 2000;
-const DEBOUNCE_TIMEOUT_MS = 3000;
-const DEBOUNCE_MAX_MS = 60000;
+const DEBOUNCE_IDLE_MS = 1000;
+const DEBOUNCE_TIMEOUT_MS = 1000;
+const DEBOUNCE_MAX_MS = 4000;
 
-export type FlushFn = () => void | Promise<void>;
+export type FlushFn<T> = (value: T) => void | Promise<void>;
 
-export interface Debounceable {
-  notify: () => void;
+export interface Debounceable<T = void> {
+  notify: (value: T) => void;
   flush: () => void;
   dispose: () => void;
 }
 
 /**
- * Typing-pattern debounce: saves after 2s idle, or forces save after 1min without saving.
+ * Typing-pattern debounce: saves after 1s idle, or forces save after 4s without saving.
  * Call flush() explicitly on blur or navigation.
  */
-export const createDebounce = (onFlush: FlushFn): Debounceable => {
+export const createDebounce = <T>(onFlush: FlushFn<T>): Debounceable<T> => {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastEditAt = 0;
   let lastSavedAt = 0;
+  let pendingValue: T | undefined;
 
   const doFlush = () => {
     timer = null;
     lastSavedAt = Date.now();
-    onFlush();
+    if (pendingValue !== undefined) {
+      const value = pendingValue;
+      pendingValue = undefined;
+      onFlush(value);
+    }
   };
 
   const tryFlush = () => {
@@ -59,7 +64,8 @@ export const createDebounce = (onFlush: FlushFn): Debounceable => {
   };
 
   return {
-    notify() {
+    notify(value: T) {
+      pendingValue = value;
       lastEditAt = Date.now();
       if (timer === null) {
         timer = setTimeout(tryFlush, DEBOUNCE_TIMEOUT_MS);
@@ -77,6 +83,7 @@ export const createDebounce = (onFlush: FlushFn): Debounceable => {
         clearTimeout(timer);
         timer = null;
       }
+      pendingValue = undefined;
     },
   };
 };
