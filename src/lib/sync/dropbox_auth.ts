@@ -7,7 +7,7 @@ import {
 } from "./dropbox";
 import {
   persistedTokenSchema,
-  dropboxPkceStateSchema,
+  pkceStateSchema,
   type SyncToken,
   type PersistedToken,
 } from "./interface";
@@ -94,7 +94,7 @@ export async function handleCallback(code: string): Promise<void> {
   const cfg = getDropboxConfig();
   const raw = sessionStorage.getItem(PKCE_KEY);
   if (!raw) throw new Error("PKCE state missing");
-  const pkceState = dropboxPkceStateSchema.safeParse(JSON.parse(raw));
+  const pkceState = pkceStateSchema.safeParse(JSON.parse(raw));
   if (!pkceState.success) throw new Error("PKCE state missing");
   sessionStorage.removeItem(PKCE_KEY);
 

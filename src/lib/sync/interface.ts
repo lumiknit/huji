@@ -20,9 +20,6 @@ export const pkceStateSchema = z.object({
   codeVerifier: z.string(),
 });
 
-// Keep old name for backward compat
-export const dropboxPkceStateSchema = pkceStateSchema;
-
 export type SyncProviderName = "dropbox" | "onedrive";
 
 export const PENDING_PROVIDER_KEY = "sync_pending_provider";

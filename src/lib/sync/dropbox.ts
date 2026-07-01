@@ -2,7 +2,7 @@ import { z } from "zod/mini";
 import {
   generateCodeVerifier,
   generateCodeChallenge,
-  dropboxPkceStateSchema,
+  pkceStateSchema,
   type SyncFile,
   type SyncToken,
 } from "./interface";
@@ -18,7 +18,7 @@ export interface DropboxConfig {
   redirectUri: string;
 }
 
-export type DropboxPkceState = z.infer<typeof dropboxPkceStateSchema>;
+export type DropboxPkceState = z.infer<typeof pkceStateSchema>;
 
 const tokenResponseSchema = z.object({
   access_token: z.string(),
