@@ -18,7 +18,10 @@ import {
 } from "../lib/db/content";
 import { genId, genUniqueId } from "../lib/utils/id";
 import { splitSections } from "../lib/md/section";
-import { extractFrontmatter, parseDocument } from "../lib/md/frontmatter";
+import {
+  parseDocument,
+  parseFrontmatterDataLoose,
+} from "../lib/md/frontmatter";
 import { ensureRenderRules } from "../lib/db/defaults";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { sanitizeFilename } from "../lib/path";
@@ -218,17 +221,9 @@ const updateLastUsedAt = async (list: SectionMeta[]) => {
   if (!row) return;
   const now = new Date().toISOString();
   try {
-    // Fast path: already-migrated rows are compact JSON, no dynamic import needed.
-    let data: Record<string, unknown>;
-    let legacyFormat: "yaml" | null = null;
-    try {
-      data = JSON.parse(row.content) as Record<string, unknown>;
-    } catch {
-      const info = await extractFrontmatter(row.content);
-      if (!info) return;
-      data = info.data;
-      legacyFormat = info.type === "yaml" ? "yaml" : null;
-    }
+    const parsed = await parseFrontmatterDataLoose(row.content);
+    if (!parsed) return;
+    const { data, legacyFormat } = parsed;
 
     if (typeof data._filename === "string") setFilename(data._filename);
     data._last_used_at = now;

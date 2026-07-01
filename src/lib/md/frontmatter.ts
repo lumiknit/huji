@@ -114,6 +114,34 @@ export const serializeFrontmatter = async (
 };
 
 /**
+ * Parses a stored frontmatter row's content, tolerating rows not yet
+ * migrated to the compact-JSON storage format. Returns null if the content
+ * is neither valid compact JSON nor legacy "---"/"+++"-delimited frontmatter.
+ * `legacyFormat` is set only when the row was read via the legacy path, so
+ * callers can detect and persist the migration.
+ */
+export const parseFrontmatterDataLoose = async (
+  content: string,
+): Promise<{
+  data: Record<string, unknown>;
+  legacyFormat: "yaml" | null;
+} | null> => {
+  try {
+    return {
+      data: JSON.parse(content) as Record<string, unknown>,
+      legacyFormat: null,
+    };
+  } catch {
+    const info = await extractFrontmatter(content).catch(() => null);
+    if (!info) return null;
+    return {
+      data: info.data,
+      legacyFormat: info.type === "yaml" ? "yaml" : null,
+    };
+  }
+};
+
+/**
  * Decodes internally-stored compact JSON frontmatter data into the text
  * shown/edited in the frontmatter editor for the given display format.
  * Unlike serializeFrontmatter (used for real markdown files), this never

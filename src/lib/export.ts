@@ -3,8 +3,8 @@ import { getContent } from "./db/content";
 import { assembleSections } from "./md/section";
 import { renderMarkdown, extractText } from "./md/render";
 import {
-  extractFrontmatter,
   getUserData,
+  parseFrontmatterDataLoose,
   serializeFrontmatter,
 } from "./md/frontmatter";
 import type { FrontmatterType } from "./md/frontmatter";
@@ -145,15 +145,9 @@ export const loadRawMarkdown = async (
     const row = await getContent(m.id);
     const content = row?.content ?? "";
     if (m.level === -1) {
-      let data: Record<string, unknown> | null = null;
-      try {
-        data = JSON.parse(content) as Record<string, unknown>;
-      } catch {
-        // Legacy row not yet migrated to compact JSON.
-        const info = await extractFrontmatter(content).catch(() => null);
-        data = info?.data ?? null;
-      }
-      if (data) {
+      const parsed = await parseFrontmatterDataLoose(content);
+      if (parsed) {
+        const { data } = parsed;
         if (typeof data._filename === "string") filename = data._filename;
         const format: FrontmatterType = m.heading === "yaml" ? "yaml" : "json";
         fmContent = await serializeFrontmatter(format, data);

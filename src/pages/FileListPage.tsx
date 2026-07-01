@@ -24,7 +24,7 @@ import toast from "solid-toast";
 import { getDB } from "../lib/db/index";
 import { putMeta } from "../lib/db/meta";
 import { putContent } from "../lib/db/content";
-import { extractFrontmatter } from "../lib/md/frontmatter";
+import { parseFrontmatterDataLoose } from "../lib/md/frontmatter";
 import { genId } from "../lib/utils/id";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { ensureRenderRules } from "../lib/db/defaults";
@@ -66,16 +66,11 @@ const loadFileList = async (): Promise<FileSummary[]> => {
       let docId: string | undefined;
       if (content) {
         try {
-          let data: Record<string, unknown> | null = null;
-          try {
-            data = JSON.parse(content.content) as Record<string, unknown>;
-          } catch {
-            // Legacy row not yet migrated to compact JSON — read-only fallback,
-            // never persisted here (migration happens when the file is opened).
-            const info = await extractFrontmatter(content.content);
-            data = info?.data ?? null;
-          }
-          if (data) {
+          // Legacy rows not yet migrated to compact JSON are read here
+          // read-only — migration happens when the file is opened.
+          const parsed = await parseFrontmatterDataLoose(content.content);
+          if (parsed) {
+            const { data } = parsed;
             if (typeof data._filename === "string") filename = data._filename;
             if (typeof data._last_used_at === "string")
               lastUsedAt = data._last_used_at;

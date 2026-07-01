@@ -29,13 +29,15 @@ const FrontmatterEditor: Component<FrontmatterEditorProps> = (props) => {
   const [error, setError] = createSignal("");
   let textareaEl: HTMLTextAreaElement | undefined;
 
+  // Reload from storage only when switching to a different section — not on
+  // every format change, which would otherwise discard unsaved edits made
+  // just before handleFormatChange runs its own (already up to date) convert.
   createEffect(() => {
     const id = props.id;
-    const format = props.format;
     (async () => {
       const raw = await loadSectionContent(id);
       try {
-        setText(await decodeFrontmatterForEdit(raw, format));
+        setText(await decodeFrontmatterForEdit(raw, props.format));
         setError("");
       } catch {
         setText(raw);
