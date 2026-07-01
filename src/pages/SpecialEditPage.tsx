@@ -32,7 +32,7 @@ import {
   WHOLE_ID,
   setMetas,
 } from "../states/editor";
-import { flushSave, notifyEdit } from "../states/editor_save";
+import { flushSave } from "../states/editor_save";
 
 import { getFileMetas, putMeta, putMetas, deleteMetas } from "../lib/db/meta";
 import { putContents, deleteContents } from "../lib/db/content";
@@ -404,7 +404,6 @@ const SpecialEditPage: Component = () => {
         <Editor
           language="markdown"
           commander={wholeCommander}
-          onChange={() => notifyEdit(WHOLE_ID)}
           onSave={() => handleWholeBack()}
         />
       </Show>
