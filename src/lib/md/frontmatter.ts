@@ -1,3 +1,5 @@
+import { ensureRenderRules } from "../db/defaults";
+
 export type FrontmatterType = "json" | "yaml";
 
 // ── Low-level helpers ──
@@ -139,6 +141,25 @@ export const parseFrontmatterDataLoose = async (
       legacyFormat: info.type === "yaml" ? "yaml" : null,
     };
   }
+};
+
+/** Best-effort `_id` recovery from frontmatter text too broken to JSON.parse. */
+export const extractIdLoose = (raw: string): string | null => {
+  const m = /"_id"\s*:\s*"([^"]*)"/.exec(raw);
+  return m?.[1] || null;
+};
+
+/** Builds a fresh default frontmatter object, keeping the given `_id`. */
+export const createDefaultFrontmatterData = (
+  id: string,
+): Record<string, unknown> => {
+  const data: Record<string, unknown> = {
+    _id: id,
+    _filename: "Untitled",
+    _last_used_at: new Date().toISOString(),
+  };
+  ensureRenderRules(data);
+  return data;
 };
 
 /**

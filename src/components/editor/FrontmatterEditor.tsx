@@ -7,11 +7,14 @@ import {
 } from "solid-js";
 import type { FrontmatterType } from "../../lib/md/frontmatter";
 import {
+  createDefaultFrontmatterData,
   decodeFrontmatterForEdit,
   encodeFrontmatterFromEdit,
+  extractIdLoose,
 } from "../../lib/md/frontmatter";
 import { loadSectionContent, setSaveStatus } from "../../states/editor";
 import { registerValueGetter } from "../../states/editor_save";
+import { genId } from "../../lib/utils/id";
 
 type FrontmatterEditorProps = {
   id: string;
@@ -40,8 +43,18 @@ const FrontmatterEditor: Component<FrontmatterEditorProps> = (props) => {
         setText(await decodeFrontmatterForEdit(raw, props.format));
         setError("");
       } catch {
-        setText(raw);
-        setError("Invalid frontmatter");
+        // Raw content isn't valid JSON at all — show an editable default
+        // instead of the broken text, keeping whatever _id we can recover.
+        const fallback = createDefaultFrontmatterData(
+          extractIdLoose(raw) ?? genId(),
+        );
+        setText(
+          await decodeFrontmatterForEdit(
+            JSON.stringify(fallback),
+            props.format,
+          ),
+        );
+        setError("Invalid frontmatter — loaded default, save to fix");
       }
     })();
   });

@@ -1,6 +1,6 @@
 import { getFileMetas } from "./db/meta";
 import { getContent } from "./db/content";
-import { extractFrontmatter } from "./md/frontmatter";
+import { parseFrontmatterDataLoose } from "./md/frontmatter";
 import { buildHiddenIds } from "./export";
 import type { SectionMeta } from "./db/schema";
 import type { FrontmatterType } from "./md/frontmatter";
@@ -30,11 +30,13 @@ export const loadPreviewData = async (fileId: string): Promise<PreviewData> => {
 
     if (m.level === -1) {
       try {
-        const info = await extractFrontmatter(content);
-        if (info) {
+        const parsed = await parseFrontmatterDataLoose(content);
+        if (parsed) {
           fmRaw = content;
-          fmType = info.type;
-          fmData = info.data;
+          // Display/export format is tracked on the meta, not inferrable
+          // from stored content (always compact JSON regardless of format).
+          fmType = m.heading === "yaml" ? "yaml" : "json";
+          fmData = parsed.data;
           if (typeof fmData._filename === "string") filename = fmData._filename;
         }
       } catch {

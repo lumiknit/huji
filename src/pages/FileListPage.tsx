@@ -336,7 +336,7 @@ const FileListPage: Component = () => {
           <input
             ref={fileInputEl}
             type="file"
-            accept=".md,.md.gz,.markdown,.txt"
+            accept=".md,.md.gz,.gz,.markdown,.txt"
             class="hidden"
             onChange={handleFileInput}
           />
