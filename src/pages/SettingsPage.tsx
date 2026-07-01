@@ -64,6 +64,8 @@ import {
   importHujiSettings,
 } from "../lib/db/settings-storage";
 import { aconfirm } from "../components/CommonDialog";
+import FontDataList from "../components/settings/FontDataList";
+import ThemePreview from "../components/settings/ThemePreview";
 
 const handleResetAll = async () => {
   if (
@@ -81,61 +83,11 @@ const handleResetAll = async () => {
   location.reload();
 };
 
-const FontDataList: Component<{ id: string }> = (props) => {
-  return (
-    <datalist id={props.id}>
-      <option value="BuiltinSerif" />
-      <option value="BuiltinSans" />
-      <option value="RIDIBatang" />
-      <option value="MaruBuri" />
-      <option value="Pretendard JP Variable" />
-      <option value="KimjungchulMyungjo" />
-      <option value="GyeonggiCheonnyeonBatang" />
-    </datalist>
-  );
-};
-
 const THEME_VARIANTS: { value: ThemeVariant; label: string }[] = [
   { value: "default", label: "Default" },
   { value: "warm", label: "Warm" },
   { value: "cool", label: "Cool" },
 ];
-
-type ThemeSwatch = { mode: "light" | "dark"; variant: ThemeVariant };
-
-const ThemePreview: Component<ThemeSwatch> = (props) => {
-  const prefix = () => `--thm-${props.mode}-${props.variant}`;
-  const v = (name: string) => `var(${prefix()}-${name})`;
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: "6px",
-        padding: "6px 8px",
-        background: v("bg"),
-        border: `2px solid ${v("border")}`,
-        "border-radius": "var(--radius)",
-        "font-size": "11px",
-        color: v("fg"),
-        "min-width": "120px",
-        "align-items": "center",
-      }}
-    >
-      <span style={{ flex: 1 }}>Aa</span>
-      <span
-        style={{
-          background: v("primary"),
-          color: v("primary-fg"),
-          padding: "1px 6px",
-          "border-radius": "3px",
-        }}
-      >
-        Btn
-      </span>
-      <span style={{ color: v("muted") }}>…</span>
-    </div>
-  );
-};
 
 const SAMPLE_TEXT = "Hello, 다람쥐, テスト文字";
 
@@ -184,15 +136,8 @@ const SettingsPage: Component = () => {
           <For each={THEME_VARIANTS}>
             {(t) => (
               <div
-                style={{
-                  cursor: "pointer",
-                  outline:
-                    themeLight() === t.value
-                      ? "2px solid var(--c-primary)"
-                      : "none",
-                  "outline-offset": "2px",
-                  "border-radius": "var(--radius)",
-                }}
+                class="theme-swatch-card"
+                classList={{ selected: themeLight() === t.value }}
                 onClick={() => setThemeLight(t.value)}
               >
                 <div
@@ -228,15 +173,8 @@ const SettingsPage: Component = () => {
           <For each={THEME_VARIANTS}>
             {(t) => (
               <div
-                style={{
-                  cursor: "pointer",
-                  outline:
-                    themeDark() === t.value
-                      ? "2px solid var(--c-primary)"
-                      : "none",
-                  "outline-offset": "2px",
-                  "border-radius": "var(--radius)",
-                }}
+                class="theme-swatch-card"
+                classList={{ selected: themeDark() === t.value }}
                 onClick={() => setThemeDark(t.value)}
               >
                 <div
@@ -305,16 +243,7 @@ const SettingsPage: Component = () => {
         </div>
 
         {/* Font family */}
-        <div
-          style={{
-            display: "grid",
-            "grid-template-columns": "1fr 1fr 1fr",
-            gap: "0.5rem",
-            "align-items": "center",
-            "padding-block": "var(--sp-xs)",
-            "font-size": "0.875rem",
-          }}
-        >
+        <div class="settings-row">
           <span>Font family</span>
           <div>
             <input
@@ -342,16 +271,7 @@ const SettingsPage: Component = () => {
         </div>
 
         {/* Font size */}
-        <div
-          style={{
-            display: "grid",
-            "grid-template-columns": "1fr 1fr 1fr",
-            gap: "0.5rem",
-            "align-items": "center",
-            "padding-block": "var(--sp-xs)",
-            "font-size": "0.875rem",
-          }}
-        >
+        <div class="settings-row">
           <span>Font size (px)</span>
           <input
             type="number"
@@ -371,16 +291,7 @@ const SettingsPage: Component = () => {
         </div>
 
         {/* Line height */}
-        <div
-          style={{
-            display: "grid",
-            "grid-template-columns": "1fr 1fr 1fr",
-            gap: "0.5rem",
-            "align-items": "center",
-            "padding-block": "var(--sp-xs)",
-            "font-size": "0.875rem",
-          }}
-        >
+        <div class="settings-row">
           <span>Line height</span>
           <input
             type="number"
@@ -404,16 +315,7 @@ const SettingsPage: Component = () => {
         </div>
 
         {/* Font weight */}
-        <div
-          style={{
-            display: "grid",
-            "grid-template-columns": "1fr 1fr 1fr",
-            gap: "0.5rem",
-            "align-items": "center",
-            "padding-block": "var(--sp-xs)",
-            "font-size": "0.875rem",
-          }}
-        >
+        <div class="settings-row">
           <span>Font weight</span>
           <input
             type="number"
@@ -437,16 +339,7 @@ const SettingsPage: Component = () => {
         </div>
 
         {/* Paragraph indent */}
-        <div
-          style={{
-            display: "grid",
-            "grid-template-columns": "1fr 1fr 1fr",
-            gap: "0.5rem",
-            "align-items": "center",
-            "padding-block": "var(--sp-xs)",
-            "font-size": "0.875rem",
-          }}
-        >
+        <div class="settings-row">
           <span>Paragraph indent</span>
           <select
             value={String(editorParaIndent())}
@@ -470,26 +363,9 @@ const SettingsPage: Component = () => {
         </div>
 
         {/* Side-by-side preview */}
-        <div
-          style={{
-            display: "grid",
-            "grid-template-columns": "1fr 1fr",
-            gap: "0.5rem",
-            "margin-top": "0.75rem",
-          }}
-        >
+        <div class="settings-row-2col">
           <div>
-            <div
-              style={{
-                "font-size": "0.7rem",
-                color: "var(--c-muted)",
-                "margin-bottom": "0.25rem",
-                "text-transform": "uppercase",
-                "letter-spacing": "0.05em",
-              }}
-            >
-              Editor
-            </div>
+            <div class="settings-subtitle">Editor</div>
             <div
               style={{
                 "font-family": editorFont() || SERIF_STACK,
@@ -506,17 +382,7 @@ const SettingsPage: Component = () => {
             </div>
           </div>
           <div>
-            <div
-              style={{
-                "font-size": "0.7rem",
-                color: "var(--c-muted)",
-                "margin-bottom": "0.25rem",
-                "text-transform": "uppercase",
-                "letter-spacing": "0.05em",
-              }}
-            >
-              Preview
-            </div>
+            <div class="settings-subtitle">Preview</div>
             <div
               style={{
                 "font-family": effectivePreviewFont() || SERIF_STACK,

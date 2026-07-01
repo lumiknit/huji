@@ -6,16 +6,16 @@ import {
   Show,
 } from "solid-js";
 
-type FileDropProps = {
+const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
+
+type Props = {
   onDrop: (file: File) => void;
   label?: string;
 };
 
-const FileDrop: Component<FileDropProps> = (props) => {
+const FileDrop: Component<Props> = (props) => {
   const [dragging, setDragging] = createSignal(false);
   let depth = 0;
-
-  const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
 
   const onDragEnter = (e: DragEvent) => {
     if (!hasFiles(e)) return;

@@ -362,6 +362,44 @@ section > label > select {
   margin-left: auto;
 }
 
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  padding-block: var(--sp-xs);
+  font-size: 0.875rem;
+}
+
+.settings-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.settings-subtitle {
+  font-size: 0.7rem;
+  color: var(--c-muted);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.theme-swatch-card {
+  cursor: pointer;
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+.theme-swatch-card.selected {
+  outline: 2px solid var(--c-primary);
+}
+
+.theme-swatch-card:not(.selected) {
+  outline: none;
+}
+
 /* ── File list ── */
 ul,
 ol {
@@ -731,15 +769,6 @@ article.md-body {
   flex: 1;
 }
 
-.find-regex-label {
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
 .find-error {
   color: var(--c-danger);
   font-size: 0.8rem;
@@ -927,17 +956,6 @@ button.count-label.dim {
 }
 
 /* ── Helper utilities ── */
-.flex-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-sm);
-}
-
-.flex-row > input[type="text"],
-.flex-row > input[type="search"] {
-  flex: 1;
-}
-
 .hidden {
   display: none;
 }
@@ -960,12 +978,6 @@ button.count-label.dim {
 
 .text-xs {
   font-size: 0.8rem;
-}
-
-.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .pre-wrap {
@@ -1075,10 +1087,6 @@ button.count-label.dim {
 
 .file-drop-hint {
   font-size: 0.875rem;
-  color: var(--c-muted);
-}
-
-.file-drop-disallowed .file-drop-label {
   color: var(--c-muted);
 }
 
@@ -1224,8 +1232,8 @@ dialog > form > .dialog-actions {
 .sticker-section-select {
   flex: 1;
   min-width: 0;
-  height: auto;
-  padding: 0.1rem var(--sp-xs);
+  height: 1.6rem;
+  padding: 0 var(--sp-xs);
   font-size: 0.75rem;
 }
 

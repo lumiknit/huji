@@ -3,7 +3,6 @@ import {
   createSignal,
   createEffect,
   createMemo,
-  createResource,
   onMount,
   onCleanup,
   For,
@@ -12,7 +11,6 @@ import {
 import { Dynamic } from "solid-js/web";
 import { useParams, useNavigate, useSearchParams, A } from "@solidjs/router";
 import {
-  TbOutlineDeviceFloppy,
   TbOutlineEye,
   TbOutlineRotate,
   TbOutlineRotateClockwise,
@@ -74,65 +72,18 @@ import LightEditor from "../components/editor/LightEditor";
 import { lightEditor } from "../states/settings";
 import { createCommander } from "../components/editor/commander";
 import ToggleMenu from "../components/ToggleMenu";
-import MarkdownView from "../components/MarkdownView";
 import FileDrop from "../components/FileDrop";
 import Toolbar from "../components/Toolbar";
 import FindReplaceModal from "../components/FindReplaceModal";
 import Sticker from "../components/Sticker";
 import { resetFindState, loadFindContents } from "../states/find";
 import { stickerOpen, toggleSticker } from "../states/sticker";
+import ContextSection from "../components/editor/ContextSection";
+import SaveOrBackupButton from "../components/editor/SaveOrBackupButton";
+import { scrollSelectionToCenter } from "../lib/utils/dom";
 import type { SectionMeta } from "../lib/db/schema";
 
 const ALL_ID = "__all__";
-
-type ContextSectionProps = {
-  meta: () => SectionMeta;
-  raw: boolean;
-};
-
-const ContextSection: Component<ContextSectionProps> = (props) => {
-  const [content] = createResource(() => props.meta().id, loadSectionContent);
-  return (
-    <div class="section-preview">
-      <Show
-        when={!props.raw && props.meta().level !== -1}
-        fallback={<pre class="pre-wrap">{content() ?? ""}</pre>}
-      >
-        <MarkdownView content={content() ?? ""} />
-      </Show>
-    </div>
-  );
-};
-
-type SaveOrBackupButtonProps = {
-  status: () => string;
-  onSave: () => void;
-  onBackup: () => void;
-  canBackup: () => boolean;
-};
-
-const SaveOrBackupButton: Component<SaveOrBackupButtonProps> = (props) => {
-  const isSaved = () => props.status() === "saved";
-  const handleClick = () => {
-    if (isSaved()) {
-      props.onBackup();
-    } else {
-      props.onSave();
-    }
-  };
-  return (
-    <button
-      class={isSaved() ? undefined : "primary"}
-      disabled={isSaved() ? !props.canBackup() : props.status() === "saving"}
-      onClick={handleClick}
-      title={isSaved() ? "Backup to cloud" : "Save"}
-    >
-      <Show when={isSaved()} fallback={<TbOutlineDeviceFloppy />}>
-        <TbOutlineCloudUpload />
-      </Show>
-    </button>
-  );
-};
 
 const EditorPage: Component = () => {
   const params = useParams<{ fileId: string }>();
@@ -184,17 +135,6 @@ const EditorPage: Component = () => {
     if (idx === -1) return null;
     return list[idx + 1] ?? null;
   });
-
-  const scrollToEditor = () => {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const rect = sel.getRangeAt(0).getBoundingClientRect();
-    const hh = document.documentElement.clientHeight / 2;
-    window.scrollTo({
-      top: window.scrollY + rect.top - hh,
-      behavior: "smooth",
-    });
-  };
 
   const prettifyFrontmatter = async () => {
     if (!isFrontmatter()) return;
@@ -556,7 +496,7 @@ const EditorPage: Component = () => {
       <Show when={mode() === "single"}>
         <button
           class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}
-          onClick={scrollToEditor}
+          onClick={scrollSelectionToCenter}
           title="Jump to current selection"
         >
           {scrollPct()}%

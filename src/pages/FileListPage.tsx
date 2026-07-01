@@ -78,7 +78,7 @@ const loadFileList = async (): Promise<FileSummary[]> => {
             if (typeof info.data._id === "string" && info.data._id)
               docId = info.data._id;
             if (Array.isArray(info.data._tags))
-              tags = (info.data._tags as unknown[]).filter(
+              tags = info.data._tags.filter(
                 (t): t is string => typeof t === "string",
               );
           }
