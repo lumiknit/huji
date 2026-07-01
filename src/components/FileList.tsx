@@ -278,7 +278,7 @@ const FileList: Component<FileListProps> = (props) => {
       ...(doc.frontmatter?.data ?? {}),
       ...(newId ? { _id: genId() } : {}),
     };
-    const fmType = doc.frontmatter?.type ?? "yaml";
+    const fmType = doc.frontmatter?.type ?? "json";
     const newFm = await serializeFrontmatter(fmType, fmData);
     const newText = doc.body ? newFm + "\n" + doc.body : newFm;
     const newFileId = await importMarkdownText(newText, item.filename);

@@ -15,10 +15,7 @@ import { getDB } from "../lib/db";
 import { createDebounce } from "../lib/utils/debounce";
 import { genUniqueId } from "../lib/utils/id";
 import { normalizeSectionText, splitSections } from "../lib/md/section";
-import {
-  extractFrontmatter,
-  serializeFrontmatter,
-} from "../lib/md/frontmatter";
+import { encodeFrontmatterFromEdit } from "../lib/md/frontmatter";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { batch } from "solid-js";
 import {
@@ -28,6 +25,7 @@ import {
   setSectionCount,
   getCurrentDocId,
   fileId,
+  WHOLE_ID,
 } from "./editor";
 
 const countWords = (text: string) => {
@@ -126,68 +124,29 @@ export const normalizeAndMerge = async (
   return (await mergeNoHeadingSections(normalized)).metas;
 };
 
-// ── Section insert helpers ──
+// ── Frontmatter save (separate from the generic section pipeline) ──
 
-export const insertSectionsAfterFrontmatter = async (
-  fmMeta: SectionMeta,
-  rest: string,
-  now: string,
-): Promise<void> => {
-  const sections = splitSections(rest);
-  if (sections.length === 0) return;
-
-  const list = editorState.metas();
-  const existingIds = new Set(list.map((m) => m.id));
-  const nextBodyMeta = list.find((m) => m.level >= 0);
-  const nextFrac =
-    nextBodyMeta?.fracIndex ??
-    fmMeta.fracIndex + FRAC_GAP * (sections.length + 1);
-
-  const insertedMetas: SectionMeta[] = [];
-  const insertedContents: Array<{
-    id: string;
-    content: string;
-    updatedAt: string;
-  }> = [];
-
-  for (let i = 0; i < sections.length; i++) {
-    const s = sections[i];
-    const newId = genUniqueId(existingIds);
-    existingIds.add(newId);
-    const frac =
-      fmMeta.fracIndex +
-      (nextFrac - fmMeta.fracIndex) * ((i + 1) / (sections.length + 1));
-    insertedMetas.push({
-      id: newId,
-      fileId: fmMeta.fileId,
-      fracIndex: frac,
-      level: s.level,
-      heading: s.heading,
-      updatedAt: now,
-    });
-    insertedContents.push({ id: newId, content: s.raw, updatedAt: now });
+/**
+ * Parses edited frontmatter text and persists it as compact JSON.
+ * Returns false (without writing) if the text fails to parse — frontmatter
+ * is never split into sections or merged like a regular section.
+ */
+const saveFrontmatterSection = async (
+  id: string,
+  format: "json" | "yaml",
+  editText: string,
+): Promise<boolean> => {
+  let data: Record<string, unknown>;
+  try {
+    data = await encodeFrontmatterFromEdit(editText, format);
+  } catch {
+    return false;
   }
-
-  await putMetas(insertedMetas);
-  await putContents(insertedContents);
-
-  const allMetas = [...list, ...insertedMetas].sort(
-    (a, b) => a.fracIndex - b.fracIndex,
-  );
-  const merged = await normalizeAndMerge(allMetas);
-  setMetas(merged);
-};
-
-// ── _id protection ──
-
-const applyDocIdProtection = async (raw: string): Promise<string> => {
   const docId = getCurrentDocId();
-  if (!docId) return raw;
-  const info = await extractFrontmatter(raw);
-  if (!info || info.data._id === docId) return raw;
-  const data = { ...info.data, _id: docId };
-  const newFm = await serializeFrontmatter(info.type, data);
-  return newFm + raw.slice(info.end);
+  if (docId && data._id !== docId) data._id = docId;
+  const now = new Date().toISOString();
+  await putContent({ id, content: JSON.stringify(data), updatedAt: now });
+  return true;
 };
 
 // ── Core save ──
@@ -201,10 +160,11 @@ const saveRaw = async (
   id: string,
   trimmed: string,
 ): Promise<SectionMeta | null> => {
+  const meta = editorState.metas().find((m) => m.id === id);
+  if (meta?.level === -1) return null; // frontmatter has its own save path
   const now = new Date().toISOString();
   await putContent({ id, content: trimmed, updatedAt: now });
-  const meta = editorState.metas().find((m) => m.id === id);
-  if (!meta || meta.level === -1) return null;
+  if (!meta) return null;
   const { heading, level } = extractHeadingFromRaw(trimmed);
   if (meta.heading !== heading || meta.level !== level) {
     const updated = { ...meta, heading, level, updatedAt: now };
@@ -228,32 +188,19 @@ const extractHeadingFromRaw = (
  * Normalize and save the current section on navigation away.
  * Handles frontmatter _id protection, section splitting, and merging.
  * Called only from goToSection — not during auto-save.
+ *
+ * Returns false if the section could not be saved (currently only possible
+ * for invalid frontmatter text) — the caller should block navigation so the
+ * edit isn't silently discarded.
  */
 export const normalizeSectionOnLeave = async (
   id: string,
   meta: SectionMeta,
   value: string,
-): Promise<void> => {
+): Promise<boolean> => {
   if (meta.level === -1) {
-    const rawFixed = await applyDocIdProtection(value);
-    const info = await extractFrontmatter(rawFixed);
-    if (!info) return;
-
-    const now = new Date().toISOString();
-    const fm = rawFixed.slice(0, info.end);
-    const rest = rawFixed.slice(info.end).trim();
-    await putContent({ id, content: fm, updatedAt: now });
-
-    if (info.type !== meta.heading) {
-      const updated = { ...meta, heading: info.type, updatedAt: now };
-      setMetas((prev) => prev.map((m) => (m.id === id ? updated : m)));
-      await putMeta(updated);
-    }
-
-    if (rest) {
-      await insertSectionsAfterFrontmatter(meta, rest, now);
-    }
-    return;
+    // Invalid frontmatter text is left unsaved — no split/merge logic applies here.
+    return saveFrontmatterSection(id, meta.heading as "json" | "yaml", value);
   }
 
   // ── Regular section ──
@@ -265,7 +212,7 @@ export const normalizeSectionOnLeave = async (
     await deleteMeta(id);
     await deleteContent(id);
     setMetas((prev) => prev.filter((m) => m.id !== id));
-    return;
+    return true;
   }
 
   const updatedMeta = await saveRaw(id, current.raw);
@@ -313,7 +260,7 @@ export const normalizeSectionOnLeave = async (
     );
     updatedMetas = await normalizeAndMerge(allMetas);
     setMetas(updatedMetas);
-    return;
+    return true;
   } else {
     // normalizeFracIndices is cheap (early-exits when no reindex needed).
     // mergeNoHeadingSections only matters when level-0 sections exist; skip
@@ -322,10 +269,11 @@ export const normalizeSectionOnLeave = async (
     if (normalized.some((m) => m.level === 0)) {
       const result = await mergeNoHeadingSections(normalized);
       setMetas(result.metas);
-      return;
+      return true;
     }
     setMetas(normalized);
   }
+  return true;
 };
 
 // ── Active value getter ──
@@ -342,14 +290,17 @@ export const getActiveTextareaValue = (): string => activeValueGetter?.() ?? "";
 
 const debounce = createDebounce(async (id: string) => {
   const value = getActiveTextareaValue();
-  const meta = editorState.metas().find((m) => m.id === id);
-  if (!meta) return;
+  if (id !== WHOLE_ID && !editorState.metas().find((m) => m.id === id)) return;
   setSaveStatus("saving");
   try {
-    const updated = await saveRaw(id, value.trim());
-    batch(() => {
+    if (id === WHOLE_ID) {
+      await saveWholeContent(value);
+    } else {
+      const updated = await saveRaw(id, value.trim());
       if (updated)
         setMetas((prev) => prev.map((m) => (m.id === id ? updated : m)));
+    }
+    batch(() => {
       setSectionCount(countText(value));
       setSaveStatus("saved");
     });
@@ -376,23 +327,36 @@ export const disposeDebounce = () => {
 export const flushSave = async (id: string): Promise<void> => {
   debounce.dispose();
   const value = getActiveTextareaValue();
+  const meta = editorState.metas().find((m) => m.id === id);
   setSaveStatus("saving");
   try {
-    const updated = await saveRaw(id, value.trim());
-    batch(() => {
+    if (id === WHOLE_ID) {
+      await saveWholeContent(value);
+    } else if (meta?.level === -1) {
+      const ok = await saveFrontmatterSection(
+        id,
+        meta.heading as "json" | "yaml",
+        value,
+      );
+      if (!ok) throw new Error("Invalid frontmatter");
+    } else {
+      const updated = await saveRaw(id, value.trim());
       if (updated)
         setMetas((prev) => prev.map((m) => (m.id === id ? updated : m)));
+    }
+    batch(() => {
       setSectionCount(countText(value));
       setSaveStatus("saved");
     });
-  } catch {
+  } catch (e) {
     setSaveStatus("dirty");
+    throw e;
   }
 };
 
 // ── Whole-file save ──
 
-export const saveWholeContent = async (raw: string): Promise<void> => {
+const saveWholeContent = async (raw: string): Promise<void> => {
   const id = fileId();
   if (!id) return;
 

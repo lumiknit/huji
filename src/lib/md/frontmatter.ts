@@ -1,4 +1,4 @@
-export type FrontmatterType = "json" | "yaml" | "toml";
+export type FrontmatterType = "json" | "yaml";
 
 // ── Low-level helpers ──
 
@@ -74,22 +74,6 @@ export const extractFrontmatter = async (
     return null;
   }
 
-  if (text.startsWith("+++\n") || text.startsWith("+++\r\n")) {
-    const offset = text.startsWith("+++\r\n") ? 5 : 4;
-    const closeIdx = text.indexOf("\n+++", offset);
-    if (closeIdx !== -1) {
-      const raw = text.slice(offset, closeIdx);
-      const { parse } = await import("smol-toml");
-      try {
-        const data = parse(raw) as Record<string, unknown>;
-        return { type: "toml", raw, data, end: closeIdx + 4 };
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }
-
   return null;
 };
 
@@ -126,11 +110,45 @@ export const serializeFrontmatter = async (
       const { dump } = await import("js-yaml");
       return `---\n${dump(data)}---`;
     }
-    case "toml": {
-      const { stringify } = await import("smol-toml");
-      return `+++\n${stringify(data as Parameters<typeof stringify>[0])}\n+++`;
-    }
   }
+};
+
+/**
+ * Decodes internally-stored compact JSON frontmatter data into the text
+ * shown/edited in the frontmatter editor for the given display format.
+ * Unlike serializeFrontmatter (used for real markdown files), this never
+ * adds "---" delimiters — the editor widget is a standalone field, not raw
+ * markdown text.
+ */
+export const decodeFrontmatterForEdit = async (
+  compactJson: string,
+  format: FrontmatterType,
+): Promise<string> => {
+  const data = JSON.parse(compactJson) as Record<string, unknown>;
+  if (format === "json") return JSON.stringify(data, null, 2);
+  const { dump } = await import("js-yaml");
+  return dump(data);
+};
+
+/**
+ * Parses edited frontmatter text (json or yaml, as produced by
+ * decodeFrontmatterForEdit) back into a plain data object. Throws if the
+ * text is not valid for the given format.
+ */
+export const encodeFrontmatterFromEdit = async (
+  editedText: string,
+  format: FrontmatterType,
+): Promise<Record<string, unknown>> => {
+  if (format === "json") {
+    return JSON.parse(editedText) as Record<string, unknown>;
+  }
+  const { load } = await import("js-yaml");
+  const data = load(editedText);
+  if (data === null || data === undefined) return {};
+  if (typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Invalid YAML frontmatter");
+  }
+  return data as Record<string, unknown>;
 };
 
 /** Returns only user-defined fields, stripping huji internal fields (prefixed with _). */

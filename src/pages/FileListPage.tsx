@@ -24,10 +24,7 @@ import toast from "solid-toast";
 import { getDB } from "../lib/db/index";
 import { putMeta } from "../lib/db/meta";
 import { putContent } from "../lib/db/content";
-import {
-  extractFrontmatter,
-  serializeFrontmatter,
-} from "../lib/md/frontmatter";
+import { extractFrontmatter } from "../lib/md/frontmatter";
 import { genId } from "../lib/utils/id";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { ensureRenderRules } from "../lib/db/defaults";
@@ -69,16 +66,22 @@ const loadFileList = async (): Promise<FileSummary[]> => {
       let docId: string | undefined;
       if (content) {
         try {
-          const info = await extractFrontmatter(content.content);
-          if (info) {
-            if (typeof info.data._filename === "string")
-              filename = info.data._filename;
-            if (typeof info.data._last_used_at === "string")
-              lastUsedAt = info.data._last_used_at;
-            if (typeof info.data._id === "string" && info.data._id)
-              docId = info.data._id;
-            if (Array.isArray(info.data._tags))
-              tags = info.data._tags.filter(
+          let data: Record<string, unknown> | null = null;
+          try {
+            data = JSON.parse(content.content) as Record<string, unknown>;
+          } catch {
+            // Legacy row not yet migrated to compact JSON — read-only fallback,
+            // never persisted here (migration happens when the file is opened).
+            const info = await extractFrontmatter(content.content);
+            data = info?.data ?? null;
+          }
+          if (data) {
+            if (typeof data._filename === "string") filename = data._filename;
+            if (typeof data._last_used_at === "string")
+              lastUsedAt = data._last_used_at;
+            if (typeof data._id === "string" && data._id) docId = data._id;
+            if (Array.isArray(data._tags))
+              tags = data._tags.filter(
                 (t): t is string => typeof t === "string",
               );
           }
@@ -112,12 +115,12 @@ const createNewFile = async (filename: string): Promise<string> => {
     fileId,
     fracIndex: 0,
     level: -1,
-    heading: "yaml",
+    heading: "json",
     updatedAt: now,
   });
   await putContent({
     id: fmId,
-    content: await serializeFrontmatter("yaml", fmData),
+    content: JSON.stringify(fmData),
     updatedAt: now,
   });
 

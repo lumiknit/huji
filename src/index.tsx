@@ -12,7 +12,7 @@ import FileListPage from "./pages/FileListPage";
 import AboutPage from "./pages/AboutPage";
 import EditorPage from "./pages/EditorPage";
 import PreviewPage from "./pages/PreviewPage";
-import ReorderPage from "./pages/ReorderPage";
+import SpecialEditPage from "./pages/SpecialEditPage";
 import SettingsPage from "./pages/SettingsPage";
 type LayoutProps = { children?: JSX.Element };
 
@@ -36,7 +36,7 @@ render(
       <Route path="/about" component={AboutPage} />
       <Route path="/edit/:fileId" component={EditorPage} />
       <Route path="/preview/:fileId" component={PreviewPage} />
-      <Route path="/reorder/:fileId" component={ReorderPage} />
+      <Route path="/edit/:fileId/esp" component={SpecialEditPage} />
       <Route path="/settings" component={SettingsPage} />
     </HashRouter>
   ),

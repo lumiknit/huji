@@ -3,14 +3,12 @@
   "specifiers": {
     "npm:@codemirror/commands@^6.10.4": "6.10.4",
     "npm:@codemirror/lang-markdown@^6.5.0": "6.5.0",
-    "npm:@codemirror/lang-yaml@^6.1.3": "6.1.3",
     "npm:@codemirror/language@^6.12.4": "6.12.4",
     "npm:@codemirror/search@^6.7.1": "6.7.1",
     "npm:@codemirror/state@^6.7.0": "6.7.0",
     "npm:@codemirror/view@^6.43.4": "6.43.4",
     "npm:@eslint/js@^10.0.1": "10.0.1_eslint@10.6.0",
     "npm:@lezer/markdown@^1.6.4": "1.6.4",
-    "npm:@solid-primitives/media@^2.3.5": "2.3.5_solid-js@1.9.13",
     "npm:@solid-primitives/storage@^4.3.4": "4.3.4_solid-js@1.9.13",
     "npm:@solidjs/router@~0.16.1": "0.16.1_solid-js@1.9.13",
     "npm:@types/js-yaml@^4.0.9": "4.0.9",
@@ -25,7 +23,6 @@
     "npm:knip@^6.23.0": "6.23.0",
     "npm:marked@^18.0.5": "18.0.5",
     "npm:prettier@^3.9.1": "3.9.1",
-    "npm:smol-toml@^1.7.0": "1.7.0",
     "npm:solid-icons@^1.2.0": "1.2.0_solid-js@1.9.13",
     "npm:solid-js@^1.9.13": "1.9.13",
     "npm:solid-toast@0.5": "0.5.0_solid-js@1.9.13",
@@ -271,18 +268,6 @@
         "@codemirror/view",
         "@lezer/common",
         "@lezer/markdown"
-      ]
-    },
-    "@codemirror/lang-yaml@6.1.3": {
-      "integrity": "sha512-AZ8DJBuXGVHybpBQhmZtgew5//4hv3tdkXnr3vDmOUMJRuB6vn/uuwtmTOTlqEaQFg3hQSVeA90NmvIQyUV6FQ==",
-      "dependencies": [
-        "@codemirror/autocomplete",
-        "@codemirror/language",
-        "@codemirror/state",
-        "@lezer/common",
-        "@lezer/highlight",
-        "@lezer/lr",
-        "@lezer/yaml"
       ]
     },
     "@codemirror/language@6.12.4": {
@@ -542,14 +527,6 @@
       "dependencies": [
         "@lezer/common",
         "@lezer/highlight"
-      ]
-    },
-    "@lezer/yaml@1.0.4": {
-      "integrity": "sha512-2lrrHqxalACEbxIbsjhqGpSW8kWpUKuY6RHgnSAFZa6qK62wvnPxA8hGOwOoDbwHcOFs5M4o27mjGu+P7TvBmw==",
-      "dependencies": [
-        "@lezer/common",
-        "@lezer/highlight",
-        "@lezer/lr"
       ]
     },
     "@marijn/find-cluster-break@1.0.3": {
@@ -856,37 +833,6 @@
     },
     "@rolldown/pluginutils@1.0.1": {
       "integrity": "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="
-    },
-    "@solid-primitives/event-listener@2.4.5_solid-js@1.9.13": {
-      "integrity": "sha512-nwRV558mIabl4yVAhZKY8cb6G+O1F0M6Z75ttTu5hk+SxdOnKSGj+eetDIu7Oax1P138ZdUU01qnBPR8rnxaEA==",
-      "dependencies": [
-        "@solid-primitives/utils",
-        "solid-js"
-      ]
-    },
-    "@solid-primitives/media@2.3.5_solid-js@1.9.13": {
-      "integrity": "sha512-LX9fB5WDaK87FMDtUB1qokBOfT2et9Uobv/zZaKLH9caFSz4+P70MBKEIBHcZQy+9MV5M2XvGYLTbLskjkzMjA==",
-      "dependencies": [
-        "@solid-primitives/event-listener",
-        "@solid-primitives/rootless",
-        "@solid-primitives/static-store",
-        "@solid-primitives/utils",
-        "solid-js"
-      ]
-    },
-    "@solid-primitives/rootless@1.5.3_solid-js@1.9.13": {
-      "integrity": "sha512-N8cIDAHbWcLahNRLr0knAAQvXyEdEMoAZvIMZKmhNb1mlx9e2UOv9BRD5YNwQUJwbNoYVhhLwFOEOcVXFx0HqA==",
-      "dependencies": [
-        "@solid-primitives/utils",
-        "solid-js"
-      ]
-    },
-    "@solid-primitives/static-store@0.1.3_solid-js@1.9.13": {
-      "integrity": "sha512-uxez7SXnr5GiRnzqO2IEDjOJRIXaG+0LZLBizmUA1FwSi+hrpuMzVBwyk70m4prcl8X6FDDXUl9O8hSq8wHbBQ==",
-      "dependencies": [
-        "@solid-primitives/utils",
-        "solid-js"
-      ]
     },
     "@solid-primitives/storage@4.3.4_solid-js@1.9.13": {
       "integrity": "sha512-GSxPAIuyxhJWOcv7n10iv3aid5oHN3KUgyA9IV0GYWlPpgyGs43aS9E85b0VXDLoH+D4ThNK8+2WEJ8B/S6Ccg==",
@@ -2418,14 +2364,12 @@
       "dependencies": [
         "npm:@codemirror/commands@^6.10.4",
         "npm:@codemirror/lang-markdown@^6.5.0",
-        "npm:@codemirror/lang-yaml@^6.1.3",
         "npm:@codemirror/language@^6.12.4",
         "npm:@codemirror/search@^6.7.1",
         "npm:@codemirror/state@^6.7.0",
         "npm:@codemirror/view@^6.43.4",
         "npm:@eslint/js@^10.0.1",
         "npm:@lezer/markdown@^1.6.4",
-        "npm:@solid-primitives/media@^2.3.5",
         "npm:@solid-primitives/storage@^4.3.4",
         "npm:@solidjs/router@~0.16.1",
         "npm:@types/js-yaml@^4.0.9",
@@ -2440,7 +2384,6 @@
         "npm:knip@^6.23.0",
         "npm:marked@^18.0.5",
         "npm:prettier@^3.9.1",
-        "npm:smol-toml@^1.7.0",
         "npm:solid-icons@^1.2.0",
         "npm:solid-js@^1.9.13",
         "npm:solid-toast@0.5",

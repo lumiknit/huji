@@ -8,7 +8,6 @@ import {
   For,
   Show,
 } from "solid-js";
-import { Dynamic } from "solid-js/web";
 import { useParams, useNavigate, useSearchParams, A } from "@solidjs/router";
 import {
   TbOutlineEye,
@@ -16,7 +15,6 @@ import {
   TbOutlineRotateClockwise,
   TbOutlineSearch,
   TbOutlinePlus,
-  TbOutlineWand,
   TbOutlineHome,
   TbOutlineDownload,
   TbOutlinePaperclip,
@@ -34,7 +32,6 @@ import {
   loadFile,
   goToSection,
   loadSectionContent,
-  loadAllContent,
   addSection,
   addSectionBefore,
   disposeEditor,
@@ -43,13 +40,9 @@ import {
   getCurrentDocId,
   importMarkdownText,
   setSectionCount,
+  type GoToSectionOpts,
 } from "../states/editor";
-import {
-  notifyEdit,
-  flushSave,
-  saveWholeContent,
-  countText,
-} from "../states/editor_save";
+import { notifyEdit, flushSave, countText } from "../states/editor_save";
 import {
   wakeLock,
   contextSections,
@@ -59,17 +52,11 @@ import {
   showWords,
   setShowWords,
 } from "../states/settings";
-import {
-  extractFrontmatter,
-  serializeFrontmatter,
-} from "../lib/md/frontmatter";
 import { loadRawMarkdown, downloadBlob, packMDBlob } from "../lib/export";
 import { sanitizeFilename, packBackupName } from "../lib/path";
 import { getProvider } from "../lib/sync/provider";
 import type { SyncProviderName } from "../lib/sync/interface";
 import Editor from "../components/editor/Editor";
-import LightEditor from "../components/editor/LightEditor";
-import { lightEditor } from "../states/settings";
 import { createCommander } from "../components/editor/commander";
 import ToggleMenu from "../components/ToggleMenu";
 import FileDrop from "../components/FileDrop";
@@ -83,94 +70,73 @@ import SaveOrBackupButton from "../components/editor/SaveOrBackupButton";
 import { scrollSelectionToCenter } from "../lib/utils/dom";
 import type { SectionMeta } from "../lib/db/schema";
 
-const ALL_ID = "__all__";
-
 const EditorPage: Component = () => {
   const params = useParams<{ fileId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isReadonly = () => searchParams.readonly !== undefined;
 
-  const [fmError, setFmError] = createSignal("");
   const [showFind, setShowFind] = createSignal(false);
 
   const editorCommander = createCommander();
-  const wholeCommander = createCommander();
 
   const openFind = async () => {
     const id = editorState.activeSectionId();
-    if (id && !id.startsWith("__")) await flushSave(id);
+    if (id && !id.startsWith("__")) {
+      try {
+        await flushSave(id);
+      } catch {
+        toast.error("Fix invalid frontmatter before continuing");
+        return;
+      }
+    }
     await loadFindContents();
     setShowFind(true);
   };
 
-  const activeMeta = createMemo(() =>
-    editorState.metasMap().get(editorState.activeSectionId() ?? ""),
-  );
-  const isFrontmatter = createMemo(() => activeMeta()?.level === -1);
+  // Wraps goToSection to surface a save failure (e.g. invalid frontmatter)
+  // instead of silently keeping the current section active.
+  const goToSectionSafe = async (
+    nextId: string | null,
+    opts?: GoToSectionOpts,
+  ) => {
+    const ok = await goToSection(nextId, opts);
+    if (!ok) toast.error("Fix invalid frontmatter before leaving");
+    return ok;
+  };
 
-  const fmMetas = createMemo(() =>
-    editorState.metas().filter((m) => m.level === -1),
-  );
+  // Sections only — frontmatter is edited on the dedicated special-edit page.
   const bodyMetas = createMemo(() =>
     editorState.metas().filter((m) => m.level >= 0),
   );
 
   const sectionLabels = editorState.sectionLabels;
 
-  const activeIdx = createMemo(() => {
+  const activeBodyIdx = createMemo(() => {
     const id = editorState.activeSectionId();
-    return editorState.metas().findIndex((m) => m.id === id);
+    return bodyMetas().findIndex((m) => m.id === id);
   });
 
   const prevSection = createMemo(() => {
-    const idx = activeIdx();
+    const idx = activeBodyIdx();
     if (idx <= 0) return null;
-    return editorState.metas()[idx - 1] ?? null;
+    return bodyMetas()[idx - 1] ?? null;
   });
 
   const nextSection = createMemo(() => {
-    const list = editorState.metas();
-    const idx = activeIdx();
+    const idx = activeBodyIdx();
     if (idx === -1) return null;
-    return list[idx + 1] ?? null;
+    return bodyMetas()[idx + 1] ?? null;
   });
 
-  const prettifyFrontmatter = async () => {
-    if (!isFrontmatter()) return;
-    const id = editorState.activeSectionId();
-    if (!id) return;
-    try {
-      const info = await extractFrontmatter(editorCommander.getValue());
-      if (!info) {
-        setFmError("Invalid frontmatter");
-        return;
-      }
-      const pretty = await serializeFrontmatter(info.type, info.data);
-      editorCommander.setValue(pretty);
-      setFmError("");
-      notifyEdit(id);
-    } catch (e) {
-      setFmError(String(e));
-    }
+  // Navigates to the special-edit page for reorder/whole-file/frontmatter
+  // editing, remembering the current section so "back" can return to it.
+  const openSpecialEdit = (target: "reorder" | "all" | "frontmatter") => {
+    const returnTo = editorState.activeSectionId();
+    const qs = new URLSearchParams({ target });
+    if (returnTo) qs.set("return_to", returnTo);
+    navigate(`/edit/${params.fileId}/esp?${qs.toString()}`);
   };
-
-  // Switch language when active section type changes
-  createEffect(() => {
-    const lang = isFrontmatter() ? "yaml" : "markdown";
-    if (mode() === "single") {
-      editorCommander.setLanguage(lang);
-    }
-  });
-
-  // Load whole-file content when entering all mode
-  createEffect(async () => {
-    if (mode() !== "all") return;
-    const content = await loadAllContent();
-    if (mode() !== "all") return; // guard: mode may have changed during await
-    wholeCommander.setValue(content);
-    wholeCommander.focus();
-  });
 
   onMount(async () => {
     resetFindState();
@@ -228,7 +194,7 @@ const EditorPage: Component = () => {
     const target = editorState.activeSection(); // { equals: false }: fires on every goToSection
     editorState.activeContentVersion(); // also re-run on external content updates
     const id = target.id;
-    if (!id || id === ALL_ID) return;
+    if (!id) return;
     const content = await loadSectionContent(id);
     if (editorState.activeSectionId() !== id) return; // race condition guard
     setSectionCount(countText(content));
@@ -252,22 +218,26 @@ const EditorPage: Component = () => {
   });
 
   const handleSectionChange = async (e: Event) => {
-    const id = (e.currentTarget as HTMLSelectElement).value;
-    if (id === "__outline__") {
-      navigate(`/reorder/${params.fileId}`);
+    const select = e.currentTarget as HTMLSelectElement;
+    const id = select.value;
+    if (id === "__reorder__" || id === "__all__" || id === "__frontmatter__") {
+      const target =
+        id === "__reorder__"
+          ? "reorder"
+          : id === "__all__"
+            ? "all"
+            : "frontmatter";
+      openSpecialEdit(target);
+      select.value = editorState.activeSectionId() ?? "";
       return;
     }
-    if (id === ALL_ID) {
-      await goToSection(ALL_ID);
-    } else {
-      await goToSection(id);
-    }
+    await goToSectionSafe(id);
   };
 
   const contextRange = createMemo(() => {
     const ctx = contextSections();
-    const list = editorState.metas();
-    const idx = activeIdx();
+    const list = bodyMetas();
+    const idx = activeBodyIdx();
     if (idx === -1)
       return { before: [] as SectionMeta[], after: [] as SectionMeta[] };
     return {
@@ -276,12 +246,9 @@ const EditorPage: Component = () => {
     };
   });
 
-  const mode = createMemo(() => {
-    const id = editorState.activeSectionId();
-    if (id === ALL_ID) return "all";
-    if (id) return "single";
-    return "none";
-  });
+  const mode = createMemo(() =>
+    editorState.activeSectionId() ? "single" : "none",
+  );
 
   const selectTitleHere = () => {
     const val = editorCommander.getValue();
@@ -445,15 +412,6 @@ const EditorPage: Component = () => {
     return `${n.toLocaleString()} ${unit}`;
   };
 
-  const handleWholeSave = async () => {
-    try {
-      await saveWholeContent(wholeCommander.getValue());
-    } catch (e) {
-      console.error("Failed to save:", e);
-      toast.error("Failed to save");
-    }
-  };
-
   let fileInsertEl: HTMLInputElement | undefined;
 
   const handleFileInsert = (e: Event) => {
@@ -466,13 +424,9 @@ const EditorPage: Component = () => {
 
   const handleSave = () => {
     const p = (async () => {
-      if (mode() === "all") {
-        await handleWholeSave();
-      } else {
-        const id = editorState.activeSectionId();
-        if (id) {
-          await flushSave(id);
-        }
+      const id = editorState.activeSectionId();
+      if (id) {
+        await flushSave(id);
       }
     })();
     toast.promise(p, {
@@ -567,12 +521,6 @@ const EditorPage: Component = () => {
               <TbOutlineNote />{" "}
               {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
             </button>
-            <Show when={isFrontmatter()}>
-              <hr />
-              <button onClick={prettifyFrontmatter}>
-                <TbOutlineWand /> Prettify
-              </button>
-            </Show>
             <hr />
             <button onClick={() => handleAddSection()}>
               <TbOutlinePlus /> Add section
@@ -624,33 +572,10 @@ const EditorPage: Component = () => {
           </button>
           <select onChange={handleSectionChange}>
             <optgroup label="Special">
-              <option
-                value="__outline__"
-                selected={editorState.activeSectionId() === "__outline__"}
-              >
-                Outline / Reorder
-              </option>
-              <option
-                value={ALL_ID}
-                selected={editorState.activeSectionId() === ALL_ID}
-              >
-                Whole file
-              </option>
+              <option value="__reorder__">Outline / Reorder</option>
+              <option value="__all__">Whole file</option>
+              <option value="__frontmatter__">Frontmatter</option>
             </optgroup>
-            <Show when={fmMetas().length > 0}>
-              <optgroup label="FrontMatter">
-                <For each={fmMetas()}>
-                  {(m) => (
-                    <option
-                      value={m.id}
-                      selected={editorState.activeSectionId() === m.id}
-                    >
-                      [{m.heading}]
-                    </option>
-                  )}
-                </For>
-              </optgroup>
-            </Show>
             <optgroup label="Sections">
               <For each={bodyMetas()}>
                 {(m) => (
@@ -667,18 +592,6 @@ const EditorPage: Component = () => {
         </div>
       </Toolbar>
 
-      <Show when={mode() === "all"}>
-        <Dynamic
-          component={lightEditor() ? LightEditor : Editor}
-          language="markdown"
-          commander={wholeCommander}
-          readonly={isReadonly()}
-          onChange={() => !isReadonly() && notifyEdit("__all__")}
-          onSave={() => handleSave()}
-          onBlur={isReadonly() ? undefined : handleWholeSave}
-        />
-      </Show>
-
       <Show when={mode() === "single"}>
         <div class="section-preview-container section-preview-container-before">
           <For each={contextRange().before}>
@@ -691,7 +604,7 @@ const EditorPage: Component = () => {
             {(prev) => (
               <button
                 onClick={() => {
-                  goToSection(prev().id, {
+                  goToSectionSafe(prev().id, {
                     selStart: Infinity,
                     selEnd: Infinity,
                   });
@@ -710,9 +623,8 @@ const EditorPage: Component = () => {
         </div>
 
         <div>
-          <Dynamic
-            component={lightEditor() ? LightEditor : Editor}
-            language={isFrontmatter() ? "yaml" : "markdown"}
+          <Editor
+            language="markdown"
             commander={editorCommander}
             readonly={isReadonly()}
             onChange={() => {
@@ -725,16 +637,16 @@ const EditorPage: Component = () => {
             onPrevSection={() => {
               const prev = prevSection();
               if (prev)
-                goToSection(prev.id, { selStart: Infinity, selEnd: Infinity });
+                goToSectionSafe(prev.id, {
+                  selStart: Infinity,
+                  selEnd: Infinity,
+                });
             }}
             onNextSection={() => {
               const next = nextSection();
-              if (next) goToSection(next.id, { selStart: 0, selEnd: 0 });
+              if (next) goToSectionSafe(next.id, { selStart: 0, selEnd: 0 });
             }}
           />
-          <Show when={fmError()}>
-            <p class="error-text">{fmError()}</p>
-          </Show>
         </div>
 
         <div class="section-nav">
@@ -742,7 +654,7 @@ const EditorPage: Component = () => {
             {(next) => (
               <button
                 onClick={() => {
-                  goToSection(next().id, { selStart: 0, selEnd: 0 });
+                  goToSectionSafe(next().id, { selStart: 0, selEnd: 0 });
                 }}
               >
                 <TbOutlineArrowDown />

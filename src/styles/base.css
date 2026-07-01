@@ -333,6 +333,17 @@ div.edit:empty::before {
   border-color: transparent;
 }
 
+/* Frontmatter editor */
+.frontmatter-editor-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: var(--sp-sm);
+}
+
+.frontmatter-editor-textarea {
+  min-height: 6lh;
+}
+
 /* ── Settings: section > label 레이아웃 ── */
 section > h2 {
   font-size: 0.75rem;

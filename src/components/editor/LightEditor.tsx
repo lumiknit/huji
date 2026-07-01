@@ -1,5 +1,5 @@
 import { type Component, onMount, onCleanup } from "solid-js";
-import type { EditorCommander, EditorLanguage } from "./commander.ts";
+import type { EditorWidgetProps } from "./commander.ts";
 import { registerValueGetter } from "../../states/editor_save.ts";
 import {
   spellcheck,
@@ -7,20 +7,7 @@ import {
   autocapitalize,
 } from "../../states/settings.ts";
 
-type LightEditorProps = {
-  language?: EditorLanguage;
-  placeholder?: string;
-  readonly?: boolean;
-  commander?: EditorCommander;
-  onChange?: () => void;
-  onSave?: () => void;
-  onFind?: () => void;
-  onBlur?: () => void;
-  onPrevSection?: () => void;
-  onNextSection?: () => void;
-};
-
-const LightEditor: Component<LightEditorProps> = (props) => {
+const LightEditor: Component<EditorWidgetProps> = (props) => {
   let textareaEl: HTMLTextAreaElement | undefined;
 
   onMount(() => {

@@ -1,4 +1,4 @@
-export type EditorLanguage = "markdown" | "yaml";
+export type EditorLanguage = "markdown" | "plaintext";
 
 export type EditorCommander = {
   undo: () => void;
@@ -16,6 +16,20 @@ export type EditorCommander = {
   setLanguage: (lang: EditorLanguage) => void;
   insertAtCursor: (text: string) => void;
   getContainer: () => HTMLElement | null;
+};
+
+/** Shared props for any editor widget (CodeMirror or plain textarea). */
+export type EditorWidgetProps = {
+  language?: EditorLanguage;
+  placeholder?: string;
+  readonly?: boolean;
+  commander?: EditorCommander;
+  onChange?: () => void;
+  onSave?: () => void;
+  onFind?: () => void;
+  onBlur?: () => void;
+  onPrevSection?: () => void;
+  onNextSection?: () => void;
 };
 
 export const createCommander = (): EditorCommander => ({

@@ -16,9 +16,10 @@ import { markdown } from "@codemirror/lang-markdown";
 import { GFM } from "@lezer/markdown";
 import { search, openSearchPanel, searchKeymap } from "@codemirror/search";
 import { livePreviewPlugin, livePreviewTheme } from "./live_preview.ts";
+import type { EditorLanguage } from "./commander.ts";
 
 export { openSearchPanel };
-export type EditorLanguage = "markdown" | "yaml";
+export type { EditorLanguage };
 
 export function createSpellcheckCompartment() {
   return new Compartment();

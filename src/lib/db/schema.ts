@@ -6,7 +6,7 @@ export type SectionMeta = {
   fracIndex: number;
   /** -1 = frontmatter, 0 = heading-less intro, 1–6 = H1–H6 */
   level: number;
-  /** level=-1: "json" | "yaml" | "toml" */
+  /** level=-1: preferred edit format ("json" | "yaml"); stored content is always compact JSON */
   heading: string;
   updatedAt: string;
 };

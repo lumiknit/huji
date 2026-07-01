@@ -145,11 +145,18 @@ export const loadRawMarkdown = async (
     const row = await getContent(m.id);
     const content = row?.content ?? "";
     if (m.level === -1) {
-      const info = await extractFrontmatter(content).catch(() => null);
-      if (info) {
-        fmContent = content;
-        if (typeof info.data._filename === "string")
-          filename = info.data._filename;
+      let data: Record<string, unknown> | null = null;
+      try {
+        data = JSON.parse(content) as Record<string, unknown>;
+      } catch {
+        // Legacy row not yet migrated to compact JSON.
+        const info = await extractFrontmatter(content).catch(() => null);
+        data = info?.data ?? null;
+      }
+      if (data) {
+        if (typeof data._filename === "string") filename = data._filename;
+        const format: FrontmatterType = m.heading === "yaml" ? "yaml" : "json";
+        fmContent = await serializeFrontmatter(format, data);
       }
       continue;
     }

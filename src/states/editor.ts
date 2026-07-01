@@ -18,11 +18,7 @@ import {
 } from "../lib/db/content";
 import { genId, genUniqueId } from "../lib/utils/id";
 import { splitSections } from "../lib/md/section";
-import {
-  extractFrontmatter,
-  parseDocument,
-  serializeFrontmatter,
-} from "../lib/md/frontmatter";
+import { extractFrontmatter, parseDocument } from "../lib/md/frontmatter";
 import { ensureRenderRules } from "../lib/db/defaults";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { sanitizeFilename } from "../lib/path";
@@ -34,6 +30,9 @@ import {
 } from "./editor_save";
 
 export type SaveStatus = "saved" | "dirty" | "saving";
+
+/** Special section id representing the "whole file" editor mode. */
+export const WHOLE_ID = "__all__";
 
 // ── Signals ──
 
@@ -161,18 +160,17 @@ export const importMarkdownText = async (
     fmData._id = genId();
   }
   ensureRenderRules(fmData);
-  const fmType = doc.frontmatter?.type ?? "yaml";
-  const fmRaw = await serializeFrontmatter(fmType, fmData);
+  const editFormat = doc.frontmatter?.type === "yaml" ? "yaml" : "json";
 
   metaList.push({
     id: fmId,
     fileId: fId,
     fracIndex: 0,
     level: -1,
-    heading: fmType,
+    heading: editFormat,
     updatedAt: now,
   });
-  contents.push({ id: fmId, content: fmRaw, updatedAt: now });
+  contents.push({ id: fmId, content: JSON.stringify(fmData), updatedAt: now });
 
   const sections = splitSections(doc.body);
   for (let i = 0; i < sections.length; i++) {
@@ -220,21 +218,37 @@ const updateLastUsedAt = async (list: SectionMeta[]) => {
   if (!row) return;
   const now = new Date().toISOString();
   try {
-    const info = await extractFrontmatter(row.content);
-    if (!info) return;
-    if (typeof info.data._filename === "string")
-      setFilename(info.data._filename);
-    const data: Record<string, unknown> = { ...info.data, _last_used_at: now };
+    // Fast path: already-migrated rows are compact JSON, no dynamic import needed.
+    let data: Record<string, unknown>;
+    let legacyFormat: "yaml" | null = null;
+    try {
+      data = JSON.parse(row.content) as Record<string, unknown>;
+    } catch {
+      const info = await extractFrontmatter(row.content);
+      if (!info) return;
+      data = info.data;
+      legacyFormat = info.type === "yaml" ? "yaml" : null;
+    }
+
+    if (typeof data._filename === "string") setFilename(data._filename);
+    data._last_used_at = now;
     if (typeof data._id !== "string" || !data._id) {
       data._id = genId();
     }
     currentDocId = data._id as string;
     ensureRenderRules(data);
-    const newContent = await serializeFrontmatter(info.type, data);
-    await putContent({ id: fmMeta.id, content: newContent, updatedAt: now });
-    const updatedMeta = { ...fmMeta, heading: info.type, updatedAt: now };
-    setMetas((prev) => prev.map((m) => (m.id === fmMeta.id ? updatedMeta : m)));
-    if (fmMeta.heading !== info.type) await putMeta(updatedMeta);
+    await putContent({
+      id: fmMeta.id,
+      content: JSON.stringify(data),
+      updatedAt: now,
+    });
+    if (legacyFormat && fmMeta.heading !== legacyFormat) {
+      const updatedMeta = { ...fmMeta, heading: legacyFormat, updatedAt: now };
+      setMetas((prev) =>
+        prev.map((m) => (m.id === fmMeta.id ? updatedMeta : m)),
+      );
+      await putMeta(updatedMeta);
+    }
   } catch {
     // Silently ignore parse failures — last_used_at is non-critical
   }
@@ -250,7 +264,7 @@ const updateLastUsedAt = async (list: SectionMeta[]) => {
 export const goToSection = async (
   nextId: string | null,
   opts: GoToSectionOpts = {},
-) => {
+): Promise<boolean> => {
   disposeDebounce();
 
   const id = _activeSection().id;
@@ -258,7 +272,13 @@ export const goToSection = async (
     const value = getActiveTextareaValue();
     const meta = metas().find((m) => m.id === id);
     if (meta) {
-      await normalizeSectionOnLeave(id, meta, value);
+      const ok = await normalizeSectionOnLeave(id, meta, value);
+      if (!ok) {
+        // e.g. invalid frontmatter — keep the section active instead of
+        // silently discarding the edit.
+        setSaveStatus("dirty");
+        return false;
+      }
     }
   }
 
@@ -277,6 +297,7 @@ export const goToSection = async (
     setSaveStatus("saved");
     _setActiveSection({ id: resolvedId, ...opts });
   });
+  return true;
 };
 
 // ── Section CRUD ──
