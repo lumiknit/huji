@@ -19,7 +19,6 @@ import { genId } from "../../lib/utils/id";
 type FrontmatterEditorProps = {
   id: string;
   format: FrontmatterType;
-  readonly?: boolean;
   onFormatChange: (format: FrontmatterType) => void;
   onSave?: () => void;
   onFind?: () => void;
@@ -109,11 +108,7 @@ const FrontmatterEditor: Component<FrontmatterEditorProps> = (props) => {
   return (
     <div class="frontmatter-editor">
       <div class="frontmatter-editor-toolbar">
-        <select
-          value={props.format}
-          onChange={handleFormatChange}
-          disabled={props.readonly}
-        >
+        <select value={props.format} onChange={handleFormatChange}>
           <option value="json">JSON</option>
           <option value="yaml">YAML</option>
         </select>
@@ -121,7 +116,6 @@ const FrontmatterEditor: Component<FrontmatterEditorProps> = (props) => {
       <textarea
         ref={textareaEl}
         class="light-editor frontmatter-editor-textarea"
-        readonly={props.readonly}
         value={text()}
         onInput={(e) => handleInput(e.currentTarget.value)}
         onKeyDown={handleKeyDown}

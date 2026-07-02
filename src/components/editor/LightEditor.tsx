@@ -93,7 +93,6 @@ const LightEditor: Component<EditorWidgetProps> = (props) => {
       ref={textareaEl}
       class="light-editor"
       placeholder={props.placeholder}
-      readonly={props.readonly}
       spellcheck={spellcheck()}
       autocorrect={autocorrect() ? "on" : "off"}
       autocapitalize={autocapitalize()}

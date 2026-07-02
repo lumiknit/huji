@@ -22,7 +22,6 @@ export type EditorCommander = {
 export type EditorWidgetProps = {
   language?: EditorLanguage;
   placeholder?: string;
-  readonly?: boolean;
   commander?: EditorCommander;
   onChange?: () => void;
   onSave?: () => void;

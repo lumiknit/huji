@@ -40,7 +40,6 @@ const CMEditor: Component<EditorWidgetProps> = (props) => {
       langCompartment: langComp,
       spellcheckCompartment: spellcheckComp,
       initialSpellcheck: spellcheck(),
-      readonly: props.readonly,
     });
 
     builtExtensions = extensions;

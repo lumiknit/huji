@@ -51,7 +51,6 @@ export function buildExtensions(opts: {
   langCompartment: Compartment;
   spellcheckCompartment: Compartment;
   initialSpellcheck: boolean;
-  readonly?: boolean;
 }): Extension[] {
   const sectionNavKeys: KeyBinding[] = [];
   if (opts.onPrevSection) {
@@ -111,7 +110,6 @@ export function buildExtensions(opts: {
     opts.langCompartment.of(langExtension(opts.language)),
     placeholder(opts.placeholderText),
     EditorView.lineWrapping,
-    EditorView.editable.of(!opts.readonly),
     EditorView.domEventHandlers({
       blur: () => {
         opts.onBlur();

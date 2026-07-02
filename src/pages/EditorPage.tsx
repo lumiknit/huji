@@ -8,7 +8,7 @@ import {
   For,
   Show,
 } from "solid-js";
-import { useParams, useNavigate, useSearchParams, A } from "@solidjs/router";
+import { useParams, useNavigate, A } from "@solidjs/router";
 import {
   TbOutlineEye,
   TbOutlineRotate,
@@ -73,8 +73,6 @@ import type { SectionMeta } from "../lib/db/schema";
 const EditorPage: Component = () => {
   const params = useParams<{ fileId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isReadonly = () => searchParams.readonly !== undefined;
 
   const [showFind, setShowFind] = createSignal(false);
 
@@ -150,8 +148,13 @@ const EditorPage: Component = () => {
         selEnd: jump.end,
       });
     } else {
-      const first = list.find((m) => m.level !== -1) ?? list[0];
-      if (first) await goToSection(first.id);
+      const first = list.find((m) => m.level !== -1);
+      if (first) {
+        await goToSection(first.id);
+      } else {
+        const newId = await addSection();
+        if (newId) await goToSection(newId);
+      }
     }
   });
 
@@ -471,26 +474,10 @@ const EditorPage: Component = () => {
           <TbOutlineHome />
         </A>
         <ToggleMenu label="File">
-          <Show when={!isReadonly()}>
-            <button
-              onClick={() =>
-                window.open(
-                  `${window.location.href.split("?")[0]}?readonly`,
-                  "_blank",
-                  "width=800,height=600",
-                )
-              }
-            >
-              <TbOutlineEye /> Popup View
-            </button>
-            <hr />
-          </Show>
-          <Show when={!isReadonly()}>
-            <button onClick={handleDuplicate}>
-              <TbOutlineCopy /> Duplicate
-            </button>
-            <hr />
-          </Show>
+          <button onClick={handleDuplicate}>
+            <TbOutlineCopy /> Duplicate
+          </button>
+          <hr />
           <button onClick={handleDownload}>
             <TbOutlineDownload /> Download (.md)
           </button>
@@ -505,38 +492,35 @@ const EditorPage: Component = () => {
           </Show>
         </ToggleMenu>
 
-        <Show when={!isReadonly()}>
-          <ToggleMenu label="Edit">
-            <button onClick={() => editorCommander.undo()}>
-              <TbOutlineRotate /> Undo
-            </button>
-            <button onClick={() => editorCommander.redo()}>
-              <TbOutlineRotateClockwise /> Redo
-            </button>
-            <hr />
-            <button onClick={openFind}>
-              <TbOutlineSearch /> Find / Replace
-            </button>
-            <button onClick={toggleSticker}>
-              <TbOutlineNote />{" "}
-              {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
-            </button>
-            <hr />
-            <button onClick={() => handleAddSection()}>
-              <TbOutlinePlus /> Add section
-            </button>
-            <hr />
-            <button onClick={() => fileInsertEl?.click()}>
-              <TbOutlinePaperclip /> Insert file
-            </button>
-            <input
-              ref={fileInsertEl}
-              type="file"
-              class="hidden"
-              onChange={handleFileInsert}
-            />
-          </ToggleMenu>
-        </Show>
+        <ToggleMenu label="Edit">
+          <button onClick={() => editorCommander.undo()}>
+            <TbOutlineRotate /> Undo
+          </button>
+          <button onClick={() => editorCommander.redo()}>
+            <TbOutlineRotateClockwise /> Redo
+          </button>
+          <hr />
+          <button onClick={openFind}>
+            <TbOutlineSearch /> Find / Replace
+          </button>
+          <button onClick={toggleSticker}>
+            <TbOutlineNote /> {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
+          </button>
+          <hr />
+          <button onClick={() => handleAddSection()}>
+            <TbOutlinePlus /> Add section
+          </button>
+          <hr />
+          <button onClick={() => fileInsertEl?.click()}>
+            <TbOutlinePaperclip /> Insert file
+          </button>
+          <input
+            ref={fileInsertEl}
+            type="file"
+            class="hidden"
+            onChange={handleFileInsert}
+          />
+        </ToggleMenu>
 
         <Show when={mode() === "single"}>
           <button
@@ -553,14 +537,12 @@ const EditorPage: Component = () => {
         <A href={`/preview/${params.fileId}`} title="Preview">
           <TbOutlineEye />
         </A>
-        <Show when={!isReadonly()}>
-          <SaveOrBackupButton
-            status={editorState.saveStatus}
-            onSave={handleSave}
-            onBackup={() => handleBackup()}
-            canBackup={canBackup}
-          />
-        </Show>
+        <SaveOrBackupButton
+          status={editorState.saveStatus}
+          onSave={handleSave}
+          onBackup={() => handleBackup()}
+          canBackup={canBackup}
+        />
 
         {/* Sticker toggle button & Section select */}
         <div class="toolbar-group">
@@ -614,21 +596,17 @@ const EditorPage: Component = () => {
               </button>
             )}
           </Show>
-          <Show when={!isReadonly()}>
-            <button onClick={handleAddSectionBefore}>
-              {" "}
-              <TbOutlinePlus /> Create Prev
-            </button>
-          </Show>
+          <button onClick={handleAddSectionBefore}>
+            {" "}
+            <TbOutlinePlus /> Create Prev
+          </button>
         </div>
 
         <div>
           <Editor
             language="markdown"
             commander={editorCommander}
-            readonly={isReadonly()}
             onChange={() => {
-              if (isReadonly()) return;
               const id = editorState.activeSectionId();
               if (id) notifyEdit(id);
             }}
@@ -662,15 +640,13 @@ const EditorPage: Component = () => {
               </button>
             )}
           </Show>
-          <Show when={!isReadonly()}>
-            <button
-              onClick={() =>
-                handleAddSection(editorState.activeSectionId() ?? undefined)
-              }
-            >
-              <TbOutlinePlus /> Create Next
-            </button>
-          </Show>
+          <button
+            onClick={() =>
+              handleAddSection(editorState.activeSectionId() ?? undefined)
+            }
+          >
+            <TbOutlinePlus /> Create Next
+          </button>
         </div>
 
         <div class="section-preview-container section-preview-container-after">
