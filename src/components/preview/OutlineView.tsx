@@ -23,7 +23,9 @@ type Props = {
 
 const OutlineView: Component<Props> = (props) => {
   const [countMode, setCountMode] = createSignal<CountMode>("default");
-  const [checkedIds, setCheckedIds] = createSignal<Set<string>>(new Set());
+  // Sections are checked by default; this tracks only user-initiated opt-outs,
+  // so rule-driven hiddenIds changes never clobber a manual selection.
+  const [uncheckedIds, setUncheckedIds] = createSignal<Set<string>>(new Set());
   let headerCheckRef: HTMLInputElement | undefined;
 
   const hiddenIds = createMemo(() =>
@@ -36,12 +38,12 @@ const OutlineView: Component<Props> = (props) => {
   const isExcludedEntry = (e: SectionEntry): boolean =>
     hiddenIds().has(e.meta.id);
 
+  const isChecked = (id: string): boolean =>
+    !hiddenIds().has(id) && !uncheckedIds().has(id);
+
   createEffect(() => {
-    const newSet = new Set<string>();
-    for (const e of props.entries) {
-      if (!isExcludedEntry(e)) newSet.add(e.meta.id);
-    }
-    setCheckedIds(newSet);
+    props.entries;
+    setUncheckedIds(new Set<string>());
   });
 
   const rowTexts = createMemo(() =>
@@ -66,10 +68,10 @@ const OutlineView: Component<Props> = (props) => {
   const nonExcludedRows = createMemo(() => rows().filter((r) => !r.excluded));
   const allChecked = createMemo(() => {
     const ne = nonExcludedRows();
-    return ne.length > 0 && ne.every((r) => checkedIds().has(r.entry.meta.id));
+    return ne.length > 0 && ne.every((r) => isChecked(r.entry.meta.id));
   });
   const someChecked = createMemo(() =>
-    nonExcludedRows().some((r) => checkedIds().has(r.entry.meta.id)),
+    nonExcludedRows().some((r) => isChecked(r.entry.meta.id)),
   );
 
   createEffect(() => {
@@ -79,14 +81,16 @@ const OutlineView: Component<Props> = (props) => {
 
   const toggleAll = () => {
     if (allChecked()) {
-      setCheckedIds(new Set<string>());
+      setUncheckedIds(
+        new Set<string>(nonExcludedRows().map((r) => r.entry.meta.id)),
+      );
     } else {
-      setCheckedIds(new Set(nonExcludedRows().map((r) => r.entry.meta.id)));
+      setUncheckedIds(new Set<string>());
     }
   };
 
   const toggleRow = (id: string) => {
-    setCheckedIds((prev) => {
+    setUncheckedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -95,7 +99,7 @@ const OutlineView: Component<Props> = (props) => {
   };
 
   const checkedRows = createMemo(() =>
-    rows().filter((r) => !r.excluded && checkedIds().has(r.entry.meta.id)),
+    rows().filter((r) => !r.excluded && isChecked(r.entry.meta.id)),
   );
   const totals = createMemo(() =>
     checkedRows().reduce(
@@ -143,7 +147,7 @@ const OutlineView: Component<Props> = (props) => {
                   <Show when={!r.excluded}>
                     <input
                       type="checkbox"
-                      checked={checkedIds().has(r.entry.meta.id)}
+                      checked={isChecked(r.entry.meta.id)}
                       onChange={() => toggleRow(r.entry.meta.id)}
                     />
                   </Show>

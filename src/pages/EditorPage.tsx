@@ -8,7 +8,7 @@ import {
   For,
   Show,
 } from "solid-js";
-import { useParams, useNavigate, A } from "@solidjs/router";
+import { useParams, useNavigate, useBeforeLeave, A } from "@solidjs/router";
 import {
   TbOutlineEye,
   TbOutlineRotate,
@@ -159,6 +159,14 @@ const EditorPage: Component = () => {
   });
 
   onCleanup(() => disposeEditor());
+
+  useBeforeLeave((e) => {
+    if (editorState.saveStatus() !== "dirty") return;
+    const id = editorState.activeSectionId();
+    if (!id) return;
+    e.preventDefault();
+    flushSave(id).then(() => e.retry(true));
+  });
 
   onMount(() => {
     const handler = (e: BeforeUnloadEvent) => {

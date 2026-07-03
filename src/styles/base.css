@@ -256,36 +256,6 @@ textarea {
   outline: none;
 }
 
-/* 메인 편집 영역 */
-div.edit {
-  font-family: var(--editor-font);
-  font-size: var(--editor-font-size);
-  font-weight: var(--editor-font-weight);
-  line-height: var(--editor-line-height);
-  padding: var(--sp-sm);
-  box-sizing: border-box;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  min-height: 1lh;
-  margin-block: var(--sp-sm);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  outline: 1px solid var(--c-border);
-  outline-offset: 0px;
-  scroll-margin-top: 4rem;
-}
-
-div.edit:focus {
-  outline: none;
-}
-
-div.edit:empty::before {
-  content: "Write here!";
-  color: var(--c-muted);
-  pointer-events: none;
-}
-
 /* CodeMirror 편집 영역 */
 .cm-editor-wrap {
   font-family: var(--editor-font);
@@ -759,6 +729,7 @@ article.md-body {
 .section-preview {
   padding-block: var(--sp-md);
   opacity: 0.6;
+  contain: content;
 }
 
 /* ── Find / Replace page ── */
@@ -857,12 +828,14 @@ article.md-body {
   position: fixed;
   top: 49.9svh;
   right: 1.5rem;
-  padding: 0.2rem 0.55rem;
+  width: 3.5em;
+  padding: 0.125rem 0.35rem;
   background: var(--color-bg-2, rgba(0, 0, 0, 0.65));
   color: var(--color-fg, #fff);
   border-radius: 999px;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
+  text-align: right;
   pointer-events: auto;
   cursor: pointer;
   border: none;
@@ -1303,4 +1276,24 @@ dialog > form > .dialog-actions {
   background: var(--c-primary);
   color: var(--c-primary-fg);
   border-radius: 2px;
+}
+
+/* ── Error boundary ── */
+.error-boundary {
+  max-width: var(--max-width);
+  margin: 4rem auto;
+  padding: var(--sp-lg);
+  text-align: center;
+}
+
+.error-boundary p {
+  color: var(--c-muted);
+  word-break: break-all;
+}
+
+.error-boundary-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-xs);
+  margin-top: var(--sp-md);
 }

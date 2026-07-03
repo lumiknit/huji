@@ -4,6 +4,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  untrack,
 } from "solid-js";
 import type { FrontmatterType } from "../../lib/md/frontmatter";
 import {
@@ -36,10 +37,13 @@ const FrontmatterEditor: Component<FrontmatterEditorProps> = (props) => {
   // just before handleFormatChange runs its own (already up to date) convert.
   createEffect(() => {
     const id = props.id;
+    // Snapshot format untracked: this effect must only re-run on section
+    // switch, never on format change (see comment above).
+    const format = untrack(() => props.format);
     (async () => {
       const raw = await loadSectionContent(id);
       try {
-        setText(await decodeFrontmatterForEdit(raw, props.format));
+        setText(await decodeFrontmatterForEdit(raw, format));
         setError("");
       } catch {
         // Raw content isn't valid JSON at all — show an editable default
@@ -48,10 +52,7 @@ const FrontmatterEditor: Component<FrontmatterEditorProps> = (props) => {
           extractIdLoose(raw) ?? genId(),
         );
         setText(
-          await decodeFrontmatterForEdit(
-            JSON.stringify(fallback),
-            props.format,
-          ),
+          await decodeFrontmatterForEdit(JSON.stringify(fallback), format),
         );
         setError("Invalid frontmatter — loaded default, save to fix");
       }

@@ -1,5 +1,5 @@
 import { getDB } from ".";
-import type { SectionMeta } from "./schema";
+import type { SectionContent, SectionMeta } from "./schema";
 import { FRAC_GAP, needsReindex, reindex } from "../utils/fracindex";
 
 export const getFileMetas = async (fileId: string): Promise<SectionMeta[]> => {
@@ -22,6 +22,33 @@ export const putMetas = async (metas: SectionMeta[]): Promise<void> => {
 export const deleteMeta = async (id: string): Promise<void> => {
   const db = await getDB();
   await db.delete("meta", id);
+};
+
+/** Puts a meta + content pair atomically in a single transaction. */
+export const putSection = async (
+  meta: SectionMeta,
+  content: SectionContent,
+): Promise<void> => {
+  const db = await getDB();
+  const tx = db.transaction(["meta", "content"], "readwrite");
+  await Promise.all([
+    tx.objectStore("meta").put(meta),
+    tx
+      .objectStore("content")
+      .put({ ...content, content: content.content.trim() }),
+    tx.done,
+  ]);
+};
+
+/** Deletes a meta + content pair atomically in a single transaction. */
+export const deleteSectionRow = async (id: string): Promise<void> => {
+  const db = await getDB();
+  const tx = db.transaction(["meta", "content"], "readwrite");
+  await Promise.all([
+    tx.objectStore("meta").delete(id),
+    tx.objectStore("content").delete(id),
+    tx.done,
+  ]);
 };
 
 export const deleteMetas = async (ids: string[]): Promise<void> => {

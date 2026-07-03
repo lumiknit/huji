@@ -4,15 +4,15 @@ import {
   getFileMetas,
   putMeta,
   putMetas,
-  deleteMeta,
   deleteMetas,
   normalizeFracIndices,
   calcInsertFracIndex,
+  putSection,
+  deleteSectionRow,
 } from "../lib/db/meta";
 import {
   getContent,
   putContent,
-  deleteContent,
   deleteContents,
   putContents,
 } from "../lib/db/content";
@@ -320,8 +320,11 @@ export const addSection = async (afterId?: string): Promise<string | null> => {
     heading: "Title here",
     updatedAt: now,
   };
-  await putMeta(newMeta);
-  await putContent({ id: newId, content: defaultContent, updatedAt: now });
+  await putSection(newMeta, {
+    id: newId,
+    content: defaultContent,
+    updatedAt: now,
+  });
 
   const updated = [...list, newMeta].sort((a, b) => a.fracIndex - b.fracIndex);
   setMetas(await normalizeFracIndices(updated));
@@ -360,8 +363,11 @@ export const addSectionBefore = async (
     heading: "Title here",
     updatedAt: now,
   };
-  await putMeta(newMeta);
-  await putContent({ id: newId, content: defaultContent, updatedAt: now });
+  await putSection(newMeta, {
+    id: newId,
+    content: defaultContent,
+    updatedAt: now,
+  });
 
   const updated = [...list, newMeta].sort((a, b) => a.fracIndex - b.fracIndex);
   setMetas(await normalizeFracIndices(updated));
@@ -369,8 +375,7 @@ export const addSectionBefore = async (
 };
 
 export const deleteSection = async (id: string) => {
-  await deleteMeta(id);
-  await deleteContent(id);
+  await deleteSectionRow(id);
   setMetas((prev) => prev.filter((m) => m.id !== id));
   if (_activeSection().id === id) _setActiveSection({ id: null });
 };
