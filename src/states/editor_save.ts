@@ -26,6 +26,7 @@ import {
   getCurrentDocId,
   fileId,
   WHOLE_ID,
+  touchLastUsedAt,
 } from "./editor";
 
 const countWords = (text: string) => {
@@ -145,6 +146,7 @@ const saveFrontmatterSection = async (
   const docId = getCurrentDocId();
   if (docId && data._id !== docId) data._id = docId;
   const now = new Date().toISOString();
+  data._last_used_at = now;
   await putContent({ id, content: JSON.stringify(data), updatedAt: now });
   return true;
 };
@@ -164,6 +166,7 @@ const saveRaw = async (
   if (meta?.level === -1) return null; // frontmatter has its own save path
   const now = new Date().toISOString();
   await putContent({ id, content: trimmed, updatedAt: now });
+  await touchLastUsedAt();
   if (!meta) return null;
   const { heading, level } = extractHeadingFromRaw(trimmed);
   if (meta.heading !== heading || meta.level !== level) {
@@ -401,6 +404,7 @@ const saveWholeContent = async (raw: string): Promise<void> => {
     ...deleteIds.map((id) => contentStore.delete(id)),
     tx.done,
   ]);
+  await touchLastUsedAt();
 
   const allMetas = [...(fmMeta ? [fmMeta] : []), ...newMetas];
   setMetas(allMetas);

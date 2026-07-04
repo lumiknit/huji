@@ -106,11 +106,18 @@ export const editorState = {
 
 // ── Session state ──
 
-// Stores the _id from the currently loaded file's frontmatter so it can be
-// protected from accidental edits in the frontmatter section.
-let currentDocId: string | null = null;
+// Stores session metadata for the currently loaded file to ensure they are managed and reset together.
+interface LoadedFileState {
+  docId: string | null; // The _id inside the frontmatter block
+  frontmatterSectionId: string | null; // The IndexedDB section key/ID of the frontmatter (level: -1)
+}
 
-export const getCurrentDocId = () => currentDocId;
+let loadedFileState: LoadedFileState = {
+  docId: null,
+  frontmatterSectionId: null,
+};
+
+export const getCurrentDocId = () => loadedFileState.docId;
 
 // Persists cursor position per section within the session (for back-navigation)
 const sectionSelections = new Map<string, { start: number; end: number }>();
@@ -202,7 +209,10 @@ export const loadFile = async (id: string) => {
   disposeDebounce();
 
   sectionSelections.clear();
-  currentDocId = null;
+  loadedFileState = {
+    docId: null,
+    frontmatterSectionId: null,
+  };
 
   let list = await getFileMetas(id);
   list = await normalizeAndMerge(list);
@@ -211,12 +221,33 @@ export const loadFile = async (id: string) => {
   _setActiveSection({ id: null });
   setSaveStatus("saved");
 
-  await updateLastUsedAt(list);
+  await initFrontmatter(list);
 };
 
-const updateLastUsedAt = async (list: SectionMeta[]) => {
+export const touchLastUsedAt = async () => {
+  if (!loadedFileState.frontmatterSectionId) return;
+  const row = await getContent(loadedFileState.frontmatterSectionId);
+  if (!row) return;
+  try {
+    const parsed = await parseFrontmatterDataLoose(row.content);
+    if (!parsed) return;
+    const { data } = parsed;
+    const now = new Date().toISOString();
+    data._last_used_at = now;
+    await putContent({
+      id: loadedFileState.frontmatterSectionId,
+      content: JSON.stringify(data),
+      updatedAt: now,
+    });
+  } catch {
+    // ignore
+  }
+};
+
+const initFrontmatter = async (list: SectionMeta[]) => {
   const fmMeta = list.find((m) => m.level === -1);
   if (!fmMeta) return;
+  loadedFileState.frontmatterSectionId = fmMeta.id;
   const row = await getContent(fmMeta.id);
   if (!row) return;
   const now = new Date().toISOString();
@@ -226,17 +257,22 @@ const updateLastUsedAt = async (list: SectionMeta[]) => {
     const { data, legacyFormat } = parsed;
 
     if (typeof data._filename === "string") setFilename(data._filename);
-    data._last_used_at = now;
+    let dirty = false;
     if (typeof data._id !== "string" || !data._id) {
       data._id = genId();
+      dirty = true;
     }
-    currentDocId = data._id as string;
-    ensureRenderRules(data);
-    await putContent({
-      id: fmMeta.id,
-      content: JSON.stringify(data),
-      updatedAt: now,
-    });
+    loadedFileState.docId = data._id as string;
+    if (ensureRenderRules(data)) {
+      dirty = true;
+    }
+    if (dirty) {
+      await putContent({
+        id: fmMeta.id,
+        content: JSON.stringify(data),
+        updatedAt: now,
+      });
+    }
     if (legacyFormat && fmMeta.heading !== legacyFormat) {
       const updatedMeta = { ...fmMeta, heading: legacyFormat, updatedAt: now };
       setMetas((prev) =>
@@ -245,7 +281,7 @@ const updateLastUsedAt = async (list: SectionMeta[]) => {
       await putMeta(updatedMeta);
     }
   } catch {
-    // Silently ignore parse failures — last_used_at is non-critical
+    // Silently ignore parse failures
   }
 };
 
@@ -325,6 +361,7 @@ export const addSection = async (afterId?: string): Promise<string | null> => {
     content: defaultContent,
     updatedAt: now,
   });
+  await touchLastUsedAt();
 
   const updated = [...list, newMeta].sort((a, b) => a.fracIndex - b.fracIndex);
   setMetas(await normalizeFracIndices(updated));
@@ -368,6 +405,7 @@ export const addSectionBefore = async (
     content: defaultContent,
     updatedAt: now,
   });
+  await touchLastUsedAt();
 
   const updated = [...list, newMeta].sort((a, b) => a.fracIndex - b.fracIndex);
   setMetas(await normalizeFracIndices(updated));
@@ -378,6 +416,7 @@ export const deleteSection = async (id: string) => {
   await deleteSectionRow(id);
   setMetas((prev) => prev.filter((m) => m.id !== id));
   if (_activeSection().id === id) _setActiveSection({ id: null });
+  await touchLastUsedAt();
 };
 
 export const deleteFile = async (id: string) => {
