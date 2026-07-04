@@ -200,6 +200,34 @@ const EditorPage: Component = () => {
     });
   });
 
+  // Sets content and selection on a commander once its underlying widget is mounted.
+  const applyWhenReady = (
+    id: string,
+    content: string,
+    selection: { anchor: number; head: number },
+  ) => {
+    let cancelled = false;
+    onCleanup(() => {
+      cancelled = true;
+    });
+    const attempt = () => {
+      if (cancelled) return;
+      if (editorState.activeSectionId() !== id) return;
+      if (!editorCommander.getContainer()) {
+        requestAnimationFrame(attempt);
+        return;
+      }
+      console.log(
+        "A",
+        editorCommander.getContainer(),
+        editorCommander.setValue,
+      );
+      editorCommander.setValue(content, selection, { resetHistory: true });
+      editorCommander.focus();
+    };
+    attempt();
+  };
+
   createEffect(async () => {
     const target = editorState.activeSection(); // { equals: false }: fires on every goToSection
     editorState.activeContentVersion(); // also re-run on external content updates
@@ -214,16 +242,9 @@ const EditorPage: Component = () => {
         ? { start: target.selStart, end: target.selEnd ?? target.selStart }
         : (popped ?? { start: 0, end: 0 });
     const len = content.length;
-    requestAnimationFrame(() => {
-      editorCommander.setValue(
-        content,
-        {
-          anchor: Math.min(stored.start, len),
-          head: Math.min(stored.end, len),
-        },
-        { resetHistory: true },
-      );
-      editorCommander.focus();
+    applyWhenReady(id, content, {
+      anchor: Math.min(stored.start, len),
+      head: Math.min(stored.end, len),
     });
   });
 
@@ -255,10 +276,6 @@ const EditorPage: Component = () => {
       after: list.slice(idx + 1, idx + 1 + ctx),
     };
   });
-
-  const mode = createMemo(() =>
-    editorState.activeSectionId() ? "single" : "none",
-  );
 
   const selectTitleHere = () => {
     const val = editorCommander.getValue();
@@ -393,7 +410,7 @@ const EditorPage: Component = () => {
     scrollRafId = requestAnimationFrame(() => {
       scrollRafId = null;
       const container = editorCommander.getContainer();
-      if (!container || mode() !== "single") return;
+      if (!container) return;
       const r = container.getBoundingClientRect();
       const centerY = window.innerHeight / 2;
       const pct = Math.round(
@@ -406,13 +423,13 @@ const EditorPage: Component = () => {
     });
   };
 
-  onMount(() =>
-    window.addEventListener("scroll", handleScroll, { passive: true }),
-  );
-  onCleanup(() => {
-    window.removeEventListener("scroll", handleScroll);
-    if (scrollRafId !== null) cancelAnimationFrame(scrollRafId);
-    clearTimeout(scrollHideTimer);
+  onMount(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    onCleanup(() => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollRafId !== null) cancelAnimationFrame(scrollRafId);
+      clearTimeout(scrollHideTimer);
+    });
   });
 
   const handleScrollIndicatorClick = () => {
@@ -478,15 +495,13 @@ const EditorPage: Component = () => {
 
   return (
     <main>
-      <Show when={mode() === "single"}>
-        <button
-          class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}
-          onClick={handleScrollIndicatorClick}
-          title="Scroll editor into view"
-        >
-          {scrollPct()}%
-        </button>
-      </Show>
+      <button
+        class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}
+        onClick={handleScrollIndicatorClick}
+        title="Scroll editor into view"
+      >
+        {scrollPct()}%
+      </button>
       <Show when={showFind()}>
         <FindReplaceModal
           fileId={params.fileId}
@@ -550,15 +565,13 @@ const EditorPage: Component = () => {
           />
         </ToggleMenu>
 
-        <Show when={mode() === "single"}>
-          <button
-            class="count-label"
-            classList={{ dim: editorState.saveStatus() !== "saved" }}
-            onClick={() => setShowWords((v: boolean) => !v)}
-          >
-            {countLabel()}
-          </button>
-        </Show>
+        <button
+          class="count-label"
+          classList={{ dim: editorState.saveStatus() !== "saved" }}
+          onClick={() => setShowWords((v: boolean) => !v)}
+        >
+          {countLabel()}
+        </button>
 
         <span class="spacer" />
 
@@ -602,87 +615,85 @@ const EditorPage: Component = () => {
         </div>
       </Toolbar>
 
-      <Show when={mode() === "single"}>
-        <div class="section-preview-container section-preview-container-before">
-          <For each={contextRange().before}>
-            {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
-          </For>
-        </div>
+      <div class="section-preview-container section-preview-container-before">
+        <For each={contextRange().before}>
+          {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
+        </For>
+      </div>
 
-        <div class="section-nav">
-          <Show when={prevSection()}>
-            {(prev) => (
-              <button
-                onClick={() => {
-                  goToSectionSafe(prev().id, {
-                    selStart: Infinity,
-                    selEnd: Infinity,
-                  });
-                }}
-              >
-                <TbOutlineArrowUp /> Prev section
-              </button>
-            )}
-          </Show>
-          <button onClick={handleAddSectionBefore}>
-            {" "}
-            <TbOutlinePlus /> Create Prev
-          </button>
-        </div>
-
-        <div>
-          <Editor
-            language="markdown"
-            commander={editorCommander}
-            onChange={() => {
-              const id = editorState.activeSectionId();
-              if (id) notifyEdit(id);
-            }}
-            onSave={() => handleSave()}
-            onFind={() => openFind()}
-            onPrevSection={() => {
-              const prev = prevSection();
-              if (prev)
-                goToSectionSafe(prev.id, {
+      <div class="section-nav">
+        <Show when={prevSection()}>
+          {(prev) => (
+            <button
+              onClick={() => {
+                goToSectionSafe(prev().id, {
                   selStart: Infinity,
                   selEnd: Infinity,
                 });
-            }}
-            onNextSection={() => {
-              const next = nextSection();
-              if (next) goToSectionSafe(next.id, { selStart: 0, selEnd: 0 });
-            }}
-          />
-        </div>
+              }}
+            >
+              <TbOutlineArrowUp /> Prev section
+            </button>
+          )}
+        </Show>
+        <button onClick={handleAddSectionBefore}>
+          {" "}
+          <TbOutlinePlus /> Create Prev
+        </button>
+      </div>
 
-        <div class="section-nav">
-          <Show when={nextSection()}>
-            {(next) => (
-              <button
-                onClick={() => {
-                  goToSectionSafe(next().id, { selStart: 0, selEnd: 0 });
-                }}
-              >
-                <TbOutlineArrowDown />
-                Next section
-              </button>
-            )}
-          </Show>
-          <button
-            onClick={() =>
-              handleAddSection(editorState.activeSectionId() ?? undefined)
-            }
-          >
-            <TbOutlinePlus /> Create Next
-          </button>
-        </div>
+      <div>
+        <Editor
+          language="markdown"
+          commander={editorCommander}
+          onChange={() => {
+            const id = editorState.activeSectionId();
+            if (id) notifyEdit(id);
+          }}
+          onSave={() => handleSave()}
+          onFind={() => openFind()}
+          onPrevSection={() => {
+            const prev = prevSection();
+            if (prev)
+              goToSectionSafe(prev.id, {
+                selStart: Infinity,
+                selEnd: Infinity,
+              });
+          }}
+          onNextSection={() => {
+            const next = nextSection();
+            if (next) goToSectionSafe(next.id, { selStart: 0, selEnd: 0 });
+          }}
+        />
+      </div>
 
-        <div class="section-preview-container section-preview-container-after">
-          <For each={contextRange().after}>
-            {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
-          </For>
-        </div>
-      </Show>
+      <div class="section-nav">
+        <Show when={nextSection()}>
+          {(next) => (
+            <button
+              onClick={() => {
+                goToSectionSafe(next().id, { selStart: 0, selEnd: 0 });
+              }}
+            >
+              <TbOutlineArrowDown />
+              Next section
+            </button>
+          )}
+        </Show>
+        <button
+          onClick={() =>
+            handleAddSection(editorState.activeSectionId() ?? undefined)
+          }
+        >
+          <TbOutlinePlus /> Create Next
+        </button>
+      </div>
+
+      <div class="section-preview-container section-preview-container-after">
+        <For each={contextRange().after}>
+          {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
+        </For>
+      </div>
     </main>
   );
 };

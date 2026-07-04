@@ -108,7 +108,10 @@ export const [stickerWidth, setStickerWidth_] = persisted("stickerWidth", 320);
 export const setStickerWidth = (v: number) =>
   setStickerWidth_(Math.min(480, Math.max(180, v)));
 
-export const [lightEditor, setLightEditor] = persisted("lightEditor", true);
+export const [lightEditor, setLightEditor, initLightEditor] = persisted(
+  "lightEditor",
+  true,
+);
 
 export type ThemeVariant = "default" | "warm" | "cool";
 export const [themeLight, setThemeLight] = persisted<ThemeVariant>(
