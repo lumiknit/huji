@@ -67,7 +67,6 @@ import { resetFindState, loadFindContents } from "../states/find";
 import { stickerOpen, toggleSticker } from "../states/sticker";
 import ContextSection from "../components/editor/ContextSection";
 import SaveOrBackupButton from "../components/editor/SaveOrBackupButton";
-import { scrollSelectionToCenter } from "../lib/utils/dom";
 import type { SectionMeta } from "../lib/db/schema";
 
 const EditorPage: Component = () => {
@@ -416,6 +415,27 @@ const EditorPage: Component = () => {
     clearTimeout(scrollHideTimer);
   });
 
+  const handleScrollIndicatorClick = () => {
+    const container = editorCommander.getContainer();
+    if (!container) return;
+    const r = container.getBoundingClientRect();
+    const centerY = window.innerHeight / 2;
+    const p = (centerY - r.top) / r.height;
+
+    let targetScrollY = window.scrollY;
+    if (p < 0.0) {
+      targetScrollY = window.scrollY + r.top - centerY;
+    } else if (p > 1.0) {
+      targetScrollY = window.scrollY + r.bottom - centerY;
+    } else {
+      return;
+    }
+    window.scrollTo({
+      top: targetScrollY,
+      behavior: "smooth",
+    });
+  };
+
   const countLabel = () => {
     const { chars, words } = editorState.sectionCount();
     const n = showWords() ? words : chars;
@@ -461,8 +481,8 @@ const EditorPage: Component = () => {
       <Show when={mode() === "single"}>
         <button
           class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}
-          onClick={scrollSelectionToCenter}
-          title="Jump to current selection"
+          onClick={handleScrollIndicatorClick}
+          title="Scroll editor into view"
         >
           {scrollPct()}%
         </button>

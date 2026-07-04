@@ -25,7 +25,19 @@ const Layout: Component<LayoutProps> = (props) => {
 
   return (
     <>
-      <Toaster position="bottom-center" toastOptions={{ duration: 3000 }} />
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            color: "var(--c-fg)",
+            background: "var(--c-bg)",
+            border: "1px solid var(--c-border)",
+            "border-radius": ".5rem",
+            "box-shadow": "#4444 0px 3px 10px",
+          },
+        }}
+      />
       <CommonDialog />
       <ErrorBoundary
         fallback={(err, reset) => (
