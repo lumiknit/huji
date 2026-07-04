@@ -3,7 +3,6 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  onCleanup,
   onMount,
   Show,
   For,
@@ -20,8 +19,8 @@ import Toolbar from "../components/Toolbar";
 import Editor from "../components/editor/Editor";
 import FrontmatterEditor from "../components/editor/FrontmatterEditor";
 import {
+  applyWhenReady,
   createCommander,
-  type EditorCommander,
 } from "../components/editor/commander";
 import type { FrontmatterType } from "../lib/md/frontmatter";
 import {
@@ -77,27 +76,6 @@ const SpecialEditPage: Component = () => {
   onMount(() => {
     loadFile(params.fileId);
   });
-
-  // Sets content on a commander once its underlying widget is actually
-  // mounted — the widget (CodeMirror/textarea) may be lazy-loaded or get
-  // swapped (light editor <-> CodeMirror) after this component mounts, so a
-  // single immediate setValue can silently no-op or hit a stale instance.
-  const applyWhenReady = (commander: EditorCommander, content: string) => {
-    let cancelled = false;
-    onCleanup(() => {
-      cancelled = true;
-    });
-    const attempt = () => {
-      if (cancelled) return;
-      commander.setValue(content, undefined, { resetHistory: true });
-      if (commander.getValue() !== content) {
-        requestAnimationFrame(attempt);
-      } else {
-        commander.focus();
-      }
-    };
-    requestAnimationFrame(attempt);
-  };
 
   // ── Whole file ──
   const wholeCommander = createCommander();

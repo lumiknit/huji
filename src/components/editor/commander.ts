@@ -44,3 +44,30 @@ export const createCommander = (): EditorCommander => ({
   insertAtCursor: () => {},
   getContainer: () => null,
 });
+
+import { onCleanup } from "solid-js";
+
+export const applyWhenReady = (
+  commander: EditorCommander,
+  content: string,
+  opts?: {
+    selection?: { anchor: number; head: number };
+    guard?: () => boolean;
+  },
+) => {
+  let cancelled = false;
+  onCleanup(() => {
+    cancelled = true;
+  });
+  const attempt = () => {
+    if (cancelled) return;
+    if (opts?.guard && !opts.guard()) return;
+    if (!commander.getContainer()) {
+      requestAnimationFrame(attempt);
+      return;
+    }
+    commander.setValue(content, opts?.selection, { resetHistory: true });
+    commander.focus();
+  };
+  attempt();
+};

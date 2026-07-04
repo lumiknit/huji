@@ -57,7 +57,10 @@ import { sanitizeFilename, packBackupName } from "../lib/path";
 import { getProvider } from "../lib/sync/provider";
 import type { SyncProviderName } from "../lib/sync/interface";
 import Editor from "../components/editor/Editor";
-import { createCommander } from "../components/editor/commander";
+import {
+  applyWhenReady,
+  createCommander,
+} from "../components/editor/commander";
 import ToggleMenu from "../components/ToggleMenu";
 import FileDrop from "../components/FileDrop";
 import Toolbar from "../components/Toolbar";
@@ -200,34 +203,6 @@ const EditorPage: Component = () => {
     });
   });
 
-  // Sets content and selection on a commander once its underlying widget is mounted.
-  const applyWhenReady = (
-    id: string,
-    content: string,
-    selection: { anchor: number; head: number },
-  ) => {
-    let cancelled = false;
-    onCleanup(() => {
-      cancelled = true;
-    });
-    const attempt = () => {
-      if (cancelled) return;
-      if (editorState.activeSectionId() !== id) return;
-      if (!editorCommander.getContainer()) {
-        requestAnimationFrame(attempt);
-        return;
-      }
-      console.log(
-        "A",
-        editorCommander.getContainer(),
-        editorCommander.setValue,
-      );
-      editorCommander.setValue(content, selection, { resetHistory: true });
-      editorCommander.focus();
-    };
-    attempt();
-  };
-
   createEffect(async () => {
     const target = editorState.activeSection(); // { equals: false }: fires on every goToSection
     editorState.activeContentVersion(); // also re-run on external content updates
@@ -242,9 +217,12 @@ const EditorPage: Component = () => {
         ? { start: target.selStart, end: target.selEnd ?? target.selStart }
         : (popped ?? { start: 0, end: 0 });
     const len = content.length;
-    applyWhenReady(id, content, {
-      anchor: Math.min(stored.start, len),
-      head: Math.min(stored.end, len),
+    applyWhenReady(editorCommander, content, {
+      selection: {
+        anchor: Math.min(stored.start, len),
+        head: Math.min(stored.end, len),
+      },
+      guard: () => editorState.activeSectionId() === id,
     });
   });
 
