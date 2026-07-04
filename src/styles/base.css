@@ -615,7 +615,7 @@ article.md-body {
   & p {
     margin: 0.6em 0;
     text-indent: var(--preview-para-indent, 0);
-    text-wrap: pretty;
+    text-align: justify;
   }
 
   & ul,
