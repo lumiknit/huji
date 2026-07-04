@@ -241,6 +241,10 @@ const EditorPage: Component = () => {
       return;
     }
     await goToSectionSafe(id);
+    // After the section content is applied, scroll CodeMirror's selection
+    // into view. applyWhenReady already uses rAF internally so one more
+    // rAF here is enough to fire after it.
+    setTimeout(() => editorCommander.scrollToSelection(), 40);
   };
 
   const contextRange = createMemo(() => {
@@ -409,6 +413,26 @@ const EditorPage: Component = () => {
       clearTimeout(scrollHideTimer);
     });
   });
+
+  /**
+   * Scroll the window so the editor container's top or bottom edge
+   * is aligned to the center of the viewport. Used after prev/next
+   * section jumps so the user lands in a readable position.
+   *
+   * edge="start" → align top of editor to viewport center (going to next)
+   * edge="end"   → align bottom of editor to viewport center (going to prev)
+   */
+  const scrollWindowToEditorEdge = (edge: "start" | "end") => {
+    const container = editorCommander.getContainer();
+    if (!container) return;
+    const r = container.getBoundingClientRect();
+    const centerY = window.innerHeight / 2;
+    const targetScrollY =
+      edge === "start"
+        ? window.scrollY + r.top - centerY
+        : window.scrollY + r.bottom - centerY;
+    window.scrollTo({ top: targetScrollY, behavior: "instant" });
+  };
 
   const handleScrollIndicatorClick = () => {
     const container = editorCommander.getContainer();
@@ -607,6 +631,8 @@ const EditorPage: Component = () => {
                 goToSectionSafe(prev().id, {
                   selStart: Infinity,
                   selEnd: Infinity,
+                }).then((ok) => {
+                  if (ok) setTimeout(() => scrollWindowToEditorEdge("end"), 40);
                 });
               }}
             >
@@ -636,11 +662,19 @@ const EditorPage: Component = () => {
               goToSectionSafe(prev.id, {
                 selStart: Infinity,
                 selEnd: Infinity,
+              }).then((ok) => {
+                if (ok) setTimeout(() => scrollWindowToEditorEdge("end"), 40);
               });
           }}
           onNextSection={() => {
             const next = nextSection();
-            if (next) goToSectionSafe(next.id, { selStart: 0, selEnd: 0 });
+            if (next)
+              goToSectionSafe(next.id, { selStart: 0, selEnd: 0 }).then(
+                (ok) => {
+                  if (ok)
+                    setTimeout(() => scrollWindowToEditorEdge("start"), 40);
+                },
+              );
           }}
         />
       </div>
@@ -650,7 +684,12 @@ const EditorPage: Component = () => {
           {(next) => (
             <button
               onClick={() => {
-                goToSectionSafe(next().id, { selStart: 0, selEnd: 0 });
+                goToSectionSafe(next().id, { selStart: 0, selEnd: 0 }).then(
+                  (ok) => {
+                    if (ok)
+                      setTimeout(() => scrollWindowToEditorEdge("start"), 40);
+                  },
+                );
               }}
             >
               <TbOutlineArrowDown />

@@ -25,6 +25,7 @@ const LightEditor: Component<EditorWidgetProps> = (props) => {
       document.execCommand("redo");
     };
     cmd.openSearch = () => {};
+    cmd.scrollToSelection = () => {};
     cmd.scrollToEdge = (edge) => {
       if (!textareaEl) return;
       const pos = edge === "start" ? 0 : textareaEl.value.length;

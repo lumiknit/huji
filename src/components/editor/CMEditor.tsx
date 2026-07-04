@@ -89,6 +89,12 @@ const CMEditor: Component<EditorWidgetProps> = (props) => {
           });
         }
       };
+      cmd.scrollToSelection = () => {
+        const sel = view!.state.selection.main;
+        view!.dispatch({
+          effects: EditorView.scrollIntoView(sel, { y: "nearest" }),
+        });
+      };
       cmd.setSelection = (anchor, head) => {
         const len = view!.state.doc.length;
         view!.dispatch({
@@ -138,6 +144,7 @@ const CMEditor: Component<EditorWidgetProps> = (props) => {
       cmd.redo = () => {};
       cmd.openSearch = () => {};
       cmd.scrollToEdge = () => {};
+      cmd.scrollToSelection = () => {};
       cmd.focus = () => {};
       cmd.getValue = () => "";
       cmd.setValue = () => {};

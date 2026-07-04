@@ -5,6 +5,8 @@ export type EditorCommander = {
   redo: () => void;
   openSearch: () => void;
   scrollToEdge: (edge: "start" | "end") => void;
+  /** Scroll the editor so the current selection/cursor is visible. No-op on LightEditor. */
+  scrollToSelection: () => void;
   focus: () => void;
   getValue: () => string;
   setValue: (
@@ -36,6 +38,7 @@ export const createCommander = (): EditorCommander => ({
   redo: () => {},
   openSearch: () => {},
   scrollToEdge: () => {},
+  scrollToSelection: () => {},
   focus: () => {},
   getValue: () => "",
   setValue: () => {},
