@@ -1,6 +1,5 @@
-import { type Component, onMount, onCleanup } from "solid-js";
+import { type Component, onMount } from "solid-js";
 import type { EditorWidgetProps } from "./commander.ts";
-import { registerValueGetter } from "../../states/editor_save.ts";
 import {
   spellcheck,
   autocorrect,
@@ -11,8 +10,6 @@ const LightEditor: Component<EditorWidgetProps> = (props) => {
   let textareaEl: HTMLTextAreaElement | undefined;
 
   onMount(() => {
-    registerValueGetter(() => textareaEl?.value ?? "");
-
     if (!props.commander) return;
     const cmd = props.commander;
 
@@ -59,10 +56,6 @@ const LightEditor: Component<EditorWidgetProps> = (props) => {
       props.onChange?.();
     };
     cmd.getContainer = () => textareaEl ?? null;
-  });
-
-  onCleanup(() => {
-    registerValueGetter(null);
   });
 
   const handleKeyDown = (e: KeyboardEvent) => {

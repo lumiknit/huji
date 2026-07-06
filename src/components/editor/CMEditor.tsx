@@ -11,7 +11,6 @@ import {
   spellcheckExtension,
 } from "./cm_setup.ts";
 import type { EditorLanguage, EditorWidgetProps } from "./commander.ts";
-import { registerValueGetter } from "../../states/editor_save.ts";
 import { spellcheck, typewriterMode } from "../../states/settings.ts";
 
 const CMEditor: Component<EditorWidgetProps> = (props) => {
@@ -47,8 +46,6 @@ const CMEditor: Component<EditorWidgetProps> = (props) => {
       state: createEditorState("", { anchor: 0, head: 0 }, extensions),
       parent: containerEl!,
     });
-
-    registerValueGetter(() => view!.state.doc.toString());
 
     if (props.commander) {
       const cmd = props.commander;
@@ -132,7 +129,6 @@ const CMEditor: Component<EditorWidgetProps> = (props) => {
   });
 
   onCleanup(() => {
-    registerValueGetter(null);
     view?.destroy();
     view = undefined;
     // Neutralize any bindings so a stale commander reference (e.g. after

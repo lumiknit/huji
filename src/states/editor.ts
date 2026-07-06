@@ -29,8 +29,8 @@ import {
   disposeDebounce,
   normalizeAndMerge,
   normalizeSectionOnLeave,
-  getActiveTextareaValue,
 } from "./editor_save";
+import type { EditorCommander } from "../components/editor/commander";
 
 export type SaveStatus = "saved" | "dirty" | "saving";
 
@@ -294,13 +294,14 @@ const initFrontmatter = async (list: SectionMeta[]) => {
  */
 export const goToSection = async (
   nextId: string | null,
+  commander: EditorCommander | null,
   opts: GoToSectionOpts = {},
 ): Promise<boolean> => {
   disposeDebounce();
 
   const id = _activeSection().id;
   if (id && !id.startsWith("__")) {
-    const value = getActiveTextareaValue();
+    const value = commander?.getValue() ?? "";
     const meta = metas().find((m) => m.id === id);
     if (meta) {
       const ok = await normalizeSectionOnLeave(id, meta, value);

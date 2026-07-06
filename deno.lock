@@ -6,10 +6,10 @@
     "npm:@codemirror/language@^6.12.4": "6.12.4",
     "npm:@codemirror/search@^6.7.1": "6.7.1",
     "npm:@codemirror/state@^6.7.0": "6.7.0",
-    "npm:@codemirror/view@^6.43.4": "6.43.4",
+    "npm:@codemirror/view@^6.43.5": "6.43.5",
     "npm:@eslint/js@^10.0.1": "10.0.1_eslint@10.6.0",
     "npm:@lezer/markdown@^1.6.4": "1.6.4",
-    "npm:@solid-primitives/storage@^4.3.4": "4.3.4_solid-js@1.9.14",
+    "npm:@solid-primitives/storage@^4.3.5": "4.3.5_solid-js@1.9.14",
     "npm:@solidjs/router@~0.16.1": "0.16.1_solid-js@1.9.14",
     "npm:@types/js-yaml@^4.0.9": "4.0.9",
     "npm:@types/node@^26.1.0": "26.1.0",
@@ -303,8 +303,8 @@
         "@marijn/find-cluster-break"
       ]
     },
-    "@codemirror/view@6.43.4": {
-      "integrity": "sha512-YImu23iyKfncJzT7sRy+rEqEhSc8RhOHqDxwy4WzXRKJwYm6iwf/9OJk5ctCAdZ6yi2ZqaGEvmf55fSVqMDrgg==",
+    "@codemirror/view@6.43.5": {
+      "integrity": "sha512-7uT/vUgH6dfXWn3WqOe23KneILMvGy5wQjNMEcRXLKzziJ9NOktpW6tGoyQpwVkBgE5Gj6hKkCcsddbnkaWrOQ==",
       "dependencies": [
         "@codemirror/state",
         "crelt",
@@ -535,8 +535,6 @@
     "@napi-rs/wasm-runtime@1.1.6_@emnapi+core@1.11.0_@emnapi+runtime@1.11.0": {
       "integrity": "sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==",
       "dependencies": [
-        "@emnapi/core@1.11.0",
-        "@emnapi/runtime@1.11.0",
         "@tybys/wasm-util"
       ]
     },
@@ -839,15 +837,15 @@
     "@rolldown/pluginutils@1.0.1": {
       "integrity": "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="
     },
-    "@solid-primitives/storage@4.3.4_solid-js@1.9.14": {
-      "integrity": "sha512-GSxPAIuyxhJWOcv7n10iv3aid5oHN3KUgyA9IV0GYWlPpgyGs43aS9E85b0VXDLoH+D4ThNK8+2WEJ8B/S6Ccg==",
+    "@solid-primitives/storage@4.3.5_solid-js@1.9.14": {
+      "integrity": "sha512-uvgj2HoqPw6RlDRiwVm4LQM6WHUJ+SsCvXtvGLbWVnIjGqrrNyFxdbKQFYUkSw6QsVO/esm7Ok0VeDpO0ioRlA==",
       "dependencies": [
         "@solid-primitives/utils",
         "solid-js"
       ]
     },
-    "@solid-primitives/utils@6.4.0_solid-js@1.9.14": {
-      "integrity": "sha512-AeGTBg8Wtkh/0s+evyLtP8piQoS4wyqqQaAFs2HJcFMMjYAtUgo+ZPduRXLjPlqKVc2ejeR544oeqpbn8Egn8A==",
+    "@solid-primitives/utils@6.4.1_solid-js@1.9.14": {
+      "integrity": "sha512-ISSB5QX1qP2ynrheIpYwc4oKR5Ny4siNuUyf1qZniy+Il+p/PtDB0QK1Dnle8noiHpwRD3gpPdubOC3qI/Zamg==",
       "dependencies": [
         "solid-js"
       ]
@@ -2372,10 +2370,10 @@
         "npm:@codemirror/language@^6.12.4",
         "npm:@codemirror/search@^6.7.1",
         "npm:@codemirror/state@^6.7.0",
-        "npm:@codemirror/view@^6.43.4",
+        "npm:@codemirror/view@^6.43.5",
         "npm:@eslint/js@^10.0.1",
         "npm:@lezer/markdown@^1.6.4",
-        "npm:@solid-primitives/storage@^4.3.4",
+        "npm:@solid-primitives/storage@^4.3.5",
         "npm:@solidjs/router@~0.16.1",
         "npm:@types/js-yaml@^4.0.9",
         "npm:@types/node@^26.1.0",

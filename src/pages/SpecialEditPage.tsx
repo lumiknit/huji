@@ -3,6 +3,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  onCleanup,
   onMount,
   Show,
   For,
@@ -17,16 +18,23 @@ import toast from "solid-toast";
 import { aconfirm } from "../components/CommonDialog";
 import Toolbar from "../components/Toolbar";
 import Editor from "../components/editor/Editor";
-import FrontmatterEditor from "../components/editor/FrontmatterEditor";
 import {
   applyWhenReady,
   createCommander,
+  writeWhenReady,
 } from "../components/editor/commander";
-import type { FrontmatterType } from "../lib/md/frontmatter";
+import {
+  type FrontmatterType,
+  createDefaultFrontmatterData,
+  decodeFrontmatterForEdit,
+  encodeFrontmatterFromEdit,
+  extractIdLoose,
+} from "../lib/md/frontmatter";
 import {
   editorState,
   loadFile,
   loadAllContent,
+  loadSectionContent,
   setPendingJump,
   WHOLE_ID,
   setMetas,
@@ -34,10 +42,10 @@ import {
 import { flushSave } from "../states/editor_save";
 
 import { getFileMetas, putMeta, putMetas, deleteMetas } from "../lib/db/meta";
-import { putContents, deleteContents } from "../lib/db/content";
+import { putContent, putContents, deleteContents } from "../lib/db/content";
 import { buildReorderText, parseReorderText } from "../lib/md/reorder";
 import { FRAC_GAP } from "../lib/utils/fracindex";
-import { genUniqueId } from "../lib/utils/id";
+import { genId, genUniqueId } from "../lib/utils/id";
 import type { SectionMeta } from "../lib/db/schema";
 
 type Target = "reorder" | "all" | "frontmatter";
@@ -73,31 +81,29 @@ const SpecialEditPage: Component = () => {
     navigate(`/edit/${params.fileId}`);
   };
 
+  const [fileReady, setFileReady] = createSignal(false);
+  onMount(async () => {
+    await loadFile(params.fileId);
+    setFileReady(true);
+  });
+
+  // ── Shared editor ──
+  // Only one target is ever shown at a time, so a single commander/widget is
+  // reused across reorder/all/frontmatter instead of mounting three.
+  const commander = createCommander();
+  const [error, setError] = createSignal("");
+  // True once the user edits the editor. Cleared back to false right when a
+  // fresh/reset/converted value actually lands (see `onApplied` below) —
+  // CMEditor's setValue also fires onChange, so we can't just leave it be.
+  const [dirty, setDirty] = createSignal(false);
+
   onMount(() => {
-    loadFile(params.fileId);
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirty()) e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    onCleanup(() => window.removeEventListener("beforeunload", handler));
   });
-
-  // ── Whole file ──
-  const wholeCommander = createCommander();
-
-  createEffect(() => {
-    if (target() !== "all") return;
-    (async () => {
-      const content = await loadAllContent();
-      if (target() !== "all") return;
-      applyWhenReady(wholeCommander, content);
-    })();
-  });
-
-  const handleWholeBack = async () => {
-    try {
-      await flushSave(WHOLE_ID);
-    } catch {
-      toast.error("Failed to save");
-      return;
-    }
-    goBack();
-  };
 
   // ── Frontmatter ──
   const fmMeta = createMemo(() =>
@@ -116,11 +122,37 @@ const SpecialEditPage: Component = () => {
     await putMeta(updated);
   };
 
-  const handleFrontmatterBack = async () => {
+  const handleFrontmatterFormatChange = async (e: Event) => {
+    const select = e.currentTarget as HTMLSelectElement;
+    const newFormat = select.value as FrontmatterType;
+    const meta = fmMeta();
+    if (!meta || newFormat === meta.heading) return;
+    try {
+      const data = await encodeFrontmatterFromEdit(
+        commander.getValue(),
+        meta.heading as FrontmatterType,
+      );
+      const decoded = await decodeFrontmatterForEdit(
+        JSON.stringify(data),
+        newFormat,
+      );
+      setError("");
+      writeWhenReady(commander, decoded, {
+        guard: () => target() === "frontmatter",
+        onApplied: () => setDirty(false),
+      });
+      await setFrontmatterFormat(newFormat);
+    } catch {
+      setError("Fix errors before switching format");
+      select.value = meta.heading;
+    }
+  };
+
+  const handleFrontmatterApply = async () => {
     const meta = fmMeta();
     if (!meta) return goBack();
     try {
-      await flushSave(meta.id);
+      await flushSave(meta.id, commander.getValue);
     } catch {
       toast.error("Fix invalid frontmatter before leaving");
       return;
@@ -128,10 +160,25 @@ const SpecialEditPage: Component = () => {
     goBack();
   };
 
+  // ── Whole file ──
+  const handleWholeApply = async () => {
+    try {
+      await flushSave(WHOLE_ID, commander.getValue);
+    } catch {
+      toast.error("Failed to save");
+      return;
+    }
+    goBack();
+  };
+
+  // ── Back (cancel) — never saves; just confirms when there are unsaved edits ──
+  const handleBack = () => {
+    if (dirty() && !confirm("Leave without saving?")) return;
+    goBack();
+  };
+
   // ── Reorder ──
-  const reorderCommander = createCommander();
-  const [text, setText] = createSignal("");
-  const [error, setError] = createSignal("");
+  const [reorderError, setReorderError] = createSignal("");
   const [reorderMetas, setReorderMetas] = createSignal<SectionMeta[]>([]);
   const [loaded, setLoaded] = createSignal(false);
   const [diff, setDiff] = createSignal<DiffInfo | null>(null);
@@ -145,25 +192,22 @@ const SpecialEditPage: Component = () => {
     const result = buildReorderText(sections);
     initialText = result.text;
     fingerprintMap = result.fingerprintMap;
-    setText(result.text);
     setDiff(null);
     setLoaded(true);
-    applyWhenReady(reorderCommander, result.text);
+    return initialText;
   };
 
-  onMount(() => {
-    if (target() === "reorder") buildInitial();
-  });
-
   const handleReset = () => {
-    setText(initialText);
-    setError("");
+    setReorderError("");
     setDiff(null);
-    reorderCommander.setValue(initialText);
+    writeWhenReady(commander, initialText, {
+      guard: () => target() === "reorder",
+      onApplied: () => setDirty(false),
+    });
   };
 
   const calcDiff = (): DiffInfo | null => {
-    const result = parseReorderText(text());
+    const result = parseReorderText(commander.getValue());
     if (!result.ok) return null;
 
     const list = reorderMetas();
@@ -191,13 +235,13 @@ const SpecialEditPage: Component = () => {
   };
 
   const handleReorderBlur = () => {
-    const result = parseReorderText(text());
+    const result = parseReorderText(commander.getValue());
     if (!result.ok) {
-      setError((result as { ok: false; error: string }).error);
+      setReorderError((result as { ok: false; error: string }).error);
       setDiff(null);
       return;
     }
-    setError("");
+    setReorderError("");
     setDiff(calcDiff());
   };
 
@@ -217,12 +261,12 @@ const SpecialEditPage: Component = () => {
       if (!(await aconfirm(`${msg}\n\nProceed?`))) return;
     }
 
-    const result = parseReorderText(text());
+    const result = parseReorderText(commander.getValue());
     if (!result.ok) {
-      setError((result as { ok: false; error: string }).error);
+      setReorderError((result as { ok: false; error: string }).error);
       return;
     }
-    setError("");
+    setReorderError("");
 
     const list = reorderMetas();
     const now = new Date().toISOString();
@@ -302,27 +346,92 @@ const SpecialEditPage: Component = () => {
 
   const handleApply = () => {
     if (target() === "reorder") return handleReorderApply();
-    if (target() === "all") return handleWholeBack();
-    return handleFrontmatterBack();
+    if (target() === "all") return handleWholeApply();
+    return handleFrontmatterApply();
   };
+
+  // ── Content loading — one commander, content/language swapped per target ──
+  createEffect(() => {
+    const t = target();
+    if (!fileReady()) return; // metas/fmMeta aren't populated until loadFile resolves
+    commander.setLanguage(t === "all" ? "markdown" : "plaintext");
+    (async () => {
+      if (t === "all") {
+        const content = await loadAllContent();
+        if (target() !== t) return;
+        applyWhenReady(commander, content, {
+          guard: () => target() === t,
+          onApplied: () => setDirty(false),
+        });
+      } else if (t === "reorder") {
+        const content = await buildInitial();
+        if (target() !== t) return;
+        applyWhenReady(commander, content, {
+          guard: () => target() === t,
+          onApplied: () => setDirty(false),
+        });
+      } else {
+        let meta = fmMeta();
+        if (!meta) {
+          // No frontmatter section exists yet (e.g. an older/corrupted file)
+          // — create a default one so there's something to edit instead of
+          // silently leaving the page blank.
+          const now = new Date().toISOString();
+          const newMeta: SectionMeta = {
+            id: genId(),
+            fileId: params.fileId,
+            fracIndex: 0,
+            level: -1,
+            heading: "json",
+            updatedAt: now,
+          };
+          await putMeta(newMeta);
+          await putContent({
+            id: newMeta.id,
+            content: JSON.stringify(createDefaultFrontmatterData(genId())),
+            updatedAt: now,
+          });
+          if (target() !== t) return;
+          setMetas((prev) => [newMeta, ...prev]);
+          meta = newMeta;
+        }
+        const raw = await loadSectionContent(meta.id);
+        let decoded: string;
+        try {
+          decoded = await decodeFrontmatterForEdit(
+            raw,
+            meta.heading as FrontmatterType,
+          );
+          setError("");
+        } catch {
+          // Raw content isn't valid JSON at all — show an editable default
+          // instead of the broken text, keeping whatever _id we can recover.
+          const fallback = createDefaultFrontmatterData(
+            extractIdLoose(raw) ?? genId(),
+          );
+          decoded = await decodeFrontmatterForEdit(
+            JSON.stringify(fallback),
+            meta.heading as FrontmatterType,
+          );
+          setError("Invalid frontmatter — loaded default, save to fix");
+        }
+        if (target() !== t) return;
+        applyWhenReady(commander, decoded, {
+          guard: () => target() === t,
+          onApplied: () => setDirty(false),
+        });
+      }
+    })();
+  });
 
   return (
     <main>
       <Toolbar title={`${TITLES[target()]} — ${editorState.filename()}`}>
-        <button
-          onClick={() =>
-            target() === "reorder"
-              ? goBack()
-              : target() === "all"
-                ? handleWholeBack()
-                : handleFrontmatterBack()
-          }
-          title="Back"
-        >
+        <button onClick={handleBack} title="Back">
           <TbOutlineArrowLeft />
         </button>
         <span class="spacer" />
-        <button class="primary" onClick={handleApply}>
+        <button class="primary" onClick={handleApply} disabled={!dirty()}>
           <TbOutlineCheck /> Apply
         </button>
       </Toolbar>
@@ -342,16 +451,38 @@ const SpecialEditPage: Component = () => {
               <TbOutlineRefresh /> Reset changes
             </button>
           </div>
-          <Editor
-            language="plaintext"
-            commander={reorderCommander}
-            onChange={() => setText(reorderCommander.getValue())}
-            onBlur={handleReorderBlur}
-          />
         </Show>
+      </Show>
 
-        <Show when={error()}>
-          <pre class="error-pre">{error()}</pre>
+      <Show when={target() === "frontmatter" ? fmMeta() : undefined}>
+        {(meta) => (
+          <div class="frontmatter-editor-toolbar">
+            <select
+              value={meta().heading}
+              onChange={handleFrontmatterFormatChange}
+            >
+              <option value="json">JSON</option>
+              <option value="yaml">YAML</option>
+            </select>
+          </div>
+        )}
+      </Show>
+
+      <Editor
+        language={target() === "all" ? "markdown" : "plaintext"}
+        commander={commander}
+        onChange={() => setDirty(true)}
+        onBlur={() => {
+          if (target() === "reorder") handleReorderBlur();
+        }}
+        onSave={() => {
+          if (dirty()) handleApply();
+        }}
+      />
+
+      <Show when={target() === "reorder"}>
+        <Show when={reorderError()}>
+          <pre class="error-pre">{reorderError()}</pre>
         </Show>
 
         <Show when={diff()}>
@@ -378,23 +509,8 @@ const SpecialEditPage: Component = () => {
         </Show>
       </Show>
 
-      <Show when={target() === "all"}>
-        <Editor
-          language="markdown"
-          commander={wholeCommander}
-          onSave={() => handleWholeBack()}
-        />
-      </Show>
-
-      <Show when={target() === "frontmatter" ? fmMeta() : undefined}>
-        {(meta) => (
-          <FrontmatterEditor
-            id={meta().id}
-            format={meta().heading as FrontmatterType}
-            onFormatChange={setFrontmatterFormat}
-            onSave={() => handleFrontmatterBack()}
-          />
-        )}
+      <Show when={target() === "frontmatter" && error()}>
+        <p class="error-text">{error()}</p>
       </Show>
     </main>
   );

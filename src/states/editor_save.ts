@@ -18,6 +18,7 @@ import { normalizeSectionText, splitSections } from "../lib/md/section";
 import { encodeFrontmatterFromEdit } from "../lib/md/frontmatter";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { batch } from "solid-js";
+import type { EditorCommander } from "../components/editor/commander";
 import {
   editorState,
   setMetas,
@@ -279,42 +280,35 @@ export const normalizeSectionOnLeave = async (
   return true;
 };
 
-// ── Active value getter ──
-
-let activeValueGetter: (() => string) | null = null;
-
-export const registerValueGetter = (fn: (() => string) | null) => {
-  activeValueGetter = fn;
-};
-
-export const getActiveTextareaValue = (): string => activeValueGetter?.() ?? "";
-
 // ── Debounce / auto-save ──
 
-const debounce = createDebounce(async (id: string) => {
-  const value = getActiveTextareaValue();
-  if (id !== WHOLE_ID && !editorState.metas().find((m) => m.id === id)) return;
-  setSaveStatus("saving");
-  try {
-    if (id === WHOLE_ID) {
-      await saveWholeContent(value);
-    } else {
-      const updated = await saveRaw(id, value.trim());
-      if (updated)
-        setMetas((prev) => prev.map((m) => (m.id === id ? updated : m)));
+const debounce = createDebounce(
+  async ({ id, commander }: { id: string; commander: EditorCommander }) => {
+    const value = commander.getValue();
+    if (id !== WHOLE_ID && !editorState.metas().find((m) => m.id === id))
+      return;
+    setSaveStatus("saving");
+    try {
+      if (id === WHOLE_ID) {
+        await saveWholeContent(value);
+      } else {
+        const updated = await saveRaw(id, value.trim());
+        if (updated)
+          setMetas((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      }
+      batch(() => {
+        setSectionCount(countText(value));
+        setSaveStatus("saved");
+      });
+    } catch {
+      setSaveStatus("dirty");
     }
-    batch(() => {
-      setSectionCount(countText(value));
-      setSaveStatus("saved");
-    });
-  } catch {
-    setSaveStatus("dirty");
-  }
-});
+  },
+);
 
-export const notifyEdit = (id: string) => {
+export const notifyEdit = (id: string, commander: EditorCommander) => {
   setSaveStatus("dirty");
-  debounce.notify(id);
+  debounce.notify({ id, commander });
 };
 
 export const disposeDebounce = () => {
@@ -327,9 +321,12 @@ export const disposeDebounce = () => {
  * Flush pending edits to IDB without normalization.
  * Called before navigation; normalizeSectionOnLeave handles the full normalize.
  */
-export const flushSave = async (id: string): Promise<void> => {
+export const flushSave = async (
+  id: string,
+  getValue: () => string,
+): Promise<void> => {
   debounce.dispose();
-  const value = getActiveTextareaValue();
+  const value = getValue();
   const meta = editorState.metas().find((m) => m.id === id);
   setSaveStatus("saving");
   try {

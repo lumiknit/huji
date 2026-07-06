@@ -8,6 +8,7 @@ import {
 } from "solid-icons/tb";
 
 import { goToSection } from "../states/editor";
+import type { EditorCommander } from "./editor/commander";
 import { openSticker } from "../states/sticker";
 import {
   findQuery,
@@ -60,7 +61,11 @@ const getContext = (
   };
 };
 
-type Props = { fileId: string; onClose: () => void };
+type Props = {
+  fileId: string;
+  commander: EditorCommander;
+  onClose: () => void;
+};
 
 const FindReplaceModal: Component<Props> = (props) => {
   let dialogEl!: HTMLDialogElement;
@@ -89,7 +94,10 @@ const FindReplaceModal: Component<Props> = (props) => {
     // Proper dialog close releases the modal focus trap before we focus the editor
     dialogEl.close();
     await new Promise<void>((r) => setTimeout(r, 50));
-    await goToSection(m.sectionId, { selStart: m.start, selEnd: m.end });
+    await goToSection(m.sectionId, props.commander, {
+      selStart: m.start,
+      selEnd: m.end,
+    });
   };
 
   return (

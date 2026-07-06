@@ -84,7 +84,7 @@ const EditorPage: Component = () => {
     const id = editorState.activeSectionId();
     if (id && !id.startsWith("__")) {
       try {
-        await flushSave(id);
+        await flushSave(id, editorCommander.getValue);
       } catch {
         toast.error("Fix invalid frontmatter before continuing");
         return;
@@ -100,7 +100,7 @@ const EditorPage: Component = () => {
     nextId: string | null,
     opts?: GoToSectionOpts,
   ) => {
-    const ok = await goToSection(nextId, opts);
+    const ok = await goToSection(nextId, editorCommander, opts);
     if (!ok) toast.error("Fix invalid frontmatter before leaving");
     return ok;
   };
@@ -145,17 +145,17 @@ const EditorPage: Component = () => {
     const list = editorState.metas();
     const jump = popPendingJump();
     if (jump) {
-      await goToSection(jump.sectionId, {
+      await goToSection(jump.sectionId, editorCommander, {
         selStart: jump.start,
         selEnd: jump.end,
       });
     } else {
       const first = list.find((m) => m.level !== -1);
       if (first) {
-        await goToSection(first.id);
+        await goToSection(first.id, editorCommander);
       } else {
         const newId = await addSection();
-        if (newId) await goToSection(newId);
+        if (newId) await goToSection(newId, editorCommander);
       }
     }
   });
@@ -167,7 +167,7 @@ const EditorPage: Component = () => {
     const id = editorState.activeSectionId();
     if (!id) return;
     e.preventDefault();
-    flushSave(id).then(() => e.retry(true));
+    flushSave(id, editorCommander.getValue).then(() => e.retry(true));
   });
 
   onMount(() => {
@@ -274,7 +274,7 @@ const EditorPage: Component = () => {
     try {
       const newId = await addSectionBefore(id);
       if (newId) {
-        await goToSection(newId);
+        await goToSection(newId, editorCommander);
         requestAnimationFrame(selectTitleHere);
       }
     } catch (e) {
@@ -290,7 +290,7 @@ const EditorPage: Component = () => {
         id && !id.startsWith("__") ? id : undefined,
       );
       if (newId) {
-        await goToSection(newId);
+        await goToSection(newId, editorCommander);
         requestAnimationFrame(selectTitleHere);
       }
     } catch (e) {
@@ -476,7 +476,7 @@ const EditorPage: Component = () => {
     const p = (async () => {
       const id = editorState.activeSectionId();
       if (id) {
-        await flushSave(id);
+        await flushSave(id, editorCommander.getValue);
       }
     })();
     toast.promise(p, {
@@ -491,7 +491,7 @@ const EditorPage: Component = () => {
     if (!id) return;
     file.text().then((text) => {
       editorCommander.insertAtCursor(text);
-      notifyEdit(id);
+      notifyEdit(id, editorCommander);
     });
   };
 
@@ -507,6 +507,7 @@ const EditorPage: Component = () => {
       <Show when={showFind()}>
         <FindReplaceModal
           fileId={params.fileId}
+          commander={editorCommander}
           onClose={() => setShowFind(false)}
         />
       </Show>
@@ -652,7 +653,7 @@ const EditorPage: Component = () => {
           commander={editorCommander}
           onChange={() => {
             const id = editorState.activeSectionId();
-            if (id) notifyEdit(id);
+            if (id) notifyEdit(id, editorCommander);
           }}
           onSave={() => handleSave()}
           onFind={() => openFind()}
