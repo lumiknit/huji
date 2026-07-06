@@ -54,6 +54,13 @@ export const [sectionCount, setSectionCount] = createSignal<SectionCount>({
 const [activeContentVersion, _setActiveContentVersion] = createSignal(0);
 export const bumpActiveContent = () => _setActiveContentVersion((v) => v + 1);
 
+// True from the moment goToSection switches the active section until its
+// content has actually landed in the commander (EditorPage's load effect
+// calls setContentApplying(false) via onApplied). Blocks re-entrant
+// goToSection calls, which would otherwise read the *previous* section's
+// stale text out of the commander and save it under the new section's id.
+export const [contentApplying, setContentApplying] = createSignal(false);
+
 export type GoToSectionOpts = {
   selStart?: number;
   selEnd?: number;
@@ -102,6 +109,7 @@ export const editorState = {
   sectionCount,
   activeContentVersion,
   sectionLabels,
+  contentApplying,
 };
 
 // ── Session state ──
@@ -297,6 +305,10 @@ export const goToSection = async (
   commander: EditorCommander | null,
   opts: GoToSectionOpts = {},
 ): Promise<boolean> => {
+  // The previous section's content may still be loading/applying to the
+  // commander — leaving now would save that stale text under the wrong id.
+  if (contentApplying()) return false;
+
   disposeDebounce();
 
   const id = _activeSection().id;
@@ -327,6 +339,7 @@ export const goToSection = async (
 
   batch(() => {
     setSaveStatus("saved");
+    if (resolvedId) setContentApplying(true);
     _setActiveSection({ id: resolvedId, ...opts });
   });
   return true;

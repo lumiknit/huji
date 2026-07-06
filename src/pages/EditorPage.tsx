@@ -40,6 +40,7 @@ import {
   getCurrentDocId,
   importMarkdownText,
   setSectionCount,
+  setContentApplying,
   type GoToSectionOpts,
 } from "../states/editor";
 import { notifyEdit, flushSave, countText } from "../states/editor_save";
@@ -100,6 +101,10 @@ const EditorPage: Component = () => {
     nextId: string | null,
     opts?: GoToSectionOpts,
   ) => {
+    if (editorState.contentApplying()) {
+      toast.error("Please wait for the section to finish loading");
+      return false;
+    }
     const ok = await goToSection(nextId, editorCommander, opts);
     if (!ok) toast.error("Fix invalid frontmatter before leaving");
     return ok;
@@ -223,6 +228,7 @@ const EditorPage: Component = () => {
         head: Math.min(stored.end, len),
       },
       guard: () => editorState.activeSectionId() === id,
+      onApplied: () => setContentApplying(false),
     });
   });
 

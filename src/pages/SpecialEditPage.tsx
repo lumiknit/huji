@@ -28,7 +28,6 @@ import {
   createDefaultFrontmatterData,
   decodeFrontmatterForEdit,
   encodeFrontmatterFromEdit,
-  extractIdLoose,
 } from "../lib/md/frontmatter";
 import {
   editorState,
@@ -42,7 +41,7 @@ import {
 import { flushSave } from "../states/editor_save";
 
 import { getFileMetas, putMeta, putMetas, deleteMetas } from "../lib/db/meta";
-import { putContent, putContents, deleteContents } from "../lib/db/content";
+import { putContents, deleteContents } from "../lib/db/content";
 import { buildReorderText, parseReorderText } from "../lib/md/reorder";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { genId, genUniqueId } from "../lib/utils/id";
@@ -109,15 +108,25 @@ const SpecialEditPage: Component = () => {
   const fmMeta = createMemo(() =>
     editorState.metas().find((m) => m.level === -1),
   );
+  // Holds an in-memory-only meta for files that have no frontmatter section
+  // yet. Nothing is written to IDB until the user actually hits Apply.
+  const [newFmMeta, setNewFmMeta] = createSignal<SectionMeta | null>(null);
+  const currentFmMeta = () => fmMeta() ?? newFmMeta();
+  const isUnsavedFmMeta = (meta: SectionMeta) =>
+    !editorState.metas().some((m) => m.id === meta.id);
 
   const setFrontmatterFormat = async (format: FrontmatterType) => {
-    const meta = fmMeta();
+    const meta = currentFmMeta();
     if (!meta) return;
     const updated = {
       ...meta,
       heading: format,
       updatedAt: new Date().toISOString(),
     };
+    if (isUnsavedFmMeta(meta)) {
+      setNewFmMeta(updated);
+      return;
+    }
     setMetas((prev) => prev.map((m) => (m.id === meta.id ? updated : m)));
     await putMeta(updated);
   };
@@ -125,7 +134,7 @@ const SpecialEditPage: Component = () => {
   const handleFrontmatterFormatChange = async (e: Event) => {
     const select = e.currentTarget as HTMLSelectElement;
     const newFormat = select.value as FrontmatterType;
-    const meta = fmMeta();
+    const meta = currentFmMeta();
     if (!meta || newFormat === meta.heading) return;
     try {
       const data = await encodeFrontmatterFromEdit(
@@ -149,8 +158,23 @@ const SpecialEditPage: Component = () => {
   };
 
   const handleFrontmatterApply = async () => {
-    const meta = fmMeta();
+    const meta = currentFmMeta();
     if (!meta) return goBack();
+    // Validate before touching IDB — a brand-new section shouldn't be
+    // created for text that doesn't even parse.
+    try {
+      await encodeFrontmatterFromEdit(
+        commander.getValue(),
+        meta.heading as FrontmatterType,
+      );
+    } catch {
+      toast.error("Fix invalid frontmatter before leaving");
+      return;
+    }
+    if (isUnsavedFmMeta(meta)) {
+      await putMeta(meta);
+      setMetas((prev) => [meta, ...prev]);
+    }
     try {
       await flushSave(meta.id, commander.getValue);
     } catch {
@@ -372,48 +396,40 @@ const SpecialEditPage: Component = () => {
         });
       } else {
         let meta = fmMeta();
+        let decoded: string;
         if (!meta) {
-          // No frontmatter section exists yet (e.g. an older/corrupted file)
-          // — create a default one so there's something to edit instead of
-          // silently leaving the page blank.
-          const now = new Date().toISOString();
-          const newMeta: SectionMeta = {
+          // No frontmatter section exists yet (e.g. an older/corrupted
+          // file). Build a default in memory only — nothing is written to
+          // IDB until the user hits Apply.
+          meta = newFmMeta() ?? {
             id: genId(),
             fileId: params.fileId,
             fracIndex: 0,
             level: -1,
             heading: "json",
-            updatedAt: now,
+            updatedAt: new Date().toISOString(),
           };
-          await putMeta(newMeta);
-          await putContent({
-            id: newMeta.id,
-            content: JSON.stringify(createDefaultFrontmatterData(genId())),
-            updatedAt: now,
-          });
-          if (target() !== t) return;
-          setMetas((prev) => [newMeta, ...prev]);
-          meta = newMeta;
-        }
-        const raw = await loadSectionContent(meta.id);
-        let decoded: string;
-        try {
+          setNewFmMeta(meta);
           decoded = await decodeFrontmatterForEdit(
-            raw,
+            JSON.stringify(createDefaultFrontmatterData(genId())),
             meta.heading as FrontmatterType,
           );
           setError("");
-        } catch {
-          // Raw content isn't valid JSON at all — show an editable default
-          // instead of the broken text, keeping whatever _id we can recover.
-          const fallback = createDefaultFrontmatterData(
-            extractIdLoose(raw) ?? genId(),
-          );
-          decoded = await decodeFrontmatterForEdit(
-            JSON.stringify(fallback),
-            meta.heading as FrontmatterType,
-          );
-          setError("Invalid frontmatter — loaded default, save to fix");
+        } else {
+          const raw = await loadSectionContent(meta.id);
+          try {
+            decoded = await decodeFrontmatterForEdit(
+              raw,
+              meta.heading as FrontmatterType,
+            );
+            setError("");
+          } catch {
+            // Not valid JSON — let the user edit the raw text as-is instead
+            // of silently replacing it with a default. Apply validates
+            // before saving, so this can't be re-persisted while broken.
+            decoded = raw;
+            setError("Invalid frontmatter — fix the format before saving");
+          }
         }
         if (target() !== t) return;
         applyWhenReady(commander, decoded, {
@@ -454,7 +470,7 @@ const SpecialEditPage: Component = () => {
         </Show>
       </Show>
 
-      <Show when={target() === "frontmatter" ? fmMeta() : undefined}>
+      <Show when={target() === "frontmatter" ? currentFmMeta() : undefined}>
         {(meta) => (
           <div class="frontmatter-editor-toolbar">
             <select
