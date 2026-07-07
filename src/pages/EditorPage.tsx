@@ -392,7 +392,23 @@ const EditorPage: Component = () => {
 
   const [scrollPct, setScrollPct] = createSignal(0);
   const [showScrollPct, setShowScrollPct] = createSignal(false);
-  let scrollHideTimer: ReturnType<typeof setTimeout> | undefined;
+  const SCROLL_PCT_HIDE_DELAY = 1000;
+  let lastScrollTime = 0;
+  let scrollPctHideTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const scheduleScrollPctHide = () => {
+    if (scrollPctHideTimer !== undefined) return;
+    const check = () => {
+      const elapsed = Date.now() - lastScrollTime;
+      if (elapsed >= SCROLL_PCT_HIDE_DELAY) {
+        setShowScrollPct(false);
+        scrollPctHideTimer = undefined;
+      } else {
+        scrollPctHideTimer = setTimeout(check, SCROLL_PCT_HIDE_DELAY - elapsed);
+      }
+    };
+    scrollPctHideTimer = setTimeout(check, SCROLL_PCT_HIDE_DELAY);
+  };
 
   const [toolbarHidden, setToolbarHidden] = createSignal(false);
   const TOOLBAR_SCROLL_THRESHOLD = 36;
@@ -412,8 +428,8 @@ const EditorPage: Component = () => {
       );
       setScrollPct(pct);
       setShowScrollPct(true);
-      clearTimeout(scrollHideTimer);
-      scrollHideTimer = setTimeout(() => setShowScrollPct(false), 1000);
+      lastScrollTime = Date.now();
+      scheduleScrollPctHide();
 
       const y = window.scrollY;
       if (y < 50) {
@@ -437,7 +453,7 @@ const EditorPage: Component = () => {
     onCleanup(() => {
       window.removeEventListener("scroll", handleScroll);
       if (scrollRafId !== null) cancelAnimationFrame(scrollRafId);
-      clearTimeout(scrollHideTimer);
+      clearTimeout(scrollPctHideTimer);
     });
   });
 
