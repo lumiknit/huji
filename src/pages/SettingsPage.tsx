@@ -39,6 +39,8 @@ import {
   setAutocapitalize,
   wakeLock,
   setWakeLock,
+  autoHideToolbar,
+  setAutoHideToolbar,
   typewriterMode,
   setTypewriterMode,
   lightEditor,
@@ -473,6 +475,19 @@ const SettingsPage: Component = () => {
           <select
             value={wakeLock() ? "on" : "off"}
             onChange={(e) => setWakeLock(e.currentTarget.value === "on")}
+          >
+            <option value="on">On</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+
+        <label>
+          Auto-hide toolbar on scroll
+          <select
+            value={autoHideToolbar() ? "on" : "off"}
+            onChange={(e) =>
+              setAutoHideToolbar(e.currentTarget.value === "on")
+            }
           >
             <option value="on">On</option>
             <option value="off">Off</option>

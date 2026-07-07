@@ -24,6 +24,7 @@ import {
   TbOutlineCopy,
   TbOutlineArrowUp,
   TbOutlineArrowDown,
+  TbOutlineLayoutNavbarExpand,
 } from "solid-icons/tb";
 import toast from "solid-toast";
 
@@ -52,6 +53,7 @@ import {
   saveFormat,
   showWords,
   setShowWords,
+  autoHideToolbar,
 } from "../states/settings";
 import { loadRawMarkdown, downloadBlob, packMDBlob } from "../lib/export";
 import { sanitizeFilename, packBackupName } from "../lib/path";
@@ -392,6 +394,10 @@ const EditorPage: Component = () => {
   const [showScrollPct, setShowScrollPct] = createSignal(false);
   let scrollHideTimer: ReturnType<typeof setTimeout> | undefined;
 
+  const [toolbarHidden, setToolbarHidden] = createSignal(false);
+  const TOOLBAR_SCROLL_THRESHOLD = 36;
+  let lastToolbarScrollY = window.scrollY;
+
   let scrollRafId: number | null = null;
   const handleScroll = () => {
     if (scrollRafId !== null) return;
@@ -408,11 +414,26 @@ const EditorPage: Component = () => {
       setShowScrollPct(true);
       clearTimeout(scrollHideTimer);
       scrollHideTimer = setTimeout(() => setShowScrollPct(false), 1000);
+
+      const y = window.scrollY;
+      if (y < 50) {
+        setToolbarHidden(false);
+        lastToolbarScrollY = y;
+      } else {
+        const delta = y - lastToolbarScrollY;
+        if (delta > TOOLBAR_SCROLL_THRESHOLD) {
+          setToolbarHidden(true);
+          lastToolbarScrollY = y;
+        } else if (delta < -TOOLBAR_SCROLL_THRESHOLD) {
+          lastToolbarScrollY = y;
+        }
+      }
     });
   };
 
   onMount(() => {
     window.addEventListener("scroll", handleScroll, { passive: true });
+
     onCleanup(() => {
       window.removeEventListener("scroll", handleScroll);
       if (scrollRafId !== null) cancelAnimationFrame(scrollRafId);
@@ -468,6 +489,16 @@ const EditorPage: Component = () => {
     return `${n.toLocaleString()} ${unit}`;
   };
 
+  const activeSectionLabel = createMemo(() => {
+    const id = editorState.activeSectionId();
+    if (!id) return null;
+    const raw = sectionLabels().get(id);
+    if (!raw) return null;
+    const m = raw.match(/^([\d-]+)\.\s(.*)$/);
+    if (!m) return { idx: "", heading: raw };
+    return { idx: `${m[1]}.`, heading: m[2] };
+  });
+
   let fileInsertEl: HTMLInputElement | undefined;
 
   const handleFileInsert = (e: Event) => {
@@ -502,7 +533,11 @@ const EditorPage: Component = () => {
   };
 
   return (
-    <main>
+    <main
+      style={{
+        "padding-top": autoHideToolbar() ? "6rem" : undefined,
+      }}
+    >
       <button
         class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}
         onClick={handleScrollIndicatorClick}
@@ -520,109 +555,133 @@ const EditorPage: Component = () => {
       <Show when={stickerOpen()}>
         <Sticker />
       </Show>
-      <FileDrop onDrop={handleFileDrop} label="Insert as raw text" />
-      <Toolbar title={`Edit — ${editorState.filename()}`}>
-        <A href="/" title="File list">
-          <TbOutlineHome />
-        </A>
-        <ToggleMenu label="File">
-          <button onClick={handleDuplicate}>
-            <TbOutlineCopy /> Duplicate
-          </button>
-          <hr />
-          <button onClick={handleDownload}>
-            <TbOutlineDownload /> Download (.md)
-          </button>
-          <button onClick={handleShare}>
-            <TbOutlineShare /> Share
-          </button>
-          <Show when={canBackup()}>
-            <button onClick={() => handleBackup()}>
-              <TbOutlineCloudUpload /> Backup to{" "}
-              {defaultRemoteProvider() || "cloud"}
-            </button>
+      <Show when={autoHideToolbar() && toolbarHidden()}>
+        <button class="toolbar-chip" onClick={() => setToolbarHidden(false)}>
+          <Show when={activeSectionLabel()}>
+            {(l) => (
+              <>
+                <span class="chip-idx">{l().idx}</span>
+                <span class="chip-heading">{l().heading}</span>
+                <span class="chip-sep">·</span>
+              </>
+            )}
           </Show>
-        </ToggleMenu>
-
-        <ToggleMenu label="Edit">
-          <button onClick={() => editorCommander.undo()}>
-            <TbOutlineRotate /> Undo
-          </button>
-          <button onClick={() => editorCommander.redo()}>
-            <TbOutlineRotateClockwise /> Redo
-          </button>
-          <hr />
-          <button onClick={openFind}>
-            <TbOutlineSearch /> Find / Replace
-          </button>
-          <button onClick={toggleSticker}>
-            <TbOutlineNote /> {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
-          </button>
-          <hr />
-          <button onClick={() => handleAddSection()}>
-            <TbOutlinePlus /> Add section
-          </button>
-          <hr />
-          <button onClick={() => fileInsertEl?.click()}>
-            <TbOutlinePaperclip /> Insert file
-          </button>
-          <input
-            ref={fileInsertEl}
-            type="file"
-            class="hidden"
-            onChange={handleFileInsert}
-          />
-        </ToggleMenu>
-
-        <button
-          class="count-label"
-          classList={{ dim: editorState.saveStatus() !== "saved" }}
-          onClick={() => setShowWords((v: boolean) => !v)}
-        >
-          {countLabel()}
+          <span classList={{ dim: editorState.saveStatus() !== "saved" }}>
+            {countLabel()}
+          </span>
+          <span class="chip-sep">·</span>
+          <TbOutlineLayoutNavbarExpand />
         </button>
+      </Show>
+      <FileDrop onDrop={handleFileDrop} label="Insert as raw text" />
+      <Show when={!(autoHideToolbar() && toolbarHidden())}>
+        <Toolbar
+          title={`Edit — ${editorState.filename()}`}
+          class={autoHideToolbar() ? "toolbar-autohide" : ""}
+        >
+          <A href="/" title="File list">
+            <TbOutlineHome />
+          </A>
+          <ToggleMenu label="File">
+            <button onClick={handleDuplicate}>
+              <TbOutlineCopy /> Duplicate
+            </button>
+            <hr />
+            <button onClick={handleDownload}>
+              <TbOutlineDownload /> Download (.md)
+            </button>
+            <button onClick={handleShare}>
+              <TbOutlineShare /> Share
+            </button>
+            <Show when={canBackup()}>
+              <button onClick={() => handleBackup()}>
+                <TbOutlineCloudUpload /> Backup to{" "}
+                {defaultRemoteProvider() || "cloud"}
+              </button>
+            </Show>
+          </ToggleMenu>
 
-        <span class="spacer" />
+          <ToggleMenu label="Edit">
+            <button onClick={() => editorCommander.undo()}>
+              <TbOutlineRotate /> Undo
+            </button>
+            <button onClick={() => editorCommander.redo()}>
+              <TbOutlineRotateClockwise /> Redo
+            </button>
+            <hr />
+            <button onClick={openFind}>
+              <TbOutlineSearch /> Find / Replace
+            </button>
+            <button onClick={toggleSticker}>
+              <TbOutlineNote />{" "}
+              {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
+            </button>
+            <hr />
+            <button onClick={() => handleAddSection()}>
+              <TbOutlinePlus /> Add section
+            </button>
+            <hr />
+            <button onClick={() => fileInsertEl?.click()}>
+              <TbOutlinePaperclip /> Insert file
+            </button>
+            <input
+              ref={fileInsertEl}
+              type="file"
+              class="hidden"
+              onChange={handleFileInsert}
+            />
+          </ToggleMenu>
 
-        <A href={`/preview/${params.fileId}`} title="Preview">
-          <TbOutlineEye />
-        </A>
-        <SaveOrBackupButton
-          status={editorState.saveStatus}
-          onSave={handleSave}
-          onBackup={() => handleBackup()}
-          canBackup={canBackup}
-        />
-
-        {/* Sticker toggle button & Section select */}
-        <div class="toolbar-group">
           <button
-            onClick={toggleSticker}
-            title={stickerOpen() ? "Hide Sticker" : "Show Sticker"}
+            class="count-label"
+            classList={{ dim: editorState.saveStatus() !== "saved" }}
+            onClick={() => setShowWords((v: boolean) => !v)}
           >
-            <TbOutlineNote />
+            {countLabel()}
           </button>
-          <select onChange={handleSectionChange}>
-            <optgroup label="Special">
-              <option value="__reorder__">Outline / Reorder</option>
-              <option value="__all__">Whole file</option>
-              <option value="__frontmatter__">Frontmatter</option>
-            </optgroup>
-            <optgroup label="Sections">
-              <For each={bodyMetas()}>
-                {(m) => (
-                  <option
-                    value={m.id}
-                    selected={editorState.activeSectionId() === m.id}
-                  >
-                    {sectionLabels().get(m.id) ?? m.heading}
-                  </option>
-                )}
-              </For>
-            </optgroup>
-          </select>
-        </div>
-      </Toolbar>
+
+          <span class="spacer" />
+
+          <A href={`/preview/${params.fileId}`} title="Preview">
+            <TbOutlineEye />
+          </A>
+          <SaveOrBackupButton
+            status={editorState.saveStatus}
+            onSave={handleSave}
+            onBackup={() => handleBackup()}
+            canBackup={canBackup}
+          />
+
+          {/* Sticker toggle button & Section select */}
+          <div class="toolbar-group">
+            <button
+              onClick={toggleSticker}
+              title={stickerOpen() ? "Hide Sticker" : "Show Sticker"}
+            >
+              <TbOutlineNote />
+            </button>
+            <select onChange={handleSectionChange}>
+              <optgroup label="Special">
+                <option value="__reorder__">Outline / Reorder</option>
+                <option value="__all__">Whole file</option>
+                <option value="__frontmatter__">Frontmatter</option>
+              </optgroup>
+              <optgroup label="Sections">
+                <For each={bodyMetas()}>
+                  {(m) => (
+                    <option
+                      value={m.id}
+                      selected={editorState.activeSectionId() === m.id}
+                    >
+                      {sectionLabels().get(m.id) ?? m.heading}
+                    </option>
+                  )}
+                </For>
+              </optgroup>
+            </select>
+          </div>
+        </Toolbar>
+      </Show>
 
       <div class="section-preview-container section-preview-container-before">
         <For each={contextRange().before}>

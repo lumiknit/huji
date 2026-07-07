@@ -71,6 +71,53 @@ nav.toolbar {
   margin: 0 var(--sp-xs) var(--sp-md);
 }
 
+nav.toolbar.toolbar-autohide {
+  position: fixed;
+  left: 0;
+  right: 0;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--sp-xs);
+}
+
+.toolbar-chip {
+  position: fixed;
+  top: 0.5rem;
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: 80vw;
+  margin: 0 auto;
+  z-index: 51;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--c-border);
+  border-radius: 999rem;
+  background: var(--c-bg);
+  color: var(--c-fg);
+  font-size: 0.8rem;
+}
+
+.toolbar-chip .chip-idx {
+  color: var(--c-muted);
+  flex-shrink: 0;
+}
+
+.toolbar-chip .chip-heading {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 10rem;
+}
+
+.toolbar-chip .chip-sep {
+  color: var(--c-muted);
+  flex-shrink: 0;
+}
+
 nav.toolbar > fieldset {
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
@@ -935,7 +982,8 @@ button.count-label {
   flex-shrink: 0;
 }
 
-button.count-label.dim {
+button.count-label.dim,
+.toolbar-chip .dim {
   opacity: 0.35;
 }
 
