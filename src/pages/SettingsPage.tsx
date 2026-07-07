@@ -485,9 +485,7 @@ const SettingsPage: Component = () => {
           Auto-hide toolbar on scroll
           <select
             value={autoHideToolbar() ? "on" : "off"}
-            onChange={(e) =>
-              setAutoHideToolbar(e.currentTarget.value === "on")
-            }
+            onChange={(e) => setAutoHideToolbar(e.currentTarget.value === "on")}
           >
             <option value="on">On</option>
             <option value="off">Off</option>
