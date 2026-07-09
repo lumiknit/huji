@@ -25,6 +25,7 @@ import {
   TbOutlineArrowUp,
   TbOutlineArrowDown,
   TbOutlineLayoutNavbarExpand,
+  TbOutlineTypography,
 } from "solid-icons/tb";
 import toast from "solid-toast";
 
@@ -69,6 +70,7 @@ import ToggleMenu from "../components/ToggleMenu";
 import FileDrop from "../components/FileDrop";
 import Toolbar from "../components/Toolbar";
 import FindReplaceModal from "../components/FindReplaceModal";
+import CharNormalizeModal from "../components/CharNormalizeModal";
 import Sticker from "../components/Sticker";
 import { resetFindState, loadFindContents } from "../states/find";
 import { stickerOpen, toggleSticker } from "../states/sticker";
@@ -81,21 +83,32 @@ const EditorPage: Component = () => {
   const navigate = useNavigate();
 
   const [showFind, setShowFind] = createSignal(false);
+  const [showCharNorm, setShowCharNorm] = createSignal(false);
 
   const editorCommander = createCommander();
 
-  const openFind = async () => {
+  const flushActiveSection = async () => {
     const id = editorState.activeSectionId();
     if (id && !id.startsWith("__")) {
       try {
         await flushSave(id, editorCommander.getValue);
       } catch {
         toast.error("Fix invalid frontmatter before continuing");
-        return;
+        return false;
       }
     }
+    return true;
+  };
+
+  const openFind = async () => {
+    if (!(await flushActiveSection())) return;
     await loadFindContents();
     setShowFind(true);
+  };
+
+  const openCharNorm = async () => {
+    if (!(await flushActiveSection())) return;
+    setShowCharNorm(true);
   };
 
   // Wraps goToSection to surface a save failure (e.g. invalid frontmatter)
@@ -569,6 +582,9 @@ const EditorPage: Component = () => {
           onClose={() => setShowFind(false)}
         />
       </Show>
+      <Show when={showCharNorm()}>
+        <CharNormalizeModal onClose={() => setShowCharNorm(false)} />
+      </Show>
       <Show when={stickerOpen()}>
         <Sticker />
       </Show>
@@ -633,6 +649,9 @@ const EditorPage: Component = () => {
             <hr />
             <button onClick={openFind}>
               <TbOutlineSearch /> Find / Replace
+            </button>
+            <button onClick={openCharNorm}>
+              <TbOutlineTypography /> Char Normalize
             </button>
             <hr />
             <button onClick={() => handleAddSection()}>

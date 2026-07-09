@@ -8,11 +8,11 @@
     "npm:@codemirror/state@^6.7.1": "6.7.1",
     "npm:@codemirror/view@^6.43.6": "6.43.6",
     "npm:@eslint/js@^10.0.1": "10.0.1_eslint@10.6.0",
-    "npm:@lezer/markdown@^1.6.4": "1.6.4",
+    "npm:@lezer/markdown@^1.7.0": "1.7.0",
     "npm:@solid-primitives/storage@^4.3.5": "4.3.5_solid-js@1.9.14",
     "npm:@solidjs/router@~0.16.1": "0.16.1_solid-js@1.9.14",
     "npm:@types/js-yaml@^4.0.9": "4.0.9",
-    "npm:@types/node@^26.1.0": "26.1.0",
+    "npm:@types/node@^26.1.1": "26.1.1",
     "npm:docx@^9.7.1": "9.7.1",
     "npm:dompurify@^3.4.11": "3.4.11",
     "npm:eslint@^10.6.0": "10.6.0",
@@ -29,9 +29,9 @@
     "npm:typescript-eslint@^8.63.0": "8.63.0_eslint@10.6.0_typescript@6.0.3",
     "npm:typescript@~6.0.3": "6.0.3",
     "npm:vite-bundle-visualizer@^1.2.1": "1.2.1",
-    "npm:vite-plugin-solid@^2.11.12": "2.11.12_solid-js@1.9.14_vite@8.1.3__@types+node@26.1.0_@types+node@26.1.0",
-    "npm:vite@^8.1.3": "8.1.3_@types+node@26.1.0",
-    "npm:vitest@^4.1.10": "4.1.10_@types+node@26.1.0_jsdom@29.1.1_vite@8.1.3__@types+node@26.1.0",
+    "npm:vite-plugin-solid@^2.11.12": "2.11.12_solid-js@1.9.14_vite@8.1.3__@types+node@26.1.1_@types+node@26.1.1",
+    "npm:vite@^8.1.3": "8.1.3_@types+node@26.1.1",
+    "npm:vitest@^4.1.10": "4.1.10_@types+node@26.1.1_jsdom@29.1.1_vite@8.1.3__@types+node@26.1.1",
     "npm:zod@^4.4.3": "4.4.3"
   },
   "npm": {
@@ -522,8 +522,8 @@
         "@lezer/common"
       ]
     },
-    "@lezer/markdown@1.6.4": {
-      "integrity": "sha512-N0SxazMj4k65DBfaf1azqtMZd6u7MqluP84/NZnB/io8Td9aleFmAhz9hcbvSfsxT5tdYlJ5qgv5aMJGY4zEtA==",
+    "@lezer/markdown@1.7.0": {
+      "integrity": "sha512-zZDdfKkXl1CBYet/nL2jCskQXC+8DpbhZubbTEGqbqpkaBC4w03F5Kt9ZLDyqbadqIvvZ7VrVhd6d6qgurzAew==",
       "dependencies": [
         "@lezer/common",
         "@lezer/highlight"
@@ -535,8 +535,6 @@
     "@napi-rs/wasm-runtime@1.1.6_@emnapi+core@1.11.0_@emnapi+runtime@1.11.0": {
       "integrity": "sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==",
       "dependencies": [
-        "@emnapi/core@1.11.0",
-        "@emnapi/runtime@1.11.0",
         "@tybys/wasm-util"
       ]
     },
@@ -924,8 +922,8 @@
         "undici-types@7.24.6"
       ]
     },
-    "@types/node@26.1.0": {
-      "integrity": "sha512-O0A1G3xPGy4w7AgQdAQYUlQ+BKk2Oovw8eRpofyp5KdBZULnbe+WqaOVNrm705SHphCiG4XHsACrSmPu1f+Kgw==",
+    "@types/node@26.1.1": {
+      "integrity": "sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw==",
       "dependencies": [
         "undici-types@8.3.0"
       ]
@@ -1042,7 +1040,7 @@
         "tinyrainbow"
       ]
     },
-    "@vitest/mocker@4.1.10_vite@8.1.3__@types+node@26.1.0": {
+    "@vitest/mocker@4.1.10_vite@8.1.3__@types+node@26.1.1_@types+node@26.1.1": {
       "integrity": "sha512-v0xaezt+DKEmKfaxg133ldzADrwLGd7Ze1MfQQTYfvs8OqZIwbxyxaYURivwV7sWy5fqn3rH5uOrSp07bp44Ow==",
       "dependencies": [
         "@vitest/spy",
@@ -2192,7 +2190,7 @@
       ],
       "bin": true
     },
-    "vite-plugin-solid@2.11.12_solid-js@1.9.14_vite@8.1.3__@types+node@26.1.0_@types+node@26.1.0": {
+    "vite-plugin-solid@2.11.12_solid-js@1.9.14_vite@8.1.3__@types+node@26.1.1_@types+node@26.1.1": {
       "integrity": "sha512-FgjPcx2OwX9h6f28jli7A4bG7PP3te8uyakE5iqsmpq3Jqi1TWLgSroC9N6cMfGRU2zXsl4Q6ISvTr2VL0QHpA==",
       "dependencies": [
         "@babel/core",
@@ -2205,10 +2203,10 @@
         "vitefu"
       ]
     },
-    "vite@8.1.3_@types+node@26.1.0": {
+    "vite@8.1.3_@types+node@26.1.1": {
       "integrity": "sha512-Ds+gBRbj0lwRO2Y5hwnUBdxSwlAve9LeRyU4sNnAr0ewW0gWF0n5bgXgUzbgZ49MV9BVUAQUFYVcDUcilUExMA==",
       "dependencies": [
-        "@types/node@26.1.0",
+        "@types/node@26.1.1",
         "lightningcss",
         "picomatch",
         "postcss",
@@ -2219,11 +2217,11 @@
         "fsevents"
       ],
       "optionalPeers": [
-        "@types/node@26.1.0"
+        "@types/node@26.1.1"
       ],
       "bin": true
     },
-    "vitefu@1.1.3_vite@8.1.3__@types+node@26.1.0_@types+node@26.1.0": {
+    "vitefu@1.1.3_vite@8.1.3__@types+node@26.1.1_@types+node@26.1.1": {
       "integrity": "sha512-ub4okH7Z5KLjb6hDyjqrGXqWtWvoYdU3IGm/NorpgHncKoLTCfRIbvlhBm7r0YstIaQRYlp4yEbFqDcKSzXSSg==",
       "dependencies": [
         "vite"
@@ -2232,10 +2230,10 @@
         "vite"
       ]
     },
-    "vitest@4.1.10_@types+node@26.1.0_jsdom@29.1.1_vite@8.1.3__@types+node@26.1.0": {
+    "vitest@4.1.10_@types+node@26.1.1_jsdom@29.1.1_vite@8.1.3__@types+node@26.1.1": {
       "integrity": "sha512-R9jUTe5S4Qb0HCd4TNqpC7oGcrMssMRGXLW80ubjWsW9VH5GF8y1Y0SFLY9AbqSk6nt0PnOx4H4WNJYZ13GUPw==",
       "dependencies": [
-        "@types/node@26.1.0",
+        "@types/node@26.1.1",
         "@vitest/expect",
         "@vitest/mocker",
         "@vitest/pretty-format",
@@ -2259,7 +2257,7 @@
         "why-is-node-running"
       ],
       "optionalPeers": [
-        "@types/node@26.1.0",
+        "@types/node@26.1.1",
         "jsdom"
       ],
       "bin": true
@@ -2374,11 +2372,11 @@
         "npm:@codemirror/state@^6.7.1",
         "npm:@codemirror/view@^6.43.6",
         "npm:@eslint/js@^10.0.1",
-        "npm:@lezer/markdown@^1.6.4",
+        "npm:@lezer/markdown@^1.7.0",
         "npm:@solid-primitives/storage@^4.3.5",
         "npm:@solidjs/router@~0.16.1",
         "npm:@types/js-yaml@^4.0.9",
-        "npm:@types/node@^26.1.0",
+        "npm:@types/node@^26.1.1",
         "npm:docx@^9.7.1",
         "npm:dompurify@^3.4.11",
         "npm:eslint@^10.6.0",

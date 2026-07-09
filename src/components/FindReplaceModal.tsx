@@ -101,10 +101,10 @@ const FindReplaceModal: Component<Props> = (props) => {
   };
 
   return (
-    <dialog ref={dialogEl!} class="find-modal" onClose={props.onClose}>
-      <div class="find-modal-header">
-        <span class="find-modal-title">Find & Replace</span>
-        <button class="find-modal-close" onClick={props.onClose}>
+    <dialog ref={dialogEl!} class="modal" onClose={props.onClose}>
+      <div class="modal-header">
+        <span class="modal-title">Find & Replace</span>
+        <button class="modal-close ghost" onClick={props.onClose}>
           <TbOutlineX />
         </button>
       </div>
@@ -157,7 +157,7 @@ const FindReplaceModal: Component<Props> = (props) => {
         </Show>
       </div>
 
-      <div class="find-results">
+      <div class="modal-results">
         <Show
           when={!findLoading()}
           fallback={<p class="find-hint">Loading…</p>}

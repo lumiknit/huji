@@ -242,6 +242,13 @@ button.danger {
   color: var(--c-danger-fg);
   border-color: var(--c-danger);
 }
+button.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+button.ghost:hover:not(:disabled) {
+  background: var(--c-border);
+}
 
 /* nav 내 a 링크는 버튼처럼 */
 nav.toolbar a {
@@ -899,51 +906,6 @@ article.md-body {
 
 /* ── Find/Replace modal ── */
 
-dialog.find-modal {
-  position: fixed;
-  inset: var(--sp-xl) var(--sp-sm);
-  margin: auto;
-  max-width: 640px;
-  max-height: calc(100dvh - 2 * var(--sp-xl));
-  width: calc(100% - 2 * var(--sp-sm));
-  height: calc(100dvh - 2 * var(--sp-xl));
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  background: var(--c-bg);
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-dialog.find-modal::backdrop {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.find-modal-header {
-  display: flex;
-  align-items: center;
-  padding: var(--sp-xs) var(--sp-sm);
-  border-bottom: 1px solid var(--c-border);
-  gap: var(--sp-xs);
-}
-
-.find-modal-title {
-  flex: 1;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--c-muted);
-}
-
-.find-modal-close {
-  flex-shrink: 0;
-}
-
-.find-results {
-  flex: 1;
-  overflow-y: auto;
-}
-
 /* ── Tag badges ── */
 .badge {
   display: inline-block;
@@ -967,6 +929,35 @@ dialog.find-modal::backdrop {
   width: auto;
   flex-shrink: 0;
   font-size: 0.8rem;
+}
+
+/* ── Char Normalize modal ── */
+.charnorm-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.charnorm-table tr {
+  border-bottom: 1px solid var(--c-border);
+}
+.charnorm-table tr:last-child {
+  border-bottom: none;
+}
+.charnorm-table td,
+.charnorm-table th {
+  padding: var(--sp-xs) var(--sp-sm);
+  text-align: left;
+  vertical-align: middle;
+}
+.charnorm-table th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.charnorm-table select {
+  width: 100%;
+}
+.charnorm-actions {
+  margin-top: var(--sp-sm);
+  justify-content: flex-end;
 }
 
 /* ── Section count label ── */

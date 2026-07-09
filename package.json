@@ -1,7 +1,7 @@
 {
   "name": "huji",
   "private": true,
-  "version": "0.4.7",
+  "version": "0.4.8",
   "type": "module",
   "author": "lumiknit <aasr4r4@gmail.com>",
   "license": "MPL-2.0",
@@ -22,7 +22,7 @@
     "@codemirror/search": "^6.7.1",
     "@codemirror/state": "^6.7.1",
     "@codemirror/view": "^6.43.6",
-    "@lezer/markdown": "^1.6.4",
+    "@lezer/markdown": "^1.7.0",
     "@solid-primitives/storage": "^4.3.5",
     "@solidjs/router": "^0.16.1",
     "docx": "^9.7.1",
@@ -38,7 +38,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "eslint": "^10.6.0",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
