@@ -81,7 +81,6 @@ export function buildExtensions(opts: {
   }
 
   return [
-    livePreviewTheme,
     history(),
     keymap.of([
       ...sectionNavKeys,
@@ -106,6 +105,10 @@ export function buildExtensions(opts: {
     ]),
     search({ top: true }),
     highlightActiveLine(),
+    // Registered after highlightActiveLine() so its .cm-activeLine override
+    // wins the equal-specificity tie against highlightActiveLine()'s
+    // baseTheme rule without needing !important (see live_preview.ts).
+    livePreviewTheme,
     opts.spellcheckCompartment.of(spellcheckExtension(opts.initialSpellcheck)),
     opts.langCompartment.of(langExtension(opts.language)),
     placeholder(opts.placeholderText),
