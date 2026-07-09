@@ -14,7 +14,11 @@ import {
 import { getDB } from "../lib/db";
 import { createDebounce } from "../lib/utils/debounce";
 import { genUniqueId } from "../lib/utils/id";
-import { normalizeSectionText, splitSections } from "../lib/md/section";
+import {
+  normalizeSectionText,
+  splitSections,
+  extractHeading,
+} from "../lib/md/section";
 import { encodeFrontmatterFromEdit } from "../lib/md/frontmatter";
 import { FRAC_GAP } from "../lib/utils/fracindex";
 import { countText } from "../lib/utils/text_stats";
@@ -151,23 +155,13 @@ const saveRaw = async (
   await putContent({ id, content: trimmed, updatedAt: now });
   await touchLastUsedAt();
   if (!meta) return null;
-  const { heading, level } = extractHeadingFromRaw(trimmed);
+  const { heading, level } = extractHeading(trimmed);
   if (meta.heading !== heading || meta.level !== level) {
     const updated = { ...meta, heading, level, updatedAt: now };
     await putMeta(updated);
     return updated;
   }
   return null;
-};
-
-const extractHeadingFromRaw = (
-  raw: string,
-): { heading: string; level: number } => {
-  const nl = raw.indexOf("\n");
-  const firstLine = nl === -1 ? raw : raw.slice(0, nl);
-  const m = firstLine.match(/^(#{1,6})\s+(.*)$/);
-  if (m) return { level: m[1].length, heading: m[2].trim() };
-  return { level: 0, heading: "" };
 };
 
 /**

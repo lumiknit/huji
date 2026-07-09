@@ -5,6 +5,7 @@ import {
   For,
   Show,
   createMemo,
+  createEffect,
 } from "solid-js";
 import { useParams, A } from "@solidjs/router";
 import {
@@ -50,6 +51,16 @@ const PreviewPage: Component = () => {
   const [format, setFormat] = createSignal<"md" | "txt" | "html" | "docx">(
     "md",
   );
+
+  let renderRuleDefaulted = false;
+  createEffect(() => {
+    if (renderRuleDefaulted) return;
+    const ruleNames = Object.keys(data()?.renderRules ?? {});
+    if (ruleNames.length > 0) {
+      renderRuleDefaulted = true;
+      setRenderRuleName(ruleNames[0]);
+    }
+  });
 
   const activeRule = createMemo((): RenderRule | null => {
     const name = renderRuleName();
@@ -218,7 +229,7 @@ const PreviewPage: Component = () => {
                 value={renderRuleName()}
                 onChange={(e) => setRenderRuleName(e.currentTarget.value)}
               >
-                <option value="">Default (none)</option>
+                <option value="">Whole file</option>
                 <For each={Object.keys(data()?.renderRules ?? {})}>
                   {(name) => <option value={name}>{name}</option>}
                 </For>

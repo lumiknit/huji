@@ -600,6 +600,11 @@ const EditorPage: Component = () => {
             <TbOutlineHome />
           </A>
           <ToggleMenu label="File">
+            <button onClick={toggleSticker}>
+              <TbOutlineNote />{" "}
+              {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
+            </button>
+            <hr />
             <button onClick={handleDuplicate}>
               <TbOutlineCopy /> Duplicate
             </button>
@@ -629,15 +634,10 @@ const EditorPage: Component = () => {
             <button onClick={openFind}>
               <TbOutlineSearch /> Find / Replace
             </button>
-            <button onClick={toggleSticker}>
-              <TbOutlineNote />{" "}
-              {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
-            </button>
             <hr />
             <button onClick={() => handleAddSection()}>
               <TbOutlinePlus /> Add section
             </button>
-            <hr />
             <button onClick={() => fileInsertEl?.click()}>
               <TbOutlinePaperclip /> Insert file
             </button>

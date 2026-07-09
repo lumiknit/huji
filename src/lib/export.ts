@@ -59,7 +59,9 @@ export const buildFmRaw = async (
   mode: FmMode,
 ): Promise<string | null> => {
   if (mode === "exclude" || !fmContent || !fmType) return null;
-  return serializeFrontmatter(fmType, getUserData(fmData));
+  const userData = getUserData(fmData);
+  if (Object.keys(userData).length === 0) return null;
+  return serializeFrontmatter(fmType, userData);
 };
 
 export const buildMarkdown = async (

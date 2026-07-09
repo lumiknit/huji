@@ -6,6 +6,14 @@ export type RawSection = {
   raw: string;
 };
 
+/** For heading-less content, derive a short preview from the first non-whitespace
+ *  run, capped at maxLen chars, with all whitespace collapsed to a single space. */
+export const derivePlainHeading = (raw: string, maxLen = 32): string => {
+  const idx = raw.search(/\S/);
+  if (idx === -1) return "";
+  return raw.slice(idx, idx + maxLen).replace(/\s/g, " ");
+};
+
 /** Split markdown body into sections by heading boundaries.
  *  Frontmatter must be stripped before calling this. */
 export const splitSections = (body: string): RawSection[] => {
@@ -21,7 +29,9 @@ export const splitSections = (body: string): RawSection[] => {
   const flush = () => {
     const raw = current.join("\n");
     if (currentLevel === 0 && !raw.trim()) return;
-    sections.push({ level: currentLevel, heading: currentHeading, raw });
+    const heading =
+      currentLevel === 0 ? derivePlainHeading(raw) : currentHeading;
+    sections.push({ level: currentLevel, heading, raw });
   };
 
   let pos = 0;
@@ -71,7 +81,7 @@ export const extractHeading = (
   const firstLine = nl === -1 ? raw : raw.slice(0, nl);
   const m = firstLine.match(/^(#{1,6})\s+(.*)$/);
   if (m) return { level: m[1].length, heading: m[2].trim() };
-  return { level: 0, heading: "" };
+  return { level: 0, heading: derivePlainHeading(raw) };
 };
 
 /** Build hierarchical label like "1-3-2. heading" for the section at index. */
@@ -82,7 +92,7 @@ export const buildSectionLabel = (
   const meta = metas[index];
   if (!meta) return "";
   if (meta.level === -1) return "[FrontMatter]";
-  if (meta.level === 0) return "(no-heading)";
+  if (meta.level === 0) return meta.heading.trim() ? meta.heading : "(empty)";
 
   const counters = [0, 0, 0, 0, 0, 0, 0];
   let result = "";

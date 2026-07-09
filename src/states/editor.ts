@@ -86,7 +86,7 @@ const sectionLabels = createMemo(() => {
   for (const m of list) {
     if (m.level < 0) continue;
     if (m.level === 0) {
-      map.set(m.id, "(no-heading)");
+      map.set(m.id, m.heading.trim() ? m.heading : "(empty)");
       continue;
     }
     counters[m.level]++;
