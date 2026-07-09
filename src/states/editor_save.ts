@@ -17,6 +17,7 @@ import { genUniqueId } from "../lib/utils/id";
 import { normalizeSectionText, splitSections } from "../lib/md/section";
 import { encodeFrontmatterFromEdit } from "../lib/md/frontmatter";
 import { FRAC_GAP } from "../lib/utils/fracindex";
+import { countText } from "../lib/utils/text_stats";
 import { batch } from "solid-js";
 import type { EditorCommander } from "../components/editor/commander";
 import {
@@ -29,25 +30,6 @@ import {
   WHOLE_ID,
   touchLastUsedAt,
 } from "./editor";
-
-const countWords = (text: string) => {
-  let n = 0;
-  let inWord = false;
-  for (let i = 0; i < text.length; i++) {
-    if (text.charCodeAt(i) <= 32) {
-      inWord = false;
-    } else if (!inWord) {
-      n++;
-      inWord = true;
-    }
-  }
-  return n;
-};
-
-export const countText = (text: string) => ({
-  chars: text.length,
-  words: countWords(text),
-});
 
 // ── Normalization helpers ──
 

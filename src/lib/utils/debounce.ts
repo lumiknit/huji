@@ -20,31 +20,36 @@ export const createDebouncedSignal = <T>(
   return [value, set];
 };
 
-const DEBOUNCE_IDLE_MS = 1000;
-const DEBOUNCE_TIMEOUT_MS = 1000;
-const DEBOUNCE_MAX_MS = 4000;
+// Poll interval and idle threshold are the same value: a tick only flushes
+// once a full DEBOUNCE_MS has passed since the last edit, so there's no
+// separate "idle" constant to drift out of sync with the poll cadence.
+const DEBOUNCE_MS = 5000;
+const DEBOUNCE_EPS_MS = 10;
+const DEBOUNCE_MAX_MS = 10000;
 
 export type FlushFn<T> = (value: T) => void | Promise<void>;
 
 export interface Debounceable<T = void> {
   notify: (value: T) => void;
-  flush: () => void;
   dispose: () => void;
 }
 
 /**
- * Typing-pattern debounce: saves after 1s idle, or forces save after 4s without saving.
- * Call flush() explicitly on blur or navigation.
+ * Typing-pattern debounce: saves after DEBOUNCE_MS idle, or forces a save
+ * after DEBOUNCE_MAX_MS from the first edit of the current burst, whichever
+ * comes first.
  */
 export const createDebounce = <T>(onFlush: FlushFn<T>): Debounceable<T> => {
   let timer: ReturnType<typeof setTimeout> | null = null;
-  let lastEditAt = 0;
-  let lastSavedAt = 0;
+  // Timestamped when the timer is (re-)armed from idle, not from the last
+  // flush — so a burst that starts long after the previous save doesn't
+  // inherit a stale reference point and trip DEBOUNCE_MAX_MS immediately.
+  let firstTriggerAt = 0;
+  let lastTriggerAt = 0;
   let pendingValue: T | undefined;
 
   const doFlush = () => {
     timer = null;
-    lastSavedAt = Date.now();
     if (pendingValue !== undefined) {
       const value = pendingValue;
       pendingValue = undefined;
@@ -52,31 +57,26 @@ export const createDebounce = <T>(onFlush: FlushFn<T>): Debounceable<T> => {
     }
   };
 
-  const tryFlush = () => {
+  const check = () => {
     const now = Date.now();
-    if (now - lastEditAt >= DEBOUNCE_IDLE_MS) {
+    if (now - firstTriggerAt >= DEBOUNCE_MAX_MS) {
       doFlush();
-    } else if (now - lastSavedAt >= DEBOUNCE_MAX_MS) {
+    } else if (now - lastTriggerAt >= DEBOUNCE_MS - DEBOUNCE_EPS_MS) {
       doFlush();
     } else {
-      timer = setTimeout(tryFlush, DEBOUNCE_TIMEOUT_MS);
+      timer = setTimeout(check, DEBOUNCE_MS);
     }
   };
 
   return {
     notify(value: T) {
       pendingValue = value;
-      lastEditAt = Date.now();
+      const now = Date.now();
+      lastTriggerAt = now;
       if (timer === null) {
-        timer = setTimeout(tryFlush, DEBOUNCE_TIMEOUT_MS);
+        firstTriggerAt = now;
+        timer = setTimeout(check, DEBOUNCE_MS);
       }
-    },
-    flush() {
-      if (timer !== null) {
-        clearTimeout(timer);
-        timer = null;
-      }
-      doFlush();
     },
     dispose() {
       if (timer !== null) {

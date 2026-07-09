@@ -44,7 +44,8 @@ import {
   setContentApplying,
   type GoToSectionOpts,
 } from "../states/editor";
-import { notifyEdit, flushSave, countText } from "../states/editor_save";
+import { notifyEdit, flushSave } from "../states/editor_save";
+import { countText } from "../lib/utils/text_stats";
 import {
   wakeLock,
   contextSections,
