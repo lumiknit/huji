@@ -22,6 +22,12 @@ export const pkceStateSchema = z.object({
 
 export type SyncProviderName = "dropbox" | "onedrive";
 
+/** Thrown when the provider tells us the refresh token itself is dead
+ *  (revoked/expired) rather than some transient/network failure — there's
+ *  no point retrying, the stored token should be cleared and the user
+ *  needs to reconnect. */
+export class SyncAuthError extends Error {}
+
 export const PENDING_PROVIDER_KEY = "sync_pending_provider";
 export const ACTIVE_PROVIDER_KEY = "sync_active_provider";
 

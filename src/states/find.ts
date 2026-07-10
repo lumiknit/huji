@@ -1,6 +1,6 @@
 import { createSignal, createMemo, batch } from "solid-js";
 import { createDebouncedSignal } from "../lib/utils/debounce";
-import { getContent } from "../lib/db/content";
+import { getContents } from "../lib/db/content";
 import { buildSectionLabel } from "../lib/md/section";
 import { editorState } from "./editor";
 import { saveSectionDirectly } from "./editor_save";
@@ -66,13 +66,7 @@ export const loadFindContents = (): Promise<void> => {
   _loadFindContentsPromise = (async () => {
     setFindLoading(true);
     const bodyMetas = editorState.metas().filter((m) => m.level >= 0);
-    const map = new Map<string, string>();
-    await Promise.all(
-      bodyMetas.map(async (m) => {
-        const row = await getContent(m.id);
-        map.set(m.id, row?.content ?? "");
-      }),
-    );
+    const map = await getContents(bodyMetas.map((m) => m.id));
     batch(() => {
       setFindContents(map);
       setFindLoading(false);

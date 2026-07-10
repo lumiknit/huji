@@ -9,7 +9,7 @@ import {
 } from "solid-js";
 import { TbOutlineTypography, TbOutlineX, TbOutlineWand } from "solid-icons/tb";
 
-import { getContent } from "../lib/db/content";
+import { getContents } from "../lib/db/content";
 import { buildSectionLabel } from "../lib/md/section";
 import {
   normalizeCharacters,
@@ -55,13 +55,7 @@ const CharNormalizeModal: Component<Props> = (props) => {
   const loadContents = async () => {
     setLoading(true);
     const bodyMetas = editorState.metas().filter((m) => m.level >= 0);
-    const map = new Map<string, string>();
-    await Promise.all(
-      bodyMetas.map(async (m) => {
-        const row = await getContent(m.id);
-        map.set(m.id, row?.content ?? "");
-      }),
-    );
+    const map = await getContents(bodyMetas.map((m) => m.id));
     setContents(map);
     setLoading(false);
   };

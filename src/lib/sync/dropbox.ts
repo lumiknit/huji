@@ -3,6 +3,7 @@ import {
   generateCodeVerifier,
   generateCodeChallenge,
   pkceStateSchema,
+  SyncAuthError,
   type SyncFile,
   type SyncToken,
 } from "./interface";
@@ -142,14 +143,16 @@ export async function refreshToken(
   const json = await res.json();
   if (!res.ok) {
     const err = oauthErrorSchema.safeParse(json);
-    dbxError(
-      err.success
-        ? (err.data.error_description ??
-            err.data.error ??
-            "Token refresh failed")
-        : JSON.stringify(json),
-      json,
-    );
+    const message = err.success
+      ? (err.data.error_description ?? err.data.error ?? "Token refresh failed")
+      : JSON.stringify(json);
+    // Dropbox returns error: "invalid_grant" when the refresh token itself
+    // is dead (revoked from the account settings, or expired from disuse) —
+    // retrying with the same token will just fail the same way forever.
+    if (err.success && err.data.error === "invalid_grant") {
+      throw new SyncAuthError(message);
+    }
+    dbxError(message, json);
   }
   const parsed = tokenResponseSchema.safeParse(json);
   if (!parsed.success) dbxError("Invalid token response", parsed.error);

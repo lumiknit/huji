@@ -12,6 +12,7 @@ import {
 } from "../lib/db/meta";
 import {
   getContent,
+  getContents,
   putContent,
   deleteContents,
   putContents,
@@ -118,11 +119,13 @@ export const editorState = {
 interface LoadedFileState {
   docId: string | null; // The _id inside the frontmatter block
   frontmatterSectionId: string | null; // The IndexedDB section key/ID of the frontmatter (level: -1)
+  lastTouchedAt: number; // Date.now() of the last touchLastUsedAt() write, for throttling
 }
 
 let loadedFileState: LoadedFileState = {
   docId: null,
   frontmatterSectionId: null,
+  lastTouchedAt: 0,
 };
 
 export const getCurrentDocId = () => loadedFileState.docId;
@@ -220,6 +223,7 @@ export const loadFile = async (id: string) => {
   loadedFileState = {
     docId: null,
     frontmatterSectionId: null,
+    lastTouchedAt: 0,
   };
 
   let list = await getFileMetas(id);
@@ -232,8 +236,14 @@ export const loadFile = async (id: string) => {
   await initFrontmatter(list);
 };
 
+// Recency precision for file-list sorting doesn't need to track every
+// keystroke-driven autosave, so skip the frontmatter read/write round-trip
+// if it was already touched recently.
+const TOUCH_THROTTLE_MS = 60_000;
+
 export const touchLastUsedAt = async () => {
   if (!loadedFileState.frontmatterSectionId) return;
+  if (Date.now() - loadedFileState.lastTouchedAt < TOUCH_THROTTLE_MS) return;
   const row = await getContent(loadedFileState.frontmatterSectionId);
   if (!row) return;
   try {
@@ -247,6 +257,7 @@ export const touchLastUsedAt = async () => {
       content: JSON.stringify(data),
       updatedAt: now,
     });
+    loadedFileState.lastTouchedAt = Date.now();
   } catch {
     // ignore
   }
@@ -448,9 +459,9 @@ export const loadSectionContent = async (id: string): Promise<string> => {
 
 export const loadAllContent = async (): Promise<string> => {
   const list = metas().filter((m) => m.level >= 0);
-  const rows = await Promise.all(list.map((m) => getContent(m.id)));
-  return rows
-    .map((r) => r?.content ?? "")
+  const contents = await getContents(list.map((m) => m.id));
+  return list
+    .map((m) => contents.get(m.id) ?? "")
     .filter(Boolean)
     .join("\n\n");
 };

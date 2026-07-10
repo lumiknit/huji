@@ -8,6 +8,7 @@ import {
 import {
   persistedTokenSchema,
   pkceStateSchema,
+  SyncAuthError,
   type SyncToken,
   type PersistedToken,
 } from "./interface";
@@ -72,7 +73,16 @@ export async function ensureToken(): Promise<SyncToken> {
     refreshToken: persisted.refreshToken,
     expiresAt: _accessTokenExpiresAt,
   };
-  const refreshed = await doRefresh(cfg, stale);
+  let refreshed: SyncToken;
+  try {
+    refreshed = await doRefresh(cfg, stale);
+  } catch (e) {
+    // The stored refresh token is dead — holding onto it would just make
+    // every future call fail the same way, so drop it now and force the
+    // "Connect" flow instead of a silently stuck "Connected" state.
+    if (e instanceof SyncAuthError) clearToken();
+    throw e;
+  }
   _accessToken = refreshed.accessToken;
   _accessTokenExpiresAt = refreshed.expiresAt;
 

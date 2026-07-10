@@ -11,7 +11,10 @@ export type RawSection = {
 export const derivePlainHeading = (raw: string, maxLen = 32): string => {
   const idx = raw.search(/\S/);
   if (idx === -1) return "";
-  return raw.slice(idx, idx + maxLen).replace(/\s/g, " ");
+  // Array.from splits by code point, so a maxLen cut never lands inside a
+  // surrogate pair (e.g. an emoji) the way a plain UTF-16 slice() would.
+  const codePoints = Array.from(raw.slice(idx));
+  return codePoints.slice(0, maxLen).join("").replace(/\s+/g, " ");
 };
 
 /** Split markdown body into sections by heading boundaries.

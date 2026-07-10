@@ -507,12 +507,12 @@ ul.files > li.version-item .file-info span:first-child {
   cursor: pointer;
 }
 
-.file-menu-anchor {
+.dropdown-anchor {
   position: relative;
   flex-shrink: 0;
 }
 
-.file-dropdown {
+.dropdown-menu {
   position: absolute;
   right: 0;
   top: 100%;
@@ -524,18 +524,40 @@ ul.files > li.version-item .file-info span:first-child {
   padding: 0.2rem;
 }
 
-.file-dropdown-item {
+.dropdown-item {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  width: 100%;
   gap: 0.35rem;
   padding: 0.3rem 0.6rem;
   cursor: pointer;
   white-space: nowrap;
+  border: none;
   border-radius: 0.25rem;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
 }
 
-.file-dropdown-item.danger {
+.dropdown-item:hover,
+.dropdown-item:focus-visible {
+  background: var(--c-border);
+  outline: none;
+}
+
+/* Scoped to .dropdown-item so it wins over the unrelated solid-fill
+   `button.danger` utility (same class name, different component) instead
+   of just tinting the text on top of that button's red background. */
+.dropdown-item.danger {
+  background: transparent;
   color: var(--c-danger);
+}
+
+.dropdown-item.danger:hover,
+.dropdown-item.danger:focus-visible {
+  background: var(--c-border);
 }
 
 .icon-middle {

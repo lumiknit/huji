@@ -1,6 +1,6 @@
-import { deleteFileAllMeta } from "../lib/db/meta";
-import { deleteContents } from "../lib/db/content";
-import { getFileMetas } from "../lib/db/meta";
+import { deleteFileAllMeta, getFileMetas } from "../lib/db/meta";
+import { getContent, putContent, deleteContents } from "../lib/db/content";
+import { parseFrontmatterDataLoose } from "../lib/md/frontmatter";
 import type { SyncFile } from "../lib/sync/interface";
 import { unpackBackupName } from "../lib/path";
 import { fuzzyMatch } from "../lib/re";
@@ -13,6 +13,8 @@ export type FileSummary = {
   filename: string;
   lastUsedAt: string;
   tags: string[];
+  /** ISO timestamp if the file is in the Trash, undefined otherwise. */
+  deletedAt?: string;
 };
 
 export type LocalListItem = {
@@ -61,6 +63,21 @@ export function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** Coarse "N unit(s) ago" label for a millisecond duration. Not meant to
+ *  tick live — callers compute `ms` once (e.g. against the time the page
+ *  was entered) rather than re-diffing against the current clock. */
+export function formatRelativeTime(ms: number): string {
+  if (ms < 5_000) return "just now";
+  const sec = Math.round(ms / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.round(hr / 24);
+  return `${day}d ago`;
+}
+
 // ── Tag color ────────────────────────────────────────────────────────────────
 
 const tagColorCache = new Map<string, string>();
@@ -85,6 +102,30 @@ export const deleteLocalFile = async (fileId: string): Promise<void> => {
   const ids = metas.map((m) => m.id);
   await deleteFileAllMeta(fileId);
   await deleteContents(ids);
+};
+
+/** Soft-delete: flag the file's frontmatter as trashed (deleted=true) or
+ *  restore it (deleted=false), without touching its content. */
+export const setFileDeleted = async (
+  fileId: string,
+  deleted: boolean,
+): Promise<void> => {
+  const metas = await getFileMetas(fileId);
+  const fmMeta = metas.find((m) => m.level === -1);
+  if (!fmMeta) return;
+  const row = await getContent(fmMeta.id);
+  if (!row) return;
+  const parsed = await parseFrontmatterDataLoose(row.content);
+  if (!parsed) return;
+  const { data } = parsed;
+  const now = new Date().toISOString();
+  if (deleted) data._deleted_at = now;
+  else delete data._deleted_at;
+  await putContent({
+    id: fmMeta.id,
+    content: JSON.stringify(data),
+    updatedAt: now,
+  });
 };
 
 // ── Group builder ────────────────────────────────────────────────────────────

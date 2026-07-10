@@ -5,23 +5,19 @@ import {
   createSignal,
   createMemo,
   createEffect,
-  onMount,
-  onCleanup,
   For,
   Show,
 } from "solid-js";
 import { useNavigate, A } from "@solidjs/router";
 import {
-  TbOutlineTrash,
   TbFillCloud,
   TbOutlineChevronDown,
   TbOutlineChevronRight,
-  TbOutlineDots,
   TbOutlineGitBranch,
   TbOutlineGitFork,
+  TbOutlineTrash,
 } from "solid-icons/tb";
 import toast from "solid-toast";
-import { aconfirm } from "./CommonDialog";
 
 import { serializeFrontmatter, parseDocument } from "../lib/md/frontmatter";
 import { genId } from "../lib/utils/id";
@@ -35,84 +31,14 @@ import {
   type CloudListItem,
   type ListItem,
   buildGroups,
-  deleteLocalFile,
+  setFileDeleted,
   formatDateTime,
   formatSize,
   tagColor,
 } from "./file_list";
+import DropdownMenu from "./DropdownMenu";
 
 // ── Sub-components (module-level) ────────────────────────────────────────────
-
-type DropdownMenuProps = {
-  id: string;
-  openMenu: Accessor<string | null>;
-  setOpenMenu: Setter<string | null>;
-  onRevise: () => void;
-  onFork: () => void;
-  onDelete: () => void;
-};
-
-const DropdownMenu: Component<DropdownMenuProps> = (props) => {
-  let anchorEl: HTMLDivElement | undefined;
-
-  onMount(() => {
-    const handler = (e: MouseEvent) => {
-      if (
-        props.openMenu() === props.id &&
-        anchorEl &&
-        !anchorEl.contains(e.target as Node)
-      ) {
-        props.setOpenMenu(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    onCleanup(() => document.removeEventListener("mousedown", handler));
-  });
-
-  return (
-    <div class="file-menu-anchor" ref={anchorEl}>
-      <button
-        title="Menu"
-        onClick={() =>
-          props.setOpenMenu((prev) => (prev === props.id ? null : props.id))
-        }
-      >
-        <TbOutlineDots />
-      </button>
-      <Show when={props.openMenu() === props.id}>
-        <div class="file-dropdown">
-          <div
-            class="file-dropdown-item"
-            onClick={() => {
-              props.setOpenMenu(null);
-              props.onRevise();
-            }}
-          >
-            <TbOutlineGitBranch /> Revise
-          </div>
-          <div
-            class="file-dropdown-item"
-            onClick={() => {
-              props.setOpenMenu(null);
-              props.onFork();
-            }}
-          >
-            <TbOutlineGitFork /> Fork
-          </div>
-          <div
-            class="file-dropdown-item danger"
-            onClick={() => {
-              props.setOpenMenu(null);
-              props.onDelete();
-            }}
-          >
-            <TbOutlineTrash /> Delete
-          </div>
-        </div>
-      </Show>
-    </div>
-  );
-};
 
 type ChevronSlotProps = {
   groupKey: string;
@@ -152,22 +78,6 @@ type CloudFileInfoProps = {
 };
 
 const CloudFileInfo: Component<CloudFileInfoProps> = (props) => {
-  let anchorEl: HTMLDivElement | undefined;
-
-  onMount(() => {
-    const handler = (e: MouseEvent) => {
-      if (
-        props.openMenu() === props.item.file.name &&
-        anchorEl &&
-        !anchorEl.contains(e.target as Node)
-      ) {
-        props.setOpenMenu(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    onCleanup(() => document.removeEventListener("mousedown", handler));
-  });
-
   return (
     <>
       <a
@@ -189,31 +99,23 @@ const CloudFileInfo: Component<CloudFileInfoProps> = (props) => {
           </Show>
         </small>
       </a>
-      <div class="file-menu-anchor" ref={anchorEl}>
-        <button
-          title="Menu"
-          onClick={() =>
-            props.setOpenMenu((prev) =>
-              prev === props.item.file.name ? null : props.item.file.name,
-            )
-          }
-        >
-          <TbOutlineDots />
-        </button>
-        <Show when={props.openMenu() === props.item.file.name}>
-          <div class="file-dropdown">
-            <div
-              class="file-dropdown-item danger"
-              onClick={() => {
-                props.setOpenMenu(null);
-                props.onDelete();
-              }}
-            >
-              <TbOutlineTrash /> Delete
-            </div>
-          </div>
-        </Show>
-      </div>
+      <DropdownMenu
+        id={props.item.file.name}
+        openMenu={props.openMenu}
+        setOpenMenu={props.setOpenMenu}
+        items={[
+          {
+            key: "delete",
+            label: (
+              <>
+                <TbOutlineTrash /> Delete
+              </>
+            ),
+            danger: true,
+            onClick: props.onDelete,
+          },
+        ]}
+      />
     </>
   );
 };
@@ -262,10 +164,9 @@ const FileList: Component<FileListProps> = (props) => {
   };
 
   const handleDelete = async (fileId: string) => {
-    if (!(await aconfirm("Delete this file?"))) return;
-    await deleteLocalFile(fileId);
+    await setFileDeleted(fileId, true);
     props.onRefetch();
-    toast.success("Deleted");
+    toast.success("Moved to Trash");
   };
 
   const forkOrRevise = async (
@@ -327,9 +228,36 @@ const FileList: Component<FileListProps> = (props) => {
             id={item.fileId}
             openMenu={openMenu}
             setOpenMenu={setOpenMenu}
-            onRevise={() => handleRevise(item)}
-            onFork={() => handleFork(item)}
-            onDelete={() => void handleDelete(item.fileId)}
+            items={[
+              {
+                key: "revise",
+                label: (
+                  <>
+                    <TbOutlineGitBranch /> Revise
+                  </>
+                ),
+                onClick: () => handleRevise(item),
+              },
+              {
+                key: "fork",
+                label: (
+                  <>
+                    <TbOutlineGitFork /> Fork
+                  </>
+                ),
+                onClick: () => handleFork(item),
+              },
+              {
+                key: "delete",
+                label: (
+                  <>
+                    <TbOutlineTrash /> Delete
+                  </>
+                ),
+                danger: true,
+                onClick: () => void handleDelete(item.fileId),
+              },
+            ]}
           />
         </>
       );

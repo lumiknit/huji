@@ -1,6 +1,7 @@
 import {
   type Component,
   createSignal,
+  createMemo,
   createResource,
   onMount,
   For,
@@ -23,7 +24,7 @@ import toast from "solid-toast";
 
 import { getDB } from "../lib/db/index";
 import { putMeta } from "../lib/db/meta";
-import { putContent } from "../lib/db/content";
+import { putContent, getContents } from "../lib/db/content";
 import { parseFrontmatterDataLoose } from "../lib/md/frontmatter";
 import { genId } from "../lib/utils/id";
 import { FRAC_GAP } from "../lib/utils/fracindex";
@@ -32,9 +33,14 @@ import FileDrop from "../components/FileDrop";
 import { aprompt } from "../components/CommonDialog";
 import FileList from "../components/FileList";
 import DeletePreview from "../components/DeletePreview";
-import { type FileSummary } from "../components/file_list";
+import TrashList from "../components/TrashList";
+import { type FileSummary, formatRelativeTime } from "../components/file_list";
 import { importMarkdownText } from "../states/editor";
-import type { SyncFile, SyncProviderName } from "../lib/sync/interface";
+import {
+  SyncAuthError,
+  type SyncFile,
+  type SyncProviderName,
+} from "../lib/sync/interface";
 import {
   availableProviders,
   getActiveProvider,
@@ -45,6 +51,13 @@ import {
 import { unpackBackupName } from "../lib/path";
 import { unpackMDBlob } from "../lib/export";
 import { setDefaultRemoteProvider } from "../states/settings";
+import {
+  remoteFiles,
+  setRemoteFilesResult,
+  removeRemoteFile,
+  clearRemoteFiles,
+  isRemoteFilesStale,
+} from "../states/remote_files";
 import Toolbar from "../components/Toolbar";
 
 const PROVIDER_LABELS: Record<SyncProviderName, string> = {
@@ -56,19 +69,21 @@ const loadFileList = async (): Promise<FileSummary[]> => {
   const db = await getDB();
   const all = await db.getAll("meta");
   const frontmatters = all.filter((m) => m.level === -1);
+  const contents = await getContents(frontmatters.map((fm) => fm.id));
 
   const summaries = await Promise.all(
     frontmatters.map(async (fm) => {
-      const content = await db.get("content", fm.id);
+      const content = contents.get(fm.id);
       let filename = fm.fileId;
       let lastUsedAt = fm.updatedAt;
       let tags: string[] = [];
       let docId: string | undefined;
+      let deletedAt: string | undefined;
       if (content) {
         try {
           // Legacy rows not yet migrated to compact JSON are read here
           // read-only — migration happens when the file is opened.
-          const parsed = await parseFrontmatterDataLoose(content.content);
+          const parsed = await parseFrontmatterDataLoose(content);
           if (parsed) {
             const { data } = parsed;
             if (typeof data._filename === "string") filename = data._filename;
@@ -79,12 +94,21 @@ const loadFileList = async (): Promise<FileSummary[]> => {
               tags = data._tags.filter(
                 (t): t is string => typeof t === "string",
               );
+            if (typeof data._deleted_at === "string")
+              deletedAt = data._deleted_at;
           }
         } catch {
           /* ignore */
         }
       }
-      return { fileId: fm.fileId, docId, filename, lastUsedAt, tags };
+      return {
+        fileId: fm.fileId,
+        docId,
+        filename,
+        lastUsedAt,
+        tags,
+        deletedAt,
+      };
     }),
   );
 
@@ -145,8 +169,15 @@ export const importMarkdownFile = async (file: File): Promise<string> => {
 const FileListPage: Component = () => {
   const navigate = useNavigate();
   const [files, { refetch }] = createResource(loadFileList);
+  const activeFiles = createMemo(() =>
+    (files() ?? []).filter((f) => !f.deletedAt),
+  );
+  const trashedFiles = createMemo(() =>
+    (files() ?? []).filter((f) => f.deletedAt),
+  );
   const [search, setSearch] = createSignal("");
   const [showDeletePreview, setShowDeletePreview] = createSignal(false);
+  const [showTrash, setShowTrash] = createSignal(false);
 
   const providers = availableProviders();
   const hasCloud = providers.length > 0;
@@ -155,11 +186,27 @@ const FileListPage: Component = () => {
     getActiveProvider()?.loadToken() ?? null,
   );
   const [activeProvider, setActive] = createSignal(getActiveProvider());
-  const [cloudFiles, setCloudFiles] = createSignal<SyncFile[] | null>(null);
-  const [cloudCursor, setCloudCursor] = createSignal<string | undefined>(
-    undefined,
-  );
-  const [cloudHasMore, setCloudHasMore] = createSignal(false);
+  // Cached across SPA navigation in states/remote_files.ts; only the slice
+  // for the currently-active provider is relevant here.
+  const currentRemote = createMemo(() => {
+    const s = remoteFiles();
+    const p = activeProvider();
+    return s && p && s.provider === p.name ? s : null;
+  });
+  const cloudFiles = () => currentRemote()?.files ?? null;
+  const cloudCursor = () => currentRemote()?.cursor;
+  const cloudHasMore = () => currentRemote()?.hasMore ?? false;
+  const cloudStale = () => {
+    const p = activeProvider();
+    return !!p && !!currentRemote() && isRemoteFilesStale(p.name);
+  };
+  // Snapshotted once per mount — this is a "how long ago" label, not a live
+  // clock, so no need to re-diff against the current time on every render.
+  const pageEnteredAt = Date.now();
+  const cloudFetchedLabel = () => {
+    const s = currentRemote();
+    return s ? formatRelativeTime(pageEnteredAt - s.fetchedAt) : null;
+  };
   const [cloudLoading, setCloudLoading] = createSignal(false);
   const [authenticating, setAuthenticating] = createSignal(false);
   const [selectedProvider, setSelectedProvider] =
@@ -228,14 +275,17 @@ const FileListPage: Component = () => {
       try {
         const token = await provider.ensureToken();
         const result = await provider.list(token, cursor);
-        if (cursor) {
-          setCloudFiles((prev) => [...(prev ?? []), ...result.files]);
-        } else {
-          setCloudFiles(result.files);
-        }
-        setCloudCursor(result.cursor || undefined);
-        setCloudHasMore(result.hasMore);
+        setRemoteFilesResult(
+          provider.name,
+          result.files,
+          result.cursor || undefined,
+          result.hasMore,
+          !!cursor,
+        );
         return result.files.length;
+      } catch (e) {
+        if (e instanceof SyncAuthError) handleDisconnect();
+        throw e;
       } finally {
         setCloudLoading(false);
       }
@@ -244,7 +294,9 @@ const FileListPage: Component = () => {
       loading: label,
       success: (n) => `${n} file(s) loaded`,
       error: (e) =>
-        `${PROVIDER_LABELS[provider.name]} error: ${(e as Error).message}`,
+        e instanceof SyncAuthError
+          ? `${PROVIDER_LABELS[provider.name]} session expired — please reconnect`
+          : `${PROVIDER_LABELS[provider.name]} error: ${(e as Error).message}`,
     });
   };
 
@@ -269,22 +321,29 @@ const FileListPage: Component = () => {
     clearActiveProvider();
     setActive(null);
     setCloudToken(null);
-    setCloudFiles(null);
-    setCloudCursor(undefined);
+    clearRemoteFiles();
   };
 
   const handleCloudDelete = (f: SyncFile) => {
     const provider = activeProvider();
     if (!provider) return;
     const p = (async () => {
-      const token = await provider.ensureToken();
-      await provider.delete(token, f.name);
-      setCloudFiles((prev) => prev?.filter((c) => c.name !== f.name) ?? null);
+      try {
+        const token = await provider.ensureToken();
+        await provider.delete(token, f.name);
+        removeRemoteFile(provider.name, f.name);
+      } catch (e) {
+        if (e instanceof SyncAuthError) handleDisconnect();
+        throw e;
+      }
     })();
     toast.promise(p, {
       loading: `Deleting ${f.name}…`,
       success: "Deleted",
-      error: (e) => `Delete failed: ${(e as Error).message}`,
+      error: (e) =>
+        e instanceof SyncAuthError
+          ? `${PROVIDER_LABELS[provider.name]} session expired — please reconnect`
+          : `Delete failed: ${(e as Error).message}`,
     });
   };
 
@@ -292,15 +351,23 @@ const FileListPage: Component = () => {
     const provider = activeProvider();
     if (!provider) return;
     const p = (async () => {
-      const token = await provider.ensureToken();
-      const blob = await provider.download(token, f.name);
-      const file = new File([blob], f.name, { type: "text/markdown" });
-      return importMarkdownFile(file);
+      try {
+        const token = await provider.ensureToken();
+        const blob = await provider.download(token, f.name);
+        const file = new File([blob], f.name, { type: "text/markdown" });
+        return await importMarkdownFile(file);
+      } catch (e) {
+        if (e instanceof SyncAuthError) handleDisconnect();
+        throw e;
+      }
     })();
     toast.promise(p, {
       loading: `Downloading ${f.name}…`,
       success: "Imported",
-      error: (e) => `Download failed: ${(e as Error).message}`,
+      error: (e) =>
+        e instanceof SyncAuthError
+          ? `${PROVIDER_LABELS[provider.name]} session expired — please reconnect`
+          : `Download failed: ${(e as Error).message}`,
     });
     p.then((fileId) => navigate(`/edit/${fileId}`)).catch(() => {});
   };
@@ -376,7 +443,16 @@ const FileListPage: Component = () => {
                     </button>
                   }
                 >
+                  <small class="text-muted">
+                    Fetched {cloudFetchedLabel()}
+                  </small>
                   <button
+                    class={cloudStale() ? "primary" : undefined}
+                    title={
+                      cloudStale()
+                        ? "This list may be out of date — refresh to see recent changes"
+                        : undefined
+                    }
                     onClick={() => loadCloudFiles()}
                     disabled={cloudLoading()}
                   >
@@ -433,11 +509,17 @@ const FileListPage: Component = () => {
         </Match>
         <Match when={showDeletePreview()}>
           <DeletePreview
-            localItems={files() ?? []}
+            localItems={activeFiles()}
             cloudItems={cloudFiles() ?? []}
             provider={activeProvider()}
             onDone={handleDeleteDone}
           />
+        </Match>
+        <Match when={showTrash()}>
+          <div class="button-row mb-md">
+            <button onClick={() => setShowTrash(false)}>Back</button>
+          </div>
+          <TrashList items={trashedFiles()} onRefetch={refetch} />
         </Match>
         <Match when={true}>
           <div class="button-row mb-md">
@@ -448,10 +530,17 @@ const FileListPage: Component = () => {
             >
               <TbOutlineTrash /> Clean old versions
             </button>
+            <button onClick={() => setShowTrash(true)}>
+              <TbOutlineTrash /> Trash
+              <Show when={trashedFiles().length > 0}>
+                {" "}
+                ({trashedFiles().length})
+              </Show>
+            </button>
           </div>
 
           <FileList
-            localItems={files() ?? []}
+            localItems={activeFiles()}
             cloudItems={cloudFiles() ?? []}
             cloudLoading={cloudLoading()}
             search={search()}
