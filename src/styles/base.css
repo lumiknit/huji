@@ -82,18 +82,18 @@ nav.toolbar.toolbar-autohide {
 
 .toolbar-chip {
   position: fixed;
-  top: 0.5rem;
+  top: 0.25rem;
   left: 0;
   right: 0;
   width: fit-content;
-  max-width: 80vw;
+  max-width: 75vw;
   margin: 0 auto;
   z-index: 51;
   display: flex;
   align-items: center;
-  gap: 0.3em;
-  padding: 0.25rem 0.6rem;
-  border: 1px solid var(--c-border);
+  gap: 0.25em;
+  padding: 0.25rem 0.5rem;
+  border: 2px solid var(--c-border);
   border-radius: 999rem;
   background: var(--c-bg);
   color: var(--c-fg);
@@ -958,12 +958,6 @@ article.md-body {
   width: 100%;
   border-collapse: collapse;
 }
-.charnorm-table tr {
-  border-bottom: 1px solid var(--c-border);
-}
-.charnorm-table tr:last-child {
-  border-bottom: none;
-}
 .charnorm-table td,
 .charnorm-table th {
   padding: var(--sp-xs) var(--sp-sm);
@@ -971,7 +965,7 @@ article.md-body {
   vertical-align: middle;
 }
 .charnorm-table th {
-  font-weight: 600;
+  font-weight: bold;
   white-space: nowrap;
 }
 .charnorm-table select {
