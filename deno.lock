@@ -7,26 +7,26 @@
     "npm:@codemirror/search@^6.7.1": "6.7.1",
     "npm:@codemirror/state@^6.7.1": "6.7.1",
     "npm:@codemirror/view@^6.43.6": "6.43.6",
-    "npm:@eslint/js@^10.0.1": "10.0.1_eslint@10.6.0",
-    "npm:@lezer/markdown@^1.7.0": "1.7.0",
-    "npm:@solid-primitives/storage@^4.3.5": "4.3.5_solid-js@1.9.14",
+    "npm:@eslint/js@^10.0.1": "10.0.1_eslint@10.7.0",
+    "npm:@lezer/markdown@^1.7.1": "1.7.1",
+    "npm:@solid-primitives/storage@^4.4.0": "4.4.0_solid-js@1.9.14",
     "npm:@solidjs/router@~0.16.1": "0.16.1_solid-js@1.9.14",
     "npm:@types/js-yaml@^4.0.9": "4.0.9",
     "npm:@types/node@^26.1.1": "26.1.1",
     "npm:docx@^9.7.1": "9.7.1",
     "npm:dompurify@^3.4.11": "3.4.11",
-    "npm:eslint@^10.6.0": "10.6.0",
+    "npm:eslint@^10.7.0": "10.7.0",
     "npm:globals@^17.7.0": "17.7.0",
     "npm:idb@^8.0.3": "8.0.3",
     "npm:js-yaml@^5.2.1": "5.2.1",
     "npm:jsdom@^29.1.1": "29.1.1",
-    "npm:knip@^6.25.0": "6.25.0",
-    "npm:marked@^18.0.5": "18.0.5",
-    "npm:prettier@^3.9.4": "3.9.4",
+    "npm:knip@^6.26.0": "6.26.0",
+    "npm:marked@^18.0.6": "18.0.6",
+    "npm:prettier@^3.9.5": "3.9.5",
     "npm:solid-icons@^1.2.0": "1.2.0_solid-js@1.9.14",
     "npm:solid-js@^1.9.14": "1.9.14",
     "npm:solid-toast@0.5": "0.5.0_solid-js@1.9.14",
-    "npm:typescript-eslint@^8.63.0": "8.63.0_eslint@10.6.0_typescript@6.0.3",
+    "npm:typescript-eslint@^8.63.0": "8.63.0_eslint@10.7.0_typescript@6.0.3",
     "npm:typescript@~7.0.2": "7.0.2",
     "npm:vite-bundle-visualizer@^1.2.1": "1.2.1",
     "npm:vite-plugin-solid@^2.11.12": "2.11.12_solid-js@1.9.14_vite@8.1.4__@types+node@26.1.1_@types+node@26.1.1",
@@ -381,7 +381,7 @@
         "tslib"
       ]
     },
-    "@eslint-community/eslint-utils@4.9.1_eslint@10.6.0": {
+    "@eslint-community/eslint-utils@4.9.1_eslint@10.7.0": {
       "integrity": "sha512-phrYmNiYppR7znFEdqgfWHXR6NCkZEK7hwWDHZUjit/2/U0r6XvkDl0SYnoM51Hq7FhCGdLDT6zxCCOY1hexsQ==",
       "dependencies": [
         "eslint",
@@ -411,7 +411,7 @@
         "@types/json-schema"
       ]
     },
-    "@eslint/js@10.0.1_eslint@10.6.0": {
+    "@eslint/js@10.0.1_eslint@10.7.0": {
       "integrity": "sha512-zeR9k5pd4gxjZ0abRoIaxdc7I3nDktoXZk2qOv9gCNWx3mVwEn32VRhyLaRsDiJjTs0xq/T8mfPtyuXu7GWBcA==",
       "dependencies": [
         "eslint"
@@ -522,8 +522,8 @@
         "@lezer/common"
       ]
     },
-    "@lezer/markdown@1.7.0": {
-      "integrity": "sha512-zZDdfKkXl1CBYet/nL2jCskQXC+8DpbhZubbTEGqbqpkaBC4w03F5Kt9ZLDyqbadqIvvZ7VrVhd6d6qgurzAew==",
+    "@lezer/markdown@1.7.1": {
+      "integrity": "sha512-MEBZeFSBxgteUjEC3Wxg2Dwld5/JxRKG267L3bMFdibm8KjqSdiJYBeFw1Nt1CM8+zKMpSIEHblY8FD9z38sJQ==",
       "dependencies": [
         "@lezer/common",
         "@lezer/highlight"
@@ -839,8 +839,8 @@
     "@rolldown/pluginutils@1.0.1": {
       "integrity": "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="
     },
-    "@solid-primitives/storage@4.3.5_solid-js@1.9.14": {
-      "integrity": "sha512-uvgj2HoqPw6RlDRiwVm4LQM6WHUJ+SsCvXtvGLbWVnIjGqrrNyFxdbKQFYUkSw6QsVO/esm7Ok0VeDpO0ioRlA==",
+    "@solid-primitives/storage@4.4.0_solid-js@1.9.14": {
+      "integrity": "sha512-+u0dpTqrUG7h+IMfmGLCx7vx2Q0Eon6paBgzcWhEP/dauElpGU3ElpZZOZgw8YKR1+J4X4ENiAL0na3VH8RWMg==",
       "dependencies": [
         "@solid-primitives/utils",
         "solid-js"
@@ -933,7 +933,7 @@
     "@types/trusted-types@2.0.7": {
       "integrity": "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw=="
     },
-    "@typescript-eslint/eslint-plugin@8.63.0_@typescript-eslint+parser@8.63.0__eslint@10.6.0__typescript@6.0.3_eslint@10.6.0_typescript@6.0.3": {
+    "@typescript-eslint/eslint-plugin@8.63.0_@typescript-eslint+parser@8.63.0__eslint@10.7.0__typescript@6.0.3_eslint@10.7.0_typescript@6.0.3": {
       "integrity": "sha512-rvwSgqT+DHpWdzfSzPatRLm02a0GlESt++9iy3hLCDY4BgkaLcl8LBi9Yh7XGFBpwcBE/K3024QuXWTpbz4FfQ==",
       "dependencies": [
         "@eslint-community/regexpp",
@@ -949,7 +949,7 @@
         "typescript@6.0.3"
       ]
     },
-    "@typescript-eslint/parser@8.63.0_eslint@10.6.0_typescript@6.0.3": {
+    "@typescript-eslint/parser@8.63.0_eslint@10.7.0_typescript@6.0.3": {
       "integrity": "sha512-gwh4gvvlaVDKKxyfxMG+Gnu1u9X0OQBwyGLkbwB65dIzBKnxeRiJlNFqlI3zwVhNXJIs6qV7mlFCn/BIajlVig==",
       "dependencies": [
         "@typescript-eslint/scope-manager",
@@ -983,7 +983,7 @@
         "typescript@6.0.3"
       ]
     },
-    "@typescript-eslint/type-utils@8.63.0_eslint@10.6.0_typescript@6.0.3": {
+    "@typescript-eslint/type-utils@8.63.0_eslint@10.7.0_typescript@6.0.3": {
       "integrity": "sha512-Nzzh/OGxVCOjObjaj1CQF2RUasyYy2Jfuh+zZ3PjLzG2fYRriAiZLib9UKtO+CpQAS3YHiAS+ckZDclwqI1TPA==",
       "dependencies": [
         "@typescript-eslint/types",
@@ -1013,7 +1013,7 @@
         "typescript@6.0.3"
       ]
     },
-    "@typescript-eslint/utils@8.63.0_eslint@10.6.0_typescript@6.0.3": {
+    "@typescript-eslint/utils@8.63.0_eslint@10.7.0_typescript@6.0.3": {
       "integrity": "sha512-fUKaeAvrTuQg/Tgt3nliAUSZHJM6DlCcfyEmxCvlX8kieWSStBX+5O5Fnidtc3i2JrH+9c/GL4RY2iasd/GPTA==",
       "dependencies": [
         "@eslint-community/eslint-utils",
@@ -1404,8 +1404,8 @@
     "eslint-visitor-keys@5.0.1": {
       "integrity": "sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA=="
     },
-    "eslint@10.6.0": {
-      "integrity": "sha512-6lVbcqSodALYo+4ELD0heG6lFiFxnLMuLkiMi2qV8LMp54N8tE8FT1GMH+ev4Ti00nFjNze2+Su6DsV5OQW3Dg==",
+    "eslint@10.7.0": {
+      "integrity": "sha512-GVTD7s1vdIl6UYvAfriOPeY1Df8LIZjfofLvHwde+erDHGGuHyuM6xoxRxmHiebhYuD2p1vN4wWh0XzPARSGDQ==",
       "dependencies": [
         "@eslint-community/eslint-utils",
         "@eslint-community/regexpp",
@@ -1705,8 +1705,8 @@
         "json-buffer"
       ]
     },
-    "knip@6.25.0": {
-      "integrity": "sha512-Q3n41VjOOB/aqsbxb8kallAcFKrUz3b2S5fD5pTODljVpP01t+rvAgy2x3j0Cq8yEpRRHNdar1vHuqFfGuIakQ==",
+    "knip@6.26.0": {
+      "integrity": "sha512-e9eELEEpBpGTd4H4HB7818/DYj9dMzMyUqAddfYwUN/EbSkgIjOuWEF96W/xHsmV0SDrsdXjIM+oZ2xpPzPsBA==",
       "dependencies": [
         "fdir",
         "formatly",
@@ -1832,8 +1832,8 @@
         "@jridgewell/sourcemap-codec"
       ]
     },
-    "marked@18.0.5": {
-      "integrity": "sha512-S6GcvALHg6K4ohtu4E7x0a1AqhAjp6cV8KhLSyN9qVapnzJkusVBxZRcIU9AeYsbe6P1hKDusSbEOzGyyuce6w==",
+    "marked@18.0.6": {
+      "integrity": "sha512-MrV5puXBfuiy6wl6DLaq3BtIJQAJToAd5zt/ZKhRfGRAuFPALE7/4Y7jnxRQoEgK/pBgurGqLyAuRgZ2xOjr6w==",
       "bin": true
     },
     "mdn-data@2.27.1": {
@@ -1998,8 +1998,8 @@
     "prelude-ls@1.2.1": {
       "integrity": "sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g=="
     },
-    "prettier@3.9.4": {
-      "integrity": "sha512-yWG/o/4oJfo036EKAfK6ACAoDOfHeRHx4tuxkfBZiauURiaSmYwlpOr5LQqKtIkRD2z1PLteme2WoxEnj4tHTg==",
+    "prettier@3.9.5": {
+      "integrity": "sha512-/FVl766LpUfB5vXgCYOYa0MeV/441Ia99AeICQIQFTY/Nw0roZwULcXpku5i1/m5kt/baz+s4Zogspd839HSMg==",
       "bin": true
     },
     "process-nextick-args@2.0.1": {
@@ -2237,7 +2237,7 @@
         "prelude-ls"
       ]
     },
-    "typescript-eslint@8.63.0_eslint@10.6.0_typescript@6.0.3": {
+    "typescript-eslint@8.63.0_eslint@10.7.0_typescript@6.0.3": {
       "integrity": "sha512-xgwXyzG4sK9ALkBxbyGkTMMOS+imnW65iPhxCQMK83KhxyoDNW7l+IDqEf9vMdoUidHpOoS967RCq4eMiTexwQ==",
       "dependencies": [
         "@typescript-eslint/eslint-plugin",
@@ -2500,21 +2500,21 @@
         "npm:@codemirror/state@^6.7.1",
         "npm:@codemirror/view@^6.43.6",
         "npm:@eslint/js@^10.0.1",
-        "npm:@lezer/markdown@^1.7.0",
-        "npm:@solid-primitives/storage@^4.3.5",
+        "npm:@lezer/markdown@^1.7.1",
+        "npm:@solid-primitives/storage@^4.4.0",
         "npm:@solidjs/router@~0.16.1",
         "npm:@types/js-yaml@^4.0.9",
         "npm:@types/node@^26.1.1",
         "npm:docx@^9.7.1",
         "npm:dompurify@^3.4.11",
-        "npm:eslint@^10.6.0",
+        "npm:eslint@^10.7.0",
         "npm:globals@^17.7.0",
         "npm:idb@^8.0.3",
         "npm:js-yaml@^5.2.1",
         "npm:jsdom@^29.1.1",
-        "npm:knip@^6.25.0",
-        "npm:marked@^18.0.5",
-        "npm:prettier@^3.9.4",
+        "npm:knip@^6.26.0",
+        "npm:marked@^18.0.6",
+        "npm:prettier@^3.9.5",
         "npm:solid-icons@^1.2.0",
         "npm:solid-js@^1.9.14",
         "npm:solid-toast@0.5",

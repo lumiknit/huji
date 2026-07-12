@@ -5,7 +5,7 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from "@codemirror/view";
-import { RangeSet, RangeSetBuilder } from "@codemirror/state";
+import { RangeSetBuilder } from "@codemirror/state";
 import { syntaxTree } from "@codemirror/language";
 
 const DECO = {
@@ -26,15 +26,11 @@ const DECO = {
   bullet: Decoration.mark({ class: "cm-md-bullet-mark" }),
 };
 
-function buildDecoSet(
-  view: EditorView,
-  from: number = view.viewport.from,
-  to: number = view.viewport.to,
-): DecorationSet {
+function buildDecoSet(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   const doc = view.state.doc;
-  const vpFrom = from;
-  const vpTo = to;
+  const vpFrom = view.viewport.from;
+  const vpTo = view.viewport.to;
 
   syntaxTree(view.state).iterate({
     from: vpFrom,
@@ -204,132 +200,18 @@ function buildDecoSet(
   return builder.finish();
 }
 
-// Extra padding kept around the viewport so small scrolls don't need any
-// recompute at all; only scrolling past this margin triggers new work.
-const VIEWPORT_MARGIN = 1024;
-
-type Tree = ReturnType<typeof syntaxTree>;
-
-// Walks up from `pos` to the block-level node directly under the document
-// root. Its span is exactly the region whose decorations can change when the
-// node's content/structure changes — e.g. deleting a closing fence marker
-// re-parents everything up to the next fence (or EOF) into one FencedCode
-// node, and that node's `.to` reflects it automatically.
-function topBlockRange(
-  tree: Tree,
-  pos: number,
-  side: -1 | 1,
-): { from: number; to: number } {
-  let node = tree.resolveInner(pos, side);
-  while (node.parent && node.parent !== tree.topNode) node = node.parent;
-  return { from: node.from, to: node.to };
-}
-
-function unionTopBlockRange(
-  tree: Tree,
-  from: number,
-  to: number,
-): { from: number; to: number } {
-  const start = topBlockRange(tree, from, 1);
-  const end = to > from ? topBlockRange(tree, to - 1, -1) : start;
-  return {
-    from: Math.min(start.from, end.from),
-    to: Math.max(start.to, end.to),
-  };
-}
-
-function paddedRange(view: EditorView): { from: number; to: number } {
-  return {
-    from: Math.max(0, view.viewport.from - VIEWPORT_MARGIN),
-    to: Math.min(view.state.doc.length, view.viewport.to + VIEWPORT_MARGIN),
-  };
-}
-
 export const livePreviewPlugin = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
-    // The doc range (in current-doc coordinates) for which `decorations` is
-    // known to be complete and accurate.
-    builtFrom: number;
-    builtTo: number;
 
     constructor(view: EditorView) {
-      const { from, to } = paddedRange(view);
-      this.decorations = buildDecoSet(view, from, to);
-      this.builtFrom = from;
-      this.builtTo = to;
+      this.decorations = buildDecoSet(view);
     }
 
     update(update: ViewUpdate) {
-      const view = update.view;
-      if (update.docChanged) {
-        this.decorations = this.decorations.map(update.changes);
-        this.builtFrom = update.changes.mapPos(this.builtFrom, -1);
-        this.builtTo = update.changes.mapPos(this.builtTo, 1);
-        this.patchChangedBlocks(update);
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = buildDecoSet(update.view);
       }
-      this.ensureViewportCovered(view);
-    }
-
-    // Re-derives decorations only for the block(s) touched by this edit,
-    // instead of rebuilding the whole built range.
-    private patchChangedBlocks(update: ViewUpdate) {
-      const oldTree = syntaxTree(update.startState);
-      const newTree = syntaxTree(update.state);
-      let patchFrom = Infinity;
-      let patchTo = -Infinity;
-
-      update.changes.iterChangedRanges((fromA, toA, fromB, toB) => {
-        const oldRange = unionTopBlockRange(oldTree, fromA, toA);
-        const mappedOldFrom = update.changes.mapPos(oldRange.from, -1);
-        const mappedOldTo = update.changes.mapPos(oldRange.to, 1);
-        const newRange = unionTopBlockRange(newTree, fromB, toB);
-        patchFrom = Math.min(patchFrom, mappedOldFrom, newRange.from);
-        patchTo = Math.max(patchTo, mappedOldTo, newRange.to);
-      });
-      if (patchFrom > patchTo) return;
-
-      const view = update.view;
-      const from = Math.max(this.builtFrom, patchFrom, 0);
-      const to = Math.min(this.builtTo, patchTo, view.state.doc.length);
-      if (from >= to) return;
-      this.replaceRange(view, from, to);
-    }
-
-    // Keeps `decorations` covering the (padded) viewport, evicting anything
-    // outside it so the set doesn't grow unbounded as the user scrolls
-    // around a long document.
-    private ensureViewportCovered(view: EditorView) {
-      const { from: wantFrom, to: wantTo } = paddedRange(view);
-      if (wantFrom === this.builtFrom && wantTo === this.builtTo) return;
-
-      if (wantFrom >= this.builtTo || wantTo <= this.builtFrom) {
-        // Jumped somewhere disjoint from what's built (e.g. search jump) —
-        // nothing salvageable, just rebuild the new window from scratch.
-        this.decorations = buildDecoSet(view, wantFrom, wantTo);
-      } else {
-        if (wantFrom < this.builtFrom)
-          this.replaceRange(view, wantFrom, this.builtFrom);
-        if (wantTo > this.builtTo)
-          this.replaceRange(view, this.builtTo, wantTo);
-        this.decorations = this.decorations.update({
-          filter: (from, to) => !(to <= wantFrom || from >= wantTo),
-        });
-      }
-      this.builtFrom = wantFrom;
-      this.builtTo = wantTo;
-    }
-
-    // Recomputes decorations for [from, to) and splices them into the
-    // existing set, leaving decorations outside that range untouched.
-    private replaceRange(view: EditorView, from: number, to: number) {
-      const kept = this.decorations.update({
-        filterFrom: from,
-        filterTo: to,
-        filter: () => false,
-      });
-      const fresh = buildDecoSet(view, from, to);
-      this.decorations = RangeSet.join([kept, fresh]);
     }
   },
   {
@@ -439,11 +321,6 @@ export const livePreviewTheme = EditorView.theme({
 
   ".cm-md-bullet-mark": { color: "var(--c-muted)" },
 
-  // Same specificity as highlightActiveLine()'s baseTheme rule for
-  // .cm-activeLine; this wins the tie because livePreviewTheme is registered
-  // after highlightActiveLine() in cm_setup.ts (later stylesheet wins ties),
-  // so no !important needed — and .cm-line.cm-md-code-block (2 classes)
-  // still legitimately outranks this 1-class rule on code-fence lines.
   ".cm-activeLine": { backgroundColor: "transparent" },
 
   ".cm-md-marker": { color: "transparent", fontSize: "1px" },
