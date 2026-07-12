@@ -1,15 +1,17 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, type Signal } from "solid-js";
 import { makePersisted } from "@solid-primitives/storage";
 import { hujiSettingsStorage } from "../lib/db/settings-storage";
 
 export const SERIF_STACK = "'BuiltinSerif', serif";
 const resolveFont = (font: string) => font || SERIF_STACK;
 
-const persisted = <T>(key: string, def: T) =>
-  makePersisted(createSignal<T>(def), {
+const persisted = <T>(key: string, def: T) => {
+  const sig: Signal<T> = createSignal<T>(def);
+  return makePersisted<T, Signal<T>>(sig, {
     name: key,
     storage: hujiSettingsStorage,
   });
+};
 
 export const [editorFont, setEditorFont] = persisted("editorFont", "");
 export const [editorFontSize, setEditorFontSize_] = persisted(
@@ -171,7 +173,13 @@ export const useSettingsInit = () => {
     const light = themeLight();
     const dark = themeDark();
     const cl = document.documentElement.classList;
-    [...cl].filter((c) => c.startsWith("theme-")).forEach((c) => cl.remove(c));
+    const toRemove: string[] = [];
+    cl.forEach((c) => {
+      if (c.startsWith("theme-")) {
+        toRemove.push(c);
+      }
+    });
+    toRemove.forEach((c) => cl.remove(c));
     cl.add(`theme-light-${light}`);
     cl.add(`theme-dark-${dark}`);
 

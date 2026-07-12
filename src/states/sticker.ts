@@ -1,4 +1,4 @@
-import { createSignal, batch } from "solid-js";
+import { createSignal, batch, type Signal } from "solid-js";
 import { makePersisted } from "@solid-primitives/storage";
 import { hujiSettingsStorage } from "../lib/db/settings-storage";
 
@@ -6,7 +6,7 @@ export type StickerLayout =
   "left" | "left-long" | "right" | "right-long" | "collapsed";
 
 const persisted = <T>(key: string, def: T) =>
-  makePersisted(createSignal<T>(def), {
+  makePersisted<T, Signal<T>>(createSignal<T>(def), {
     name: key,
     storage: hujiSettingsStorage,
   });
