@@ -14,7 +14,7 @@
     "npm:@types/js-yaml@^4.0.9": "4.0.9",
     "npm:@types/node@^26.1.1": "26.1.1",
     "npm:docx@^9.7.1": "9.7.1",
-    "npm:dompurify@^3.4.11": "3.4.11",
+    "npm:dompurify@^3.4.12": "3.4.12",
     "npm:eslint@^10.7.0": "10.7.0",
     "npm:globals@^17.7.0": "17.7.0",
     "npm:idb@^8.0.3": "8.0.3",
@@ -535,8 +535,6 @@
     "@napi-rs/wasm-runtime@1.1.6_@emnapi+core@1.11.0_@emnapi+runtime@1.11.0": {
       "integrity": "sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==",
       "dependencies": [
-        "@emnapi/core@1.11.0",
-        "@emnapi/runtime@1.11.0",
         "@tybys/wasm-util"
       ]
     },
@@ -1362,8 +1360,8 @@
         "xml-js"
       ]
     },
-    "dompurify@3.4.11": {
-      "integrity": "sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==",
+    "dompurify@3.4.12": {
+      "integrity": "sha512-zQvGet8Z2sWbQhCmfFz/T5QWH2oBmjnqK3qvOjaqaNLrLEF912WamU+ohnTp0TCep/MFVHpdJuCZEdFOdTnEFg==",
       "optionalDependencies": [
         "@types/trusted-types"
       ]
@@ -2506,7 +2504,7 @@
         "npm:@types/js-yaml@^4.0.9",
         "npm:@types/node@^26.1.1",
         "npm:docx@^9.7.1",
-        "npm:dompurify@^3.4.11",
+        "npm:dompurify@^3.4.12",
         "npm:eslint@^10.7.0",
         "npm:globals@^17.7.0",
         "npm:idb@^8.0.3",

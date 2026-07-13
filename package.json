@@ -1,7 +1,7 @@
 {
   "name": "huji",
   "private": true,
-  "version": "0.5.2",
+  "version": "0.5.3",
   "type": "module",
   "author": "lumiknit <aasr4r4@gmail.com>",
   "license": "MPL-2.0",
@@ -26,7 +26,7 @@
     "@solid-primitives/storage": "^4.4.0",
     "@solidjs/router": "^0.16.1",
     "docx": "^9.7.1",
-    "dompurify": "^3.4.11",
+    "dompurify": "^3.4.12",
     "idb": "^8.0.3",
     "js-yaml": "^5.2.1",
     "marked": "^18.0.6",

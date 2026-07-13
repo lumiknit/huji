@@ -203,13 +203,20 @@ function buildDecoSet(view: EditorView): DecorationSet {
 export const livePreviewPlugin = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
+    tree: ReturnType<typeof syntaxTree>;
 
     constructor(view: EditorView) {
+      this.tree = syntaxTree(view.state);
       this.decorations = buildDecoSet(view);
     }
 
     update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged) {
+      const tree = syntaxTree(update.state);
+      // Background parsing can finish after the initial build, growing the
+      // tree without a docChanged/viewportChanged update firing — recompute
+      // so decorations (e.g. headings) don't go stale in that region.
+      if (update.docChanged || update.viewportChanged || tree !== this.tree) {
+        this.tree = tree;
         this.decorations = buildDecoSet(update.view);
       }
     }
