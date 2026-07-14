@@ -634,6 +634,12 @@ menu[popover] > button {
   font-size: 0.875rem;
 }
 
+menu[popover] > button:hover,
+menu[popover] > button:focus-visible {
+  background: var(--c-border);
+  outline: none;
+}
+
 menu[popover] > hr {
   border: none;
   border-top: 1px solid var(--c-border);
@@ -1163,7 +1169,7 @@ button.count-label.dim,
   letter-spacing: 0.04em;
 }
 
-.outline-num {
+.outline-table .outline-num {
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;

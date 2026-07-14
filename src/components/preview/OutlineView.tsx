@@ -154,7 +154,7 @@ const OutlineView: Component<Props> = (props) => {
                 </td>
                 <td class="outline-heading">
                   {r.entry.meta.heading ? (
-                    "#".repeat(r.entry.meta.level) + r.entry.meta.heading
+                    "#".repeat(r.entry.meta.level) + " " + r.entry.meta.heading
                   ) : (
                     <em>(untitled)</em>
                   )}
@@ -192,7 +192,7 @@ const OutlineView: Component<Props> = (props) => {
           </tr>
           <tr>
             <td />
-            <td>Avg</td>
+            <td>Avg.</td>
             <td class="outline-num">
               {checkedCount() > 0
                 ? (totals().chars / checkedCount()).toFixed(1)
@@ -216,14 +216,13 @@ const OutlineView: Component<Props> = (props) => {
             <td class="outline-num">{(totals().chars / 600).toFixed(1)}</td>
             <td class="outline-num">{(totals().words / 250).toFixed(1)}</td>
           </tr>
-          <tr>
-            <td />
-            <td>Reading time</td>
-            <td class="outline-num">{(totals().chars / 600).toFixed(1)} min</td>
-            <td class="outline-num">{(totals().words / 200).toFixed(1)} min</td>
-          </tr>
         </tfoot>
       </table>
+
+      <ul>
+        <li>Manuscript page: 200 chars 원고지</li>
+        <li>A5 page = reading minutes</li>
+      </ul>
     </div>
   );
 };

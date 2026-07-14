@@ -742,10 +742,12 @@ const EditorPage: Component = () => {
             </button>
           )}
         </Show>
-        <button onClick={handleAddSectionBefore}>
-          {" "}
-          <TbOutlinePlus /> Create Prev
-        </button>
+        <Show when={!prevSection()}>
+          <button onClick={handleAddSectionBefore}>
+            {" "}
+            <TbOutlinePlus /> Create Prev
+          </button>
+        </Show>
       </div>
 
       <div>
@@ -799,13 +801,15 @@ const EditorPage: Component = () => {
             </button>
           )}
         </Show>
-        <button
-          onClick={() =>
-            handleAddSection(editorState.activeSectionId() ?? undefined)
-          }
-        >
-          <TbOutlinePlus /> Create Next
-        </button>
+        <Show when={!nextSection()}>
+          <button
+            onClick={() =>
+              handleAddSection(editorState.activeSectionId() ?? undefined)
+            }
+          >
+            <TbOutlinePlus /> Create Next
+          </button>
+        </Show>
       </div>
 
       <div class="section-preview-container section-preview-container-after">

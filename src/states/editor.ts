@@ -94,7 +94,7 @@ const sectionLabels = createMemo(() => {
     for (let l = m.level + 1; l <= 6; l++) counters[l] = 0;
     const parts: number[] = [];
     for (let l = 1; l <= m.level; l++) parts.push(counters[l]);
-    map.set(m.id, parts.join("-") + ". " + m.heading);
+    map.set(m.id, parts.join(".") + ". " + m.heading);
   }
   return map;
 });

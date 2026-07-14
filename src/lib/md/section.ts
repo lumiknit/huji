@@ -109,7 +109,7 @@ export const buildSectionLabel = (
     if (i === index) {
       const parts: number[] = [];
       for (let l = 1; l <= m.level; l++) parts.push(counters[l]);
-      result = parts.join("-") + ". " + m.heading;
+      result = parts.join(".") + ". " + m.heading;
     }
   }
   return result;
