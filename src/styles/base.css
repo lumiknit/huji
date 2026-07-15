@@ -554,7 +554,7 @@ ul.files > li.version-item .file-info span:first-child {
   background: var(--c-bg);
   border: 1px solid var(--c-border);
   border-radius: 0.4rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow);
   padding: 0.2rem;
 }
 
@@ -650,7 +650,7 @@ menu[popover] {
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
   list-style: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow);
 }
 
 menu[popover] > button {

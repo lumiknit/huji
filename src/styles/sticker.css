@@ -1,8 +1,4 @@
 /* ── Sticker ── */
-:root {
-  --sticker-shadow: 0 0.125rem 0.25rem #4441;
-}
-
 .sticker {
   position: fixed;
   top: var(--sp-sm);
@@ -12,7 +8,7 @@
   background: var(--c-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
-  box-shadow: var(--sticker-shadow);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -153,5 +149,5 @@
   border-radius: 999px;
   background: var(--c-bg);
   border: 1px solid var(--c-border);
-  box-shadow: var(--sticker-shadow);
+  box-shadow: var(--shadow);
 }

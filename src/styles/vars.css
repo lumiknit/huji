@@ -1,5 +1,6 @@
 :root {
   --radius: 0.25rem;
+  --shadow: 0 0.125rem 0.25rem #4441;
   --sp-xs: 0.25rem;
   --sp-sm: 0.5rem;
   --sp-md: 1rem;
