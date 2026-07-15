@@ -114,6 +114,11 @@ export const [stickerWidth, setStickerWidth_] = persisted("stickerWidth", 320);
 export const setStickerWidth = (v: number) =>
   setStickerWidth_(Math.min(480, Math.max(180, v)));
 
+export const [stickerSide, setStickerSide] = persisted<"left" | "right">(
+  "stickerSide",
+  "right",
+);
+
 export const [lightEditor, setLightEditor, initLightEditor] = persisted(
   "lightEditor",
   true,

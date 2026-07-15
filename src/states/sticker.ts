@@ -2,8 +2,7 @@ import { createSignal, batch, type Signal } from "solid-js";
 import { makePersisted } from "@solid-primitives/storage";
 import { hujiSettingsStorage } from "../lib/db/settings-storage";
 
-export type StickerLayout =
-  "left" | "left-long" | "right" | "right-long" | "collapsed";
+export type StickerPinState = "off" | "unpinned" | "pinned";
 
 const persisted = <T>(key: string, def: T) =>
   makePersisted<T, Signal<T>>(createSignal<T>(def), {
@@ -11,34 +10,43 @@ const persisted = <T>(key: string, def: T) =>
     storage: hujiSettingsStorage,
   });
 
-export const [stickerOpen, setStickerOpen] = persisted("stickerOpen", false);
-export const [stickerSectionId, setStickerSectionId] = createSignal<
-  string | null
->(null);
-export const [stickerLayout, setStickerLayout] = persisted<StickerLayout>(
-  "stickerLayout",
-  "right",
+export const [stickerPinState, setStickerPinState] = persisted<StickerPinState>(
+  "stickerPinState",
+  "off",
 );
 
-export const cycleLayout = () => {
-  setStickerLayout((l) => {
-    if (l === "left") return "left-long";
-    if (l === "left-long") return "right";
-    if (l === "right") return "right-long";
-    if (l === "right-long") return "collapsed";
-    return "left";
+/**
+ * Whether the sticker is currently expanded (vs shrunk to a FAB).
+ * Not persisted — a shown sticker always starts expanded.
+ */
+export const [stickerVisible, setStickerVisible] = createSignal(true);
+
+/** Section shown in the top (0) / bottom (1) slot. null = OFF. */
+export const [stickerSectionIds, setStickerSectionIds] = persisted<
+  (string | null)[]
+>("stickerSectionIds", [null, null]);
+
+export const setStickerSectionSlot = (slot: number, id: string | null) => {
+  setStickerSectionIds((ids) => {
+    const next = [...ids];
+    next[slot] = id;
+    return next;
   });
 };
+
+export const stickerOpen = () => stickerPinState() !== "off";
 
 export const openSticker = (sectionId?: string) => {
   batch(() => {
-    if (sectionId) setStickerSectionId(sectionId);
-    if (stickerLayout() === "collapsed") setStickerLayout("right");
-    setStickerOpen(true);
+    if (sectionId && stickerSectionIds()[0] == null) {
+      setStickerSectionSlot(0, sectionId);
+    }
+    if (stickerPinState() === "off") setStickerPinState("unpinned");
+    setStickerVisible(true);
   });
 };
 
-export const closeSticker = () => setStickerOpen(false);
+export const closeSticker = () => setStickerPinState("off");
 
 export const toggleSticker = () => {
   if (stickerOpen()) {
@@ -47,3 +55,10 @@ export const toggleSticker = () => {
     openSticker();
   }
 };
+
+export const togglePin = () => {
+  setStickerPinState((p) => (p === "pinned" ? "unpinned" : "pinned"));
+};
+
+export const collapseToFab = () => setStickerVisible(false);
+export const expandFromFab = () => setStickerVisible(true);

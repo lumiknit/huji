@@ -4,14 +4,17 @@ import {
   createMemo,
   createResource,
   createEffect,
+  onMount,
+  onCleanup,
   Show,
   For,
 } from "solid-js";
 import {
-  TbOutlineX,
   TbOutlineSearch,
   TbOutlineChevronDown,
   TbOutlineChevronUp,
+  TbOutlinePin,
+  TbFillPinned,
   TbOutlineNote,
 } from "solid-icons/tb";
 
@@ -19,18 +22,18 @@ import { getContent } from "../lib/db/content";
 import { renderMarkdown } from "../lib/md/render";
 import { editorState } from "../states/editor";
 import {
-  stickerSectionId,
-  setStickerSectionId,
-  stickerLayout,
-  cycleLayout,
-  closeSticker,
+  stickerPinState,
+  stickerVisible,
+  setStickerVisible,
+  stickerSectionIds,
+  setStickerSectionSlot,
+  togglePin,
 } from "../states/sticker";
-import { stickerWidth } from "../states/settings";
+import { stickerSide, stickerWidth } from "../states/settings";
 
 // ── Inline search helpers ──
 
 const highlightMatches = (container: HTMLElement, query: string): Element[] => {
-  // Clear previous highlights
   container.querySelectorAll("mark.sticker-hl").forEach((m) => {
     const parent = m.parentNode;
     if (parent) {
@@ -73,10 +76,40 @@ const highlightMatches = (container: HTMLElement, query: string): Element[] => {
   return results;
 };
 
+// ── Slot (top/bottom body) ──
+
+const StickerSlot: Component<{
+  sectionId: string | null;
+  bodyRef: (el: HTMLElement) => void;
+}> = (props) => {
+  const [content] = createResource(
+    () => props.sectionId,
+    async (id) => {
+      if (!id) return "";
+      const row = await getContent(id);
+      return row?.content ?? "";
+    },
+  );
+  const html = createMemo(() => renderMarkdown(content() ?? ""));
+
+  return (
+    <Show when={props.sectionId}>
+      <div class="sticker-slot">
+        <article
+          ref={(el) => props.bodyRef(el)}
+          class="sticker-body md-body"
+          innerHTML={html()}
+        />
+      </div>
+    </Show>
+  );
+};
+
 // ── Main component ──
 
 const Sticker: Component = () => {
-  let bodyEl!: HTMLElement;
+  let rootEl!: HTMLDivElement;
+  let bodyEls: (HTMLElement | undefined)[] = [undefined, undefined];
   let searchInputEl!: HTMLInputElement;
 
   const [searchQuery, setSearchQuery] = createSignal("");
@@ -84,44 +117,14 @@ const Sticker: Component = () => {
   const [showSearch, setShowSearch] = createSignal(false);
   const [matches, setMatches] = createSignal<Element[]>([]);
 
-  // Section selector
   const bodyMetas = createMemo(() =>
     editorState.metas().filter((m) => m.level >= 0),
   );
 
-  // Resolve default to first body section
-  const resolvedSectionId = createMemo(() => {
-    const id = stickerSectionId();
-    if (id) return id;
-    return bodyMetas()[0]?.id ?? null;
-  });
-
-  const [content] = createResource(resolvedSectionId, async (id) => {
-    if (!id) return "";
-    const row = await getContent(id);
-    return row?.content ?? "";
-  });
-
-  const html = createMemo(() => renderMarkdown(content() ?? ""));
-
-  // Auto-focus search input when opened
-  createEffect(() => {
-    if (showSearch() && searchInputEl) {
-      searchInputEl.focus();
-    }
-  });
-
-  // Reset scroll and clear stale search matches on section change
-  createEffect(() => {
-    resolvedSectionId();
-    if (bodyEl) bodyEl.scrollTop = 0;
-    setMatches([]);
-    setMatchIdx(0);
-  });
-
   const runSearch = (q: string) => {
-    if (!bodyEl) return;
-    const found = highlightMatches(bodyEl, q);
+    const found = bodyEls
+      .filter((el): el is HTMLElement => !!el)
+      .flatMap((el) => highlightMatches(el, q));
     setMatches(found);
     setMatchIdx(0);
     if (found.length > 0) found[0].scrollIntoView({ block: "nearest" });
@@ -135,71 +138,105 @@ const Sticker: Component = () => {
     m[next].scrollIntoView({ block: "nearest" });
   };
 
-  // Close search when layout collapses
+  // Auto-focus search input when opened
   createEffect(() => {
-    if (layout() === "collapsed" && showSearch()) {
-      setShowSearch(false);
-      setSearchQuery("");
-      setMatches([]);
-      setMatchIdx(0);
+    if (showSearch() && searchInputEl) {
+      searchInputEl.focus();
     }
   });
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
-      if (showSearch()) {
-        setShowSearch(false);
-        setSearchQuery("");
-        runSearch("");
-      } else {
-        closeSticker();
+  // Reset stale search matches when the visible sections change
+  createEffect(() => {
+    stickerSectionIds();
+    setMatches([]);
+    setMatchIdx(0);
+    if (showSearch()) runSearch(searchQuery());
+  });
+
+  // Collapse to FAB on outside click while unpinned
+  onMount(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      if (
+        stickerPinState() === "unpinned" &&
+        stickerVisible() &&
+        rootEl &&
+        !rootEl.contains(e.target as Node)
+      ) {
+        setStickerVisible(false);
       }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    onCleanup(() => document.removeEventListener("pointerdown", onPointerDown));
+  });
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape" && showSearch()) {
+      setShowSearch(false);
+      setSearchQuery("");
+      runSearch("");
     }
   };
 
-  const layout = stickerLayout;
+  const sectionSelect = (slot: number) => (
+    <select
+      class="sticker-section-select"
+      value={stickerSectionIds()[slot] ?? ""}
+      onChange={(e) =>
+        setStickerSectionSlot(slot, e.currentTarget.value || null)
+      }
+    >
+      <option value="">(Off)</option>
+      <For each={bodyMetas()}>
+        {(m, i) => (
+          <option value={m.id}>
+            {editorState.sectionLabels().get(m.id) || `Section ${i() + 1}`}
+          </option>
+        )}
+      </For>
+    </select>
+  );
 
   return (
-    <div
-      class="sticker"
-      onKeyDown={handleKeyDown}
-      style={{
-        width:
-          layout() !== "collapsed"
-            ? `min(75vw, ${stickerWidth()}px)`
-            : undefined,
-      }}
-      classList={{
-        "sticker-left": layout() === "left" || layout() === "left-long",
-        "sticker-right": layout() === "right" || layout() === "right-long",
-        "sticker-long": layout() === "left-long" || layout() === "right-long",
-        "sticker-collapsed": layout() === "collapsed",
-      }}
-    >
-      {/* Header */}
-      <div class="sticker-header">
-        <button
-          class="sticker-btn sticker-icon-btn"
-          title="Change layout"
-          onClick={cycleLayout}
+    <Show
+      when={stickerVisible()}
+      fallback={
+        <div
+          class="sticker-fab"
+          classList={{ [`sticker-${stickerSide()}`]: true }}
         >
-          <TbOutlineNote class="sticker-icon" />
-        </button>
-        <Show when={layout() !== "collapsed"}>
-          <select
-            class="sticker-section-select"
-            value={resolvedSectionId() ?? ""}
-            onChange={(e) => setStickerSectionId(e.currentTarget.value)}
+          <button
+            class="sticker-fab-btn"
+            title="Expand sticker"
+            onClick={() => setStickerVisible(true)}
           >
-            <For each={bodyMetas()}>
-              {(m, i) => (
-                <option value={m.id}>
-                  {editorState.sectionLabels().get(m.id) ||
-                    `Section ${i() + 1}`}
-                </option>
-              )}
-            </For>
-          </select>
+            <TbOutlineNote class="sticker-icon" />
+          </button>
+        </div>
+      }
+    >
+      <div
+        ref={rootEl!}
+        class="sticker"
+        onKeyDown={handleKeyDown}
+        style={{ width: `min(75vw, ${stickerWidth()}px)` }}
+        classList={{ [`sticker-${stickerSide()}`]: true }}
+      >
+        {/* Header */}
+        <div class="sticker-header">
+          <button
+            class="sticker-btn sticker-icon-btn"
+            classList={{ active: stickerPinState() === "pinned" }}
+            title={stickerPinState() === "pinned" ? "Unpin" : "Pin"}
+            onClick={togglePin}
+          >
+            <Show
+              when={stickerPinState() === "pinned"}
+              fallback={<TbOutlinePin class="sticker-icon" />}
+            >
+              <TbFillPinned class="sticker-icon" />
+            </Show>
+          </button>
+          {sectionSelect(0)}
           <button
             class="sticker-btn"
             title="Search in sticker"
@@ -213,55 +250,52 @@ const Sticker: Component = () => {
           >
             <TbOutlineSearch />
           </button>
-        </Show>
-        <button
-          class="sticker-btn"
-          title="Close sticker"
-          onClick={closeSticker}
-        >
-          <TbOutlineX />
-        </button>
-      </div>
-
-      {/* Search bar */}
-      <Show when={showSearch() && layout() !== "collapsed"}>
-        <div class="sticker-search">
-          <input
-            ref={searchInputEl!}
-            type="search"
-            placeholder="Search…"
-            value={searchQuery()}
-            onInput={(e) => {
-              const q = e.currentTarget.value;
-              setSearchQuery(q);
-              runSearch(q);
-            }}
-          />
-          <span class="sticker-search-count">
-            {matches().length > 0
-              ? `${matchIdx() + 1}/${matches().length}`
-              : "0"}
-          </span>
-          <button class="sticker-btn" onClick={() => goToMatch(-1)}>
-            <TbOutlineChevronUp />
-          </button>
-          <button class="sticker-btn" onClick={() => goToMatch(1)}>
-            <TbOutlineChevronDown />
-          </button>
         </div>
-      </Show>
 
-      {/* Body */}
-      <Show when={layout() !== "collapsed"}>
-        <article
-          ref={(el) => {
-            bodyEl = el;
-          }}
-          class="sticker-body md-body"
-          innerHTML={html()}
-        />
-      </Show>
-    </div>
+        {/* Search bar */}
+        <Show when={showSearch()}>
+          <div class="sticker-search">
+            <input
+              ref={searchInputEl!}
+              type="search"
+              placeholder="Search…"
+              value={searchQuery()}
+              onInput={(e) => {
+                const q = e.currentTarget.value;
+                setSearchQuery(q);
+                runSearch(q);
+              }}
+            />
+            <span class="sticker-search-count">
+              {matches().length > 0
+                ? `${matchIdx() + 1}/${matches().length}`
+                : "0"}
+            </span>
+            <button class="sticker-btn" onClick={() => goToMatch(-1)}>
+              <TbOutlineChevronUp />
+            </button>
+            <button class="sticker-btn" onClick={() => goToMatch(1)}>
+              <TbOutlineChevronDown />
+            </button>
+          </div>
+        </Show>
+
+        {/* Body slots */}
+        <div class="sticker-slots">
+          <StickerSlot
+            sectionId={stickerSectionIds()[0] ?? null}
+            bodyRef={(el) => (bodyEls[0] = el)}
+          />
+          <StickerSlot
+            sectionId={stickerSectionIds()[1] ?? null}
+            bodyRef={(el) => (bodyEls[1] = el)}
+          />
+        </div>
+
+        {/* Footer */}
+        <div class="sticker-footer">{sectionSelect(1)}</div>
+      </div>
+    </Show>
   );
 };
 

@@ -1,0 +1,161 @@
+/* ── Sticker ── */
+.sticker {
+  position: fixed;
+  top: var(--sp-md);
+  bottom: var(--sp-md);
+  z-index: 100;
+  width: min(75svw, 20rem);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sticker-left {
+  left: 0.5rem;
+}
+
+.sticker-right {
+  right: 0.5rem;
+}
+
+.sticker-header,
+.sticker-footer {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--sp-xs);
+  padding: var(--sp-xs);
+  background: var(--c-bg-subtle);
+}
+
+.sticker-header {
+  border-bottom: 1px solid var(--c-border);
+}
+
+.sticker-footer {
+  border-top: 1px solid var(--c-border);
+}
+
+.sticker-icon {
+  flex-shrink: 0;
+  color: var(--c-muted);
+}
+
+.sticker-section-select {
+  flex: 1;
+  min-width: 0;
+  height: 1.6rem;
+  padding: 0 var(--sp-xs);
+  font-size: 0.75rem;
+}
+
+.sticker-btn {
+  flex-shrink: 0;
+  padding: 0 0.3rem;
+  height: 1.6rem;
+  min-width: 1.6rem;
+  font-size: 0.8rem;
+}
+
+.sticker-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sticker-btn.active {
+  color: var(--c-primary);
+}
+
+.sticker-search {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  padding: var(--sp-xs);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.sticker-search input {
+  flex: 1;
+  min-width: 0;
+  height: 1.6rem;
+  font-size: 0.8rem;
+  padding: 0 var(--sp-xs);
+}
+
+.sticker-search-count {
+  font-size: 0.75rem;
+  color: var(--c-muted);
+  white-space: nowrap;
+}
+
+/* Wrapper holding the top/bottom body slots; grows to fill remaining height */
+.sticker-slots {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sticker-slot {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sticker-slot + .sticker-slot {
+  border-top: 1px solid var(--c-border);
+}
+
+.sticker-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: var(--sp-xs) var(--sp-sm);
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.sticker-body mark.sticker-hl {
+  background: var(--c-primary);
+  color: var(--c-primary-fg);
+  border-radius: 2px;
+}
+
+/* Shrunk-to-FAB state (unpinned + clicked outside) */
+.sticker-fab {
+  position: fixed;
+  top: 100px;
+  z-index: 100;
+  width: auto;
+  height: auto;
+}
+
+.sticker-fab.sticker-left {
+  left: 0.5rem;
+}
+
+.sticker-fab.sticker-right {
+  right: 0.5rem;
+}
+
+.sticker-fab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}

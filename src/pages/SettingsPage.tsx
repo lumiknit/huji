@@ -53,6 +53,8 @@ import {
   setMaxWidth,
   stickerWidth,
   setStickerWidth,
+  stickerSide,
+  setStickerSide,
   defaultRemoteProvider,
   setDefaultRemoteProvider,
   saveFormat,
@@ -540,6 +542,19 @@ const SettingsPage: Component = () => {
             value={stickerWidth()}
             onChange={(e) => setStickerWidth(Number(e.currentTarget.value))}
           />
+        </label>
+
+        <label>
+          Sticker side
+          <select
+            value={stickerSide()}
+            onChange={(e) =>
+              setStickerSide(e.currentTarget.value as "left" | "right")
+            }
+          >
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
         </label>
       </section>
 
