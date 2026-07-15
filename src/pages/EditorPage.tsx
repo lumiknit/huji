@@ -56,6 +56,8 @@ import {
   showWords,
   setShowWords,
   autoHideToolbar,
+  stickerWidth,
+  stickerSide,
 } from "../states/settings";
 import { loadRawMarkdown, downloadBlob, packMDBlob } from "../lib/export";
 import { sanitizeFilename, packBackupName } from "../lib/path";
@@ -73,7 +75,12 @@ import FindReplaceModal from "../components/FindReplaceModal";
 import CharNormalizeModal from "../components/CharNormalizeModal";
 import Sticker from "../components/Sticker";
 import { resetFindState, loadFindContents } from "../states/find";
-import { stickerOpen, toggleSticker } from "../states/sticker";
+import {
+  stickerOpen,
+  toggleSticker,
+  stickerPinState,
+  stickerVisible,
+} from "../states/sticker";
 import ContextSection from "../components/editor/ContextSection";
 import SaveOrBackupButton from "../components/editor/SaveOrBackupButton";
 import type { SectionMeta } from "../lib/db/schema";
@@ -130,6 +137,16 @@ const EditorPage: Component = () => {
   const bodyMetas = createMemo(() =>
     editorState.metas().filter((m) => m.level >= 0),
   );
+
+  // Pinned sticker acts like a sidebar: reserve its width on its side so the
+  // whole page (nav included) stays centered within the remaining space.
+  const pinnedStickerWidth = createMemo(() =>
+    stickerPinState() === "pinned" && stickerVisible() ? stickerWidth() + 8 : 0,
+  );
+  const editorOffset = createMemo(() => ({
+    left: stickerSide() === "left" ? pinnedStickerWidth() : 0,
+    right: stickerSide() === "right" ? pinnedStickerWidth() : 0,
+  }));
 
   const sectionLabels = editorState.sectionLabels;
 
@@ -564,258 +581,264 @@ const EditorPage: Component = () => {
 
   return (
     <main
+      class="editor-main"
       style={{
         "padding-top": autoHideToolbar() ? "6rem" : undefined,
+        "--editor-left-offset": `${editorOffset().left}px`,
+        "--editor-right-offset": `${editorOffset().right}px`,
       }}
     >
-      <button
-        class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}
-        onClick={handleScrollIndicatorClick}
-        title="Scroll editor into view"
-      >
-        {scrollPct()}%
-      </button>
-      <Show when={showFind()}>
-        <FindReplaceModal
-          fileId={params.fileId}
-          commander={editorCommander}
-          onClose={() => setShowFind(false)}
-        />
-      </Show>
-      <Show when={showCharNorm()}>
-        <CharNormalizeModal onClose={() => setShowCharNorm(false)} />
-      </Show>
-      <Show when={stickerOpen()}>
-        <Sticker />
-      </Show>
-      <Show when={autoHideToolbar() && toolbarHidden()}>
-        <button class="toolbar-chip" onClick={() => setToolbarHidden(false)}>
-          <Show when={activeSectionLabel()}>
-            {(l) => (
-              <>
-                <span class="chip-idx">{l().idx}</span>
-                <span class="chip-heading">{l().heading}</span>
-                <span class="chip-sep">·</span>
-              </>
+      <div class="editor-main-inner">
+        <button
+          class={`scroll-pct-indicator${showScrollPct() ? " visible" : ""}`}
+          onClick={handleScrollIndicatorClick}
+          title="Scroll editor into view"
+        >
+          {scrollPct()}%
+        </button>
+        <Show when={showFind()}>
+          <FindReplaceModal
+            fileId={params.fileId}
+            commander={editorCommander}
+            onClose={() => setShowFind(false)}
+          />
+        </Show>
+        <Show when={showCharNorm()}>
+          <CharNormalizeModal onClose={() => setShowCharNorm(false)} />
+        </Show>
+        <Show when={stickerOpen()}>
+          <Sticker />
+        </Show>
+        <Show when={autoHideToolbar() && toolbarHidden()}>
+          <button class="toolbar-chip" onClick={() => setToolbarHidden(false)}>
+            <Show when={activeSectionLabel()}>
+              {(l) => (
+                <>
+                  <span class="chip-idx">{l().idx}</span>
+                  <span class="chip-heading">{l().heading}</span>
+                  <span class="chip-sep">·</span>
+                </>
+              )}
+            </Show>
+            <span classList={{ dim: editorState.saveStatus() !== "saved" }}>
+              {countLabel()}
+            </span>
+            <span class="chip-sep">·</span>
+            <TbOutlineLayoutNavbarExpand />
+          </button>
+        </Show>
+        <FileDrop onDrop={handleFileDrop} label="Insert as raw text" />
+        <Show when={!(autoHideToolbar() && toolbarHidden())}>
+          <Toolbar
+            title={`Edit — ${editorState.filename()}`}
+            class={autoHideToolbar() ? "toolbar-autohide" : ""}
+          >
+            <A href="/" title="File list">
+              <TbOutlineHome />
+            </A>
+            <ToggleMenu label="File">
+              <button onClick={toggleSticker}>
+                <TbOutlineNote />{" "}
+                {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
+              </button>
+              <hr />
+              <button onClick={handleDuplicate}>
+                <TbOutlineCopy /> Duplicate
+              </button>
+              <hr />
+              <button onClick={handleDownload}>
+                <TbOutlineDownload /> Download (.md)
+              </button>
+              <button onClick={handleShare}>
+                <TbOutlineShare /> Share
+              </button>
+              <Show when={canBackup()}>
+                <button onClick={() => handleBackup()}>
+                  <TbOutlineCloudUpload /> Backup to{" "}
+                  {defaultRemoteProvider() || "cloud"}
+                </button>
+              </Show>
+            </ToggleMenu>
+
+            <ToggleMenu label="Edit">
+              <button onClick={() => editorCommander.undo()}>
+                <TbOutlineRotate /> Undo
+              </button>
+              <button onClick={() => editorCommander.redo()}>
+                <TbOutlineRotateClockwise /> Redo
+              </button>
+              <hr />
+              <button onClick={openFind}>
+                <TbOutlineSearch /> Find / Replace
+              </button>
+              <button onClick={openCharNorm}>
+                <TbOutlineTypography /> Char Normalize
+              </button>
+              <hr />
+              <button onClick={() => handleAddSection()}>
+                <TbOutlinePlus /> Add section
+              </button>
+              <button onClick={() => fileInsertEl?.click()}>
+                <TbOutlinePaperclip /> Insert file
+              </button>
+              <input
+                ref={fileInsertEl}
+                type="file"
+                class="hidden"
+                onChange={handleFileInsert}
+              />
+            </ToggleMenu>
+
+            <button
+              class="count-label"
+              classList={{ dim: editorState.saveStatus() !== "saved" }}
+              onClick={() => setShowWords((v: boolean) => !v)}
+            >
+              {countLabel()}
+            </button>
+
+            <span class="spacer" />
+
+            <A href={`/preview/${params.fileId}`} title="Preview">
+              <TbOutlineEye />
+            </A>
+            <SaveOrBackupButton
+              status={editorState.saveStatus}
+              onSave={handleSave}
+              onBackup={() => handleBackup()}
+              canBackup={canBackup}
+            />
+
+            {/* Sticker toggle button & Section select */}
+            <div class="toolbar-group">
+              <button
+                onClick={toggleSticker}
+                title={stickerOpen() ? "Hide Sticker" : "Show Sticker"}
+              >
+                <TbOutlineNote />
+              </button>
+              <select onChange={handleSectionChange}>
+                <optgroup label="Special">
+                  <option value="__reorder__">Outline / Reorder</option>
+                  <option value="__all__">Whole file</option>
+                  <option value="__frontmatter__">Frontmatter</option>
+                </optgroup>
+                <optgroup label="Sections">
+                  <For each={bodyMetas()}>
+                    {(m) => (
+                      <option
+                        value={m.id}
+                        selected={editorState.activeSectionId() === m.id}
+                      >
+                        {sectionLabels().get(m.id) ?? m.heading}
+                      </option>
+                    )}
+                  </For>
+                </optgroup>
+              </select>
+            </div>
+          </Toolbar>
+        </Show>
+
+        <div class="section-preview-container section-preview-container-before">
+          <For each={contextRange().before}>
+            {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
+          </For>
+        </div>
+
+        <div class="section-nav">
+          <Show when={prevSection()}>
+            {(prev) => (
+              <button
+                onClick={() => {
+                  goToSectionSafe(prev().id, {
+                    selStart: Infinity,
+                    selEnd: Infinity,
+                  }).then((ok) => {
+                    if (ok)
+                      setTimeout(() => scrollWindowToEditorEdge("end"), 40);
+                  });
+                }}
+              >
+                <TbOutlineArrowUp /> Prev section
+              </button>
             )}
           </Show>
-          <span classList={{ dim: editorState.saveStatus() !== "saved" }}>
-            {countLabel()}
-          </span>
-          <span class="chip-sep">·</span>
-          <TbOutlineLayoutNavbarExpand />
-        </button>
-      </Show>
-      <FileDrop onDrop={handleFileDrop} label="Insert as raw text" />
-      <Show when={!(autoHideToolbar() && toolbarHidden())}>
-        <Toolbar
-          title={`Edit — ${editorState.filename()}`}
-          class={autoHideToolbar() ? "toolbar-autohide" : ""}
-        >
-          <A href="/" title="File list">
-            <TbOutlineHome />
-          </A>
-          <ToggleMenu label="File">
-            <button onClick={toggleSticker}>
-              <TbOutlineNote />{" "}
-              {stickerOpen() ? "Hide Sticker" : "Show Sticker"}
+          <Show when={!prevSection()}>
+            <button onClick={handleAddSectionBefore}>
+              {" "}
+              <TbOutlinePlus /> Create Prev
             </button>
-            <hr />
-            <button onClick={handleDuplicate}>
-              <TbOutlineCopy /> Duplicate
-            </button>
-            <hr />
-            <button onClick={handleDownload}>
-              <TbOutlineDownload /> Download (.md)
-            </button>
-            <button onClick={handleShare}>
-              <TbOutlineShare /> Share
-            </button>
-            <Show when={canBackup()}>
-              <button onClick={() => handleBackup()}>
-                <TbOutlineCloudUpload /> Backup to{" "}
-                {defaultRemoteProvider() || "cloud"}
-              </button>
-            </Show>
-          </ToggleMenu>
+          </Show>
+        </div>
 
-          <ToggleMenu label="Edit">
-            <button onClick={() => editorCommander.undo()}>
-              <TbOutlineRotate /> Undo
-            </button>
-            <button onClick={() => editorCommander.redo()}>
-              <TbOutlineRotateClockwise /> Redo
-            </button>
-            <hr />
-            <button onClick={openFind}>
-              <TbOutlineSearch /> Find / Replace
-            </button>
-            <button onClick={openCharNorm}>
-              <TbOutlineTypography /> Char Normalize
-            </button>
-            <hr />
-            <button onClick={() => handleAddSection()}>
-              <TbOutlinePlus /> Add section
-            </button>
-            <button onClick={() => fileInsertEl?.click()}>
-              <TbOutlinePaperclip /> Insert file
-            </button>
-            <input
-              ref={fileInsertEl}
-              type="file"
-              class="hidden"
-              onChange={handleFileInsert}
-            />
-          </ToggleMenu>
-
-          <button
-            class="count-label"
-            classList={{ dim: editorState.saveStatus() !== "saved" }}
-            onClick={() => setShowWords((v: boolean) => !v)}
-          >
-            {countLabel()}
-          </button>
-
-          <span class="spacer" />
-
-          <A href={`/preview/${params.fileId}`} title="Preview">
-            <TbOutlineEye />
-          </A>
-          <SaveOrBackupButton
-            status={editorState.saveStatus}
-            onSave={handleSave}
-            onBackup={() => handleBackup()}
-            canBackup={canBackup}
-          />
-
-          {/* Sticker toggle button & Section select */}
-          <div class="toolbar-group">
-            <button
-              onClick={toggleSticker}
-              title={stickerOpen() ? "Hide Sticker" : "Show Sticker"}
-            >
-              <TbOutlineNote />
-            </button>
-            <select onChange={handleSectionChange}>
-              <optgroup label="Special">
-                <option value="__reorder__">Outline / Reorder</option>
-                <option value="__all__">Whole file</option>
-                <option value="__frontmatter__">Frontmatter</option>
-              </optgroup>
-              <optgroup label="Sections">
-                <For each={bodyMetas()}>
-                  {(m) => (
-                    <option
-                      value={m.id}
-                      selected={editorState.activeSectionId() === m.id}
-                    >
-                      {sectionLabels().get(m.id) ?? m.heading}
-                    </option>
-                  )}
-                </For>
-              </optgroup>
-            </select>
-          </div>
-        </Toolbar>
-      </Show>
-
-      <div class="section-preview-container section-preview-container-before">
-        <For each={contextRange().before}>
-          {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
-        </For>
-      </div>
-
-      <div class="section-nav">
-        <Show when={prevSection()}>
-          {(prev) => (
-            <button
-              onClick={() => {
-                goToSectionSafe(prev().id, {
+        <div>
+          <Editor
+            language="markdown"
+            commander={editorCommander}
+            onChange={() => {
+              const id = editorState.activeSectionId();
+              if (id) notifyEdit(id, editorCommander);
+            }}
+            onSave={() => handleSave()}
+            onFind={() => openFind()}
+            onPrevSection={() => {
+              const prev = prevSection();
+              if (prev)
+                goToSectionSafe(prev.id, {
                   selStart: Infinity,
                   selEnd: Infinity,
                 }).then((ok) => {
                   if (ok) setTimeout(() => scrollWindowToEditorEdge("end"), 40);
                 });
-              }}
-            >
-              <TbOutlineArrowUp /> Prev section
-            </button>
-          )}
-        </Show>
-        <Show when={!prevSection()}>
-          <button onClick={handleAddSectionBefore}>
-            {" "}
-            <TbOutlinePlus /> Create Prev
-          </button>
-        </Show>
-      </div>
-
-      <div>
-        <Editor
-          language="markdown"
-          commander={editorCommander}
-          onChange={() => {
-            const id = editorState.activeSectionId();
-            if (id) notifyEdit(id, editorCommander);
-          }}
-          onSave={() => handleSave()}
-          onFind={() => openFind()}
-          onPrevSection={() => {
-            const prev = prevSection();
-            if (prev)
-              goToSectionSafe(prev.id, {
-                selStart: Infinity,
-                selEnd: Infinity,
-              }).then((ok) => {
-                if (ok) setTimeout(() => scrollWindowToEditorEdge("end"), 40);
-              });
-          }}
-          onNextSection={() => {
-            const next = nextSection();
-            if (next)
-              goToSectionSafe(next.id, { selStart: 0, selEnd: 0 }).then(
-                (ok) => {
-                  if (ok)
-                    setTimeout(() => scrollWindowToEditorEdge("start"), 40);
-                },
-              );
-          }}
-        />
-      </div>
-
-      <div class="section-nav">
-        <Show when={nextSection()}>
-          {(next) => (
-            <button
-              onClick={() => {
-                goToSectionSafe(next().id, { selStart: 0, selEnd: 0 }).then(
+            }}
+            onNextSection={() => {
+              const next = nextSection();
+              if (next)
+                goToSectionSafe(next.id, { selStart: 0, selEnd: 0 }).then(
                   (ok) => {
                     if (ok)
                       setTimeout(() => scrollWindowToEditorEdge("start"), 40);
                   },
                 );
-              }}
-            >
-              <TbOutlineArrowDown />
-              Next section
-            </button>
-          )}
-        </Show>
-        <Show when={!nextSection()}>
-          <button
-            onClick={() =>
-              handleAddSection(editorState.activeSectionId() ?? undefined)
-            }
-          >
-            <TbOutlinePlus /> Create Next
-          </button>
-        </Show>
-      </div>
+            }}
+          />
+        </div>
 
-      <div class="section-preview-container section-preview-container-after">
-        <For each={contextRange().after}>
-          {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
-        </For>
+        <div class="section-nav">
+          <Show when={nextSection()}>
+            {(next) => (
+              <button
+                onClick={() => {
+                  goToSectionSafe(next().id, { selStart: 0, selEnd: 0 }).then(
+                    (ok) => {
+                      if (ok)
+                        setTimeout(() => scrollWindowToEditorEdge("start"), 40);
+                    },
+                  );
+                }}
+              >
+                <TbOutlineArrowDown />
+                Next section
+              </button>
+            )}
+          </Show>
+          <Show when={!nextSection()}>
+            <button
+              onClick={() =>
+                handleAddSection(editorState.activeSectionId() ?? undefined)
+              }
+            >
+              <TbOutlinePlus /> Create Next
+            </button>
+          </Show>
+        </div>
+
+        <div class="section-preview-container section-preview-container-after">
+          <For each={contextRange().after}>
+            {(m) => <ContextSection meta={() => m} raw={contextRaw()} />}
+          </For>
+        </div>
       </div>
     </main>
   );

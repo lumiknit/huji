@@ -35,6 +35,25 @@ main {
   padding: 0 var(--sp-xs) 6rem;
 }
 
+/* EditorPage's <main>: spans the full viewport (overriding the generic rule
+   above) so its JS-driven left/right padding can reserve space for a pinned
+   sticker sidebar. .editor-main-inner then centers the actual page content
+   (nav included) within whatever width remains, keeping the usual base
+   gutter/scroll-space padding on its own layer. */
+main.editor-main {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  padding-left: var(--editor-left-offset, 0px);
+  padding-right: var(--editor-right-offset, 0px);
+}
+
+.editor-main-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--sp-xs) 6rem;
+}
+
 /* ── Typography ── */
 p {
   margin-block: var(--sp-sm);
@@ -73,8 +92,8 @@ nav.toolbar {
 
 nav.toolbar.toolbar-autohide {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: var(--editor-left-offset, 0px);
+  right: var(--editor-right-offset, 0px);
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 var(--sp-xs);
@@ -83,8 +102,8 @@ nav.toolbar.toolbar-autohide {
 .toolbar-chip {
   position: fixed;
   top: 0.25rem;
-  left: 0;
-  right: 0;
+  left: var(--editor-left-offset, 0px);
+  right: var(--editor-right-offset, 0px);
   width: fit-content;
   max-width: 75vw;
   margin: 0 auto;
@@ -395,6 +414,21 @@ section > label > select {
   min-width: 6rem;
   max-width: 16rem;
   margin-left: auto;
+}
+
+.px-range-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xs);
+  width: 50%;
+  min-width: 6rem;
+  max-width: 16rem;
+  margin-left: auto;
+}
+
+.px-range-col input {
+  width: 100%;
+  margin-left: 0;
 }
 
 .settings-row {

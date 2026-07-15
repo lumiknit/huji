@@ -1,9 +1,18 @@
+import { createSignal, type Signal } from "solid-js";
+import { makePersisted } from "@solid-primitives/storage";
 import { createIdbStorage } from "../idb_storage";
 
 const store = createIdbStorage("huji_settings", "kv", 2);
 
 /** AsyncStorage adapter for @solid-primitives/storage */
 export const hujiSettingsStorage = store;
+
+/** A signal persisted to huji's settings store, keyed by `key`. */
+export const persisted = <T>(key: string, def: T) =>
+  makePersisted<T, Signal<T>>(createSignal<T>(def), {
+    name: key,
+    storage: hujiSettingsStorage,
+  });
 
 export const clearHujiSettings = () => store.clear();
 

@@ -1,14 +1,18 @@
 /* ── Sticker ── */
+:root {
+  --sticker-shadow: 0 0.125rem 0.25rem #4441;
+}
+
 .sticker {
   position: fixed;
-  top: var(--sp-md);
-  bottom: var(--sp-md);
+  top: var(--sp-sm);
+  bottom: var(--sp-sm);
   z-index: 100;
   width: min(75svw, 20rem);
   background: var(--c-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--sticker-shadow);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -140,14 +144,6 @@
   height: auto;
 }
 
-.sticker-fab.sticker-left {
-  left: 0.5rem;
-}
-
-.sticker-fab.sticker-right {
-  right: 0.5rem;
-}
-
 .sticker-fab-btn {
   display: inline-flex;
   align-items: center;
@@ -157,5 +153,5 @@
   border-radius: 999px;
   background: var(--c-bg);
   border: 1px solid var(--c-border);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--sticker-shadow);
 }

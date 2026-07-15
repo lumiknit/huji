@@ -1,14 +1,7 @@
-import { createSignal, batch, type Signal } from "solid-js";
-import { makePersisted } from "@solid-primitives/storage";
-import { hujiSettingsStorage } from "../lib/db/settings-storage";
+import { createSignal, batch } from "solid-js";
+import { persisted } from "../lib/db/settings-storage";
 
 export type StickerPinState = "off" | "unpinned" | "pinned";
-
-const persisted = <T>(key: string, def: T) =>
-  makePersisted<T, Signal<T>>(createSignal<T>(def), {
-    name: key,
-    storage: hujiSettingsStorage,
-  });
 
 export const [stickerPinState, setStickerPinState] = persisted<StickerPinState>(
   "stickerPinState",
@@ -21,10 +14,13 @@ export const [stickerPinState, setStickerPinState] = persisted<StickerPinState>(
  */
 export const [stickerVisible, setStickerVisible] = createSignal(true);
 
-/** Section shown in the top (0) / bottom (1) slot. null = OFF. */
-export const [stickerSectionIds, setStickerSectionIds] = persisted<
+/**
+ * Section shown in the top (0) / bottom (1) slot. null = OFF.
+ * Not persisted — section ids are only valid within the currently open file.
+ */
+export const [stickerSectionIds, setStickerSectionIds] = createSignal<
   (string | null)[]
->("stickerSectionIds", [null, null]);
+>([null, null]);
 
 export const setStickerSectionSlot = (slot: number, id: string | null) => {
   setStickerSectionIds((ids) => {
@@ -59,6 +55,3 @@ export const toggleSticker = () => {
 export const togglePin = () => {
   setStickerPinState((p) => (p === "pinned" ? "unpinned" : "pinned"));
 };
-
-export const collapseToFab = () => setStickerVisible(false);
-export const expandFromFab = () => setStickerVisible(true);

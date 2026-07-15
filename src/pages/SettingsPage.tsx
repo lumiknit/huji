@@ -68,6 +68,41 @@ import {
   importHujiSettings,
 } from "../lib/db/settings-storage";
 import { aconfirm } from "../components/CommonDialog";
+
+const PxRangeField: Component<{
+  label: string;
+  value: () => number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}> = (props) => {
+  const min = () => props.min ?? 0;
+  const max = () => props.max ?? 1600;
+  const step = () => props.step ?? 10;
+  return (
+    <label>
+      {props.label}
+      <div class="px-range-col">
+        <input
+          type="number"
+          min={min()}
+          step={step()}
+          value={props.value()}
+          onChange={(e) => props.onChange(Number(e.currentTarget.value))}
+        />
+        <input
+          type="range"
+          min={min()}
+          max={max()}
+          step={step()}
+          value={Math.max(min(), Math.min(props.value(), max()))}
+          onChange={(e) => props.onChange(Number(e.currentTarget.value))}
+        />
+      </div>
+    </label>
+  );
+};
 import FontDataList from "../components/settings/FontDataList";
 import ThemePreview from "../components/settings/ThemePreview";
 
@@ -519,30 +554,28 @@ const SettingsPage: Component = () => {
             <option value="off">Off</option>
           </select>
         </label>
+      </section>
 
-        <label>
-          Max width (px)
-          <input
-            type="number"
-            min={320}
-            max={1920}
-            step={10}
-            value={maxWidth()}
-            onChange={(e) => setMaxWidth(Number(e.currentTarget.value))}
-          />
-        </label>
+      <section>
+        <h2>Layout</h2>
 
-        <label>
-          Sticker width (px)
-          <input
-            type="number"
-            min={180}
-            max={480}
-            step={10}
-            value={stickerWidth()}
-            onChange={(e) => setStickerWidth(Number(e.currentTarget.value))}
-          />
-        </label>
+        <PxRangeField
+          label="Max width (px)"
+          value={maxWidth}
+          onChange={setMaxWidth}
+          min={240}
+        />
+      </section>
+
+      <section>
+        <h2>Sticker</h2>
+
+        <PxRangeField
+          label="Sticker width (px)"
+          value={stickerWidth}
+          onChange={setStickerWidth}
+          max={480}
+        />
 
         <label>
           Sticker side

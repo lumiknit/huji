@@ -80,7 +80,7 @@ const highlightMatches = (container: HTMLElement, query: string): Element[] => {
 
 const StickerSlot: Component<{
   sectionId: string | null;
-  bodyRef: (el: HTMLElement) => void;
+  bodyRef: (el: HTMLElement | undefined) => void;
 }> = (props) => {
   const [content] = createResource(
     () => props.sectionId,
@@ -91,6 +91,11 @@ const StickerSlot: Component<{
     },
   );
   const html = createMemo(() => renderMarkdown(content() ?? ""));
+
+  createEffect(() => {
+    if (!props.sectionId) props.bodyRef(undefined);
+  });
+  onCleanup(() => props.bodyRef(undefined));
 
   return (
     <Show when={props.sectionId}>

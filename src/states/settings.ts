@@ -1,17 +1,8 @@
-import { createEffect, createSignal, type Signal } from "solid-js";
-import { makePersisted } from "@solid-primitives/storage";
-import { hujiSettingsStorage } from "../lib/db/settings-storage";
+import { createEffect } from "solid-js";
+import { persisted } from "../lib/db/settings-storage";
 
 export const SERIF_STACK = "'BuiltinSerif', serif";
 const resolveFont = (font: string) => font || SERIF_STACK;
-
-const persisted = <T>(key: string, def: T) => {
-  const sig: Signal<T> = createSignal<T>(def);
-  return makePersisted<T, Signal<T>>(sig, {
-    name: key,
-    storage: hujiSettingsStorage,
-  });
-};
 
 export const [editorFont, setEditorFont] = persisted("editorFont", "");
 export const [editorFontSize, setEditorFontSize_] = persisted(
@@ -108,7 +99,7 @@ export const setContextSections = (v: number) =>
   setContextSections_(Math.min(5, Math.max(0, v)));
 export const [maxWidth, setMaxWidth_] = persisted("maxWidth", 720);
 export const setMaxWidth = (v: number) =>
-  setMaxWidth_(Math.min(1920, Math.max(640, v)));
+  setMaxWidth_(Math.min(1920, Math.max(240, v)));
 
 export const [stickerWidth, setStickerWidth_] = persisted("stickerWidth", 320);
 export const setStickerWidth = (v: number) =>
